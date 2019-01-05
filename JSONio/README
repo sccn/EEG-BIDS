@@ -1,4 +1,12 @@
- JSONio: a MATLAB JSON library (v1.1)
+Difference with the version distributed at https://www.artefact.tk/software/matlab/jsonio/
+ =================================
+ 
+ In this version, Matlab structures with fields xNumber (such as x2 or x12129) 
+ are converted to JSON keys Number (such as 2 or 12129). This because numbers 
+ may not be used as field in Matlab structures. This also follows the convension
+ used by the Matlab jsondecode function.
+
+JSONio: a MATLAB JSON library (v1.1) - modified as explained above
  ====================================
 
  Copyright (C) 2015-2018 Guillaume Flandin <Guillaume@artefact.tk>
