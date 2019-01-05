@@ -1,4 +1,15 @@
-% bids_format('/Users/arno/temp/rishikesh', 24, {
+% bids_export - this function allows converting a collection of datasets to
+%               BIDS formated folders and files.
+%
+% Usage:
+%    bids_export(files, varargin)
+%
+% Input:
+%   files      - [cell] cell array of binary EEG files. If several sessions
+%                are present for some subjects, they may be placed in a
+%                sublist. For example { { file1subject1.set
+%                file2subject1.set } file1subject2.set file1subject3.set }
+%
 % Optional inputs:
 %  'targetdir' - [string] target directory. Default is 'bidsexport' in the
 %                current folder.
@@ -87,6 +98,32 @@
 %                cInfo.reference.LongName = 'Channel reference';
 %                cInfo.reference.Description = 'Channel reference montage 10/20';
 %
+%  'trialtype' - [cell] 2 column cell table indicating the type of event
+%                for each event type. For example { '2'    'stimulus';
+%                                                   '4'    'stimulus';
+%                                                   '128'  'response' }
+%
+% Validation:
+%  If the BIDS data created with this function fails to pass the BIDS
+%  validator (npm install -g https://github.com/bids-standard/bids-validator.git
+%  Usage bids-validator/bin/bids-validator --bep006 bidsfolder), please
+%  email eeglab@sccn.ucsd.edu
+%
+% Example: The following examples will pass the bids validator.
+%
+% bids_export( { subject1.set subject2.set } );
+%
+% Note that important information might be missing. For example, line noise
+% is set to 0. Use input 'tInfo' to set the line noise as below.
+%
+% bids_export( { subject1.set subject2.set }, 'tInfo', struct('PowerLineFrequency', 50 );
+%
+% In general, you will want to describe your events and include as much
+% information as possible. A detailed and comprehensive example is provided 
+% in bids_export_example.m
+%
+%
+% Author: Arnaud Delorme, 2019
 
 %  The following are automatically
 %                populated using channel structure info ('eeg', 'ecg', 'emg', 'eog', 'trigger')
@@ -103,11 +140,14 @@
 %                tInfo.TaskName = 'meditation';
 %                However, they may be overwritten man.
 
-function bids_format_eeglab(files, varargin)
+function bids_export(files, varargin)
 
 if nargin < 1
     help bids_format_eeglab;
     return
+end
+if ~exist('jsonwrite')
+    addpath(fullfile(fileparts(which(mfilename)), 'JSONio'));
 end
 
 opt = finputcheck(varargin, { 'ReferencesAndLinks' 'cell'   {}   { 'n/a' };
@@ -155,17 +195,19 @@ jsonwrite(fullfile(opt.targetdir, 'dataset_description.json'), opt.gInfo, struct
 
 % write participant information
 % -----------------------------
-participants = { 'participant_id' };
-for iSubj=1:length(files)
-    participants{iSubj+1, 1} = sprintf('sub-%3.3d', iSubj);
-end
 if ~isempty(opt.pInfo)
-    if size(opt.pInfo,1) ~= length(participants)
-        error(sprintf('Wrong number of participant (%d) in tInfo structure, should be %d based on the number of files', size(opt.pInfo,1)-1, length(files)));
+    participants = { 'participant_id' };
+    for iSubj=1:length(files)
+        participants{iSubj+1, 1} = sprintf('sub-%3.3d', iSubj);
     end
-    participants(:,2:size(opt.pInfo,2)+1) = opt.pInfo;
+    if ~isempty(opt.pInfo)
+        if size(opt.pInfo,1) ~= length(participants)
+            error(sprintf('Wrong number of participant (%d) in tInfo structure, should be %d based on the number of files', size(opt.pInfo,1)-1, length(files)));
+        end
+        participants(:,2:size(opt.pInfo,2)+1) = opt.pInfo;
+    end
+    writetsv(fullfile(opt.targetdir, 'participants.tsv'), participants);
 end
-writetsv(fullfile(opt.targetdir, 'participants.tsv'), participants);
 
 % write participation field description
 % -------------------------------------
@@ -174,26 +216,34 @@ descFields = { 'LongName'     'optional' 'char' '';
     'Description'  'optional' 'char' '';
     'Units'        'optional' 'char' '';
     'TermURL'      'optional' 'char' '' };
-fields = fieldnames(opt.pInfoDesc);
-if ~isempty(setdiff(fields, participants(1,:)))
-    error('Some field names in the pInfoDec structure do not have a corresponding column name in pInfo');
+if ~isempty(opt.pInfo)
+    fields = fieldnames(opt.pInfoDesc);
+    if ~isempty(setdiff(fields, participants(1,:)))
+        error('Some field names in the pInfoDec structure do not have a corresponding column name in pInfo');
+    end
+    fields = participants(1,:);
+    for iField = 1:length(fields)
+        descFields{1,4} = fields{iField};
+        if ~isfield(opt.pInfoDesc, fields{iField}), opt.pInfoDesc(1).(fields{iField}) = struct([]); end
+        opt.pInfoDesc.(fields{iField}) = checkfields(opt.pInfoDesc.(fields{iField}), descFields, 'pInfoDesc');
+    end
+    jsonwrite(fullfile(opt.targetdir, 'participants.json'), opt.pInfoDesc,struct('indent','  '));
 end
-fields = participants(1,:);
-for iField = 1:length(fields)
-    descFields{1,4} = fields{iField};
-    if ~isfield(opt.pInfoDesc, fields{iField}), opt.pInfoDesc(1).(fields{iField}) = struct([]); end
-    opt.pInfoDesc.(fields{iField}) = checkfields(opt.pInfoDesc.(fields{iField}), descFields, 'pInfoDesc');
-end
-jsonwrite(fullfile(opt.targetdir, 'participants.json'), opt.pInfoDesc,struct('indent','  '));
 
 % write event file information
 % ----------------------------
 events = { 'onset' 'duration' };
 fields = fieldnames(opt.eInfoDesc);
-if ~isempty(setdiff(events, fields))
-    error('"onset" or "duration" event field names in the eInfoDesc structure are missing');
-end
-fields = events(1,:);
+% if ~ismember('onset', fields)
+%     disp('"onset" event field names in the eInfoDesc structure is missing, creating one');
+%     eInfoDesc.onset.Description = 'Event onset';
+%     eInfoDesc.onset.Units = 'second';
+% end
+% if ~ismember('onset', fields)
+%     disp('"duration" event field names in the eInfoDesc structure is missing, creating one');
+%     eInfoDesc.duration.Description = 'Event duration';
+%     eInfoDesc.duration.Units = 'second';
+% end
 for iField = 1:length(fields)
     descFields{1,4} = fields{iField};
     if ~isfield(opt.eInfoDesc, fields{iField}), opt.eInfoDesc(1).(fields{iField}) = struct([]); end
@@ -253,7 +303,7 @@ end
 
 % check task info
 % ---------------
-opt.tInfo.TaskName = opt.taskName;
+opt.tInfo(1).TaskName = opt.taskName;
 tInfoFields = {...
     'TaskName' 'REQUIRED' '' '';
     'TaskDescription' 'RECOMMENDED' '' '';
@@ -270,7 +320,7 @@ tInfoFields = {...
     'ECGChannelCount' 'REQUIRED' '' 0;
     'EMGChannelCount' 'REQUIRED' '' 0;
     'EEGReference' 'REQUIRED' 'char' 'Unknown';
-    'PowerLineFrequency' 'REQUIRED' '' 'Unknown';
+    'PowerLineFrequency' 'REQUIRED' '' 0;
     'EEGGround' 'RECOMMENDED ' 'char' '';
     'MiscChannelCount' ' OPTIONAL' 'char' '';
     'TriggerChannelCount' 'RECOMMENDED' 'char' '';
@@ -298,7 +348,7 @@ for iSubj = 1:length(files)
             copy_data_bids( files{iSubj}{iSess}, fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName '_eeg' files{iSubj}{iSess}(end-3:end)]),opt.tInfo, opt.trialtype);
         end
     else
-        copy_data_bids( files{iSubj}, fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' opt.taskName '_eeg' files{iSubj}{iSess}(end-3:end) ]),opt.tInfo, opt.trialtype);
+        copy_data_bids( files{iSubj}, fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' opt.taskName '_eeg' files{iSubj}(end-3:end) ]),opt.tInfo, opt.trialtype);
     end
 end
 

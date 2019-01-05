@@ -1,5 +1,17 @@
-clear;
+% This function provides a comprehensive example of using the bids_export
+% function. Note that eventually, you may simply use bids_export({file1.set file2.set}) 
+% and that all other parameters are highly recommended but optional.
 
+% You may not run this script because you do not have the associated data.
+% It correspond to the actual dataset included in the BIDS EEG publication
+% available at https://psyarxiv.com/63a4y.
+%
+% The data itself is available at https://zenodo.org/record/1490922
+%
+% A. Delorme - Jan 2019
+
+% raw data files (replace with your own)
+% ----------------------------------
 files = { 
     {'/Users/arno/temp/BIDS_delorme/sub-Expert01/ses-01/eeg/sub-Expert01_ses-01_task-medprobe_eeg.bdf'
 '/Users/arno/temp/BIDS_delorme/sub-Expert01/ses-02/eeg/sub-Expert01_ses-02_task-medprobe_eeg.bdf' }
@@ -65,10 +77,14 @@ files = {
 
 {'/Users/arno/temp/BIDS_delorme/sub-Novice12/ses-01/eeg/sub-Novice12_ses-01_task-medprobe_eeg.bdf' } };
 
-% bids_format_eeglab_old('/Users/arno/temp/rishikesh', files, 'meditation');
+% general information for dataset_description.json file
+% -----------------------------------------------------
 generalInfo.Name = 'Meditation study';
 generalInfo.ReferencesAndLinks = { "https://www.ncbi.nlm.nih.gov/pubmed/27815577" };
-pInfo = { 'gender'   'age'   'group'; % from file mw_expe_may28_2015 and convert_files_to_bids.m
+
+% participant information for participants.tsv file
+% -------------------------------------------------
+pInfo = { 'gender'   'age'   'group'; % originally from file mw_expe_may28_2015 and convert_files_to_bids.m
 'M'	32 'expert';
 'M'	35 'expert';
 'F'	41 'expert';
@@ -94,6 +110,8 @@ pInfo = { 'gender'   'age'   'group'; % from file mw_expe_may28_2015 and convert
 'M'	50 'novice';
 'F'	38 'novice' };
        
+% participant column description for participants.json file
+% ---------------------------------------------------------
 pInfoDesc.gender.Description = 'gender, classified as male or female';
 pInfoDesc.gender.Levels.M = 'male';
 pInfoDesc.gender.Levels.F = 'female';
@@ -102,6 +120,9 @@ pInfoDesc.age.Description = 'age in years';
 pInfoDesc.group.Description = 'group, expert or novice meditators';
 pInfoDesc.group.Levels.expert = 'expert meditator';
 pInfoDesc.group.Levels.novice = 'novice meditator';
+
+% event column description for xxx-events.json file (only one such file)
+% ----------------------------------------------------------------------
 eInfoDesc.onset.Description = 'Event onset';
 eInfoDesc.onset.Units = 'second';
 eInfoDesc.duration.Description = 'Event duration';
@@ -118,14 +139,25 @@ eInfoDesc.value.Levels.x8   = 'Response 3 (this may be a response to question 1,
 eInfoDesc.value.Levels.x16   = 'Indicate involuntary response';
 eInfoDesc.value.Levels.x128 = 'First question onset (most important marker)';
 
+% Content for README file
+% -----------------------
 README = sprintf( [ 'This meditation experiment contains 24 subjects. Subjects were\n' ...
                     'meditating and were interupted about every 2 minutes to indicate\n' ...
                     'their level of concentration and mind wandering. The scientific\n' ...
                     'article (see Reference) contains all methodological details\n\n' ...
                     '- Arnaud Delorme (October 17, 2018)' ]);
+                
+% Content for CHANGES file
+% ------------------------
 CHANGES = sprintf([ 'Revision history for meditation dataset\n\n' ...
-                    '0.1 2018-10-17\n' ...
-                    ' - Initial release\n' ]);
+                    'version 0.1 beta - 2018-10-17\n' ...
+                    ' - Initial release\n' ...
+                    '\n' ...
+                    'version 1.0 - 4 Jan 2019\n' ...
+                    ' - Fixing event field names and various minor issues\n' ]);                    
+                
+% List of stimuli to be copied to the stimuli folder
+% --------------------------------------------------
 stimuli = {'/data/matlab/tracy_mw/rate_mw.wav' 
     '/data/matlab/tracy_mw/rate_meditation.wav'
     '/data/matlab/tracy_mw/rate_tired.wav'
@@ -141,17 +173,27 @@ stimuli = {'/data/matlab/tracy_mw/rate_mw.wav'
     '/data/matlab/tracy_mw/cancel.wav'
     '/data/matlab/tracy_mw/starting.wav' };
 
-code = { '/data/matlab/tracy_mw/run_mw_experiment6.m' '/data/matlab/bids_matlab/rishikesh_study/bids_format_eeglab.m' '/data/matlab/bids_matlab/rishikesh_study/run_bids_format.m' };
+% List of script to run the experiment
+% ------------------------------------
+code = { '/data/matlab/tracy_mw/run_mw_experiment6.m' mfilename('fullpath') };
 
+% Task information for xxxx-eeg.json file
+% ---------------------------------------
 tInfo.InstitutionAddress = 'Centre de Recherche Cerveau et Cognition, Place du Docteur Baylac, Pavillon Baudot, 31059 Toulouse, France';
 tInfo.InstitutionName = 'Paul Sabatier University';
 tInfo.InstitutionalDepartmentName = 'Centre de Recherche Cerveau et Cognition';
 tInfo.PowerLineFrequency = 50;
 tInfo.ManufacturersModelName = 'ActiveTwo';
 
+% Trial types correspondance with event types/values
+% BIDS allows for both trial types and event values
+% --------------------------------------------------
 trialTypes = { '2' 'response';
                '4' 'response';
                '8' 'response';
                '16' 'n/a';
                '128' 'stimulus' };
-bids_format_eeglab(files, 'targetdir', '/Users/arno/temp/bidsexport', 'taskName', 'meditation', 'trialtype', trialTypes, 'gInfo', generalInfo, 'pInfo', pInfo, 'pInfoDesc', pInfoDesc, 'eInfoDesc', eInfoDesc, 'README', README, 'CHANGES', CHANGES, 'stimuli', stimuli, 'codefiles', code, 'tInfo', tInfo);
+           
+% call to the export function
+% ---------------------------
+bids_export(files, 'targetdir', '/Users/arno/temp/bidsexport', 'taskName', 'meditation', 'trialtype', trialTypes, 'gInfo', generalInfo, 'pInfo', pInfo, 'pInfoDesc', pInfoDesc, 'eInfoDesc', eInfoDesc, 'README', README, 'CHANGES', CHANGES, 'stimuli', stimuli, 'codefiles', code, 'tInfo', tInfo);
