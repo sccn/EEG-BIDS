@@ -33,8 +33,8 @@ if isempty(STUDY)
     error('BIDS export can only export EEGLAB studies');
 end
 
-if nargin < 1
-    bidsFolder = uisetdir('Pick a BIDS output folder');
+if nargin < 2
+    bidsFolder = uigetdir('Pick a BIDS output folder');
     if isequal(bidsFolder,0), return; end
     
     options = { 'targetdir' bidsFolder };
@@ -67,12 +67,12 @@ for iSubj = 1:length(uniqueSubjects)
 	indS = strmatch( STUDY.subject{iSubj}, { STUDY.datasetinfo.subject }, 'exact' );
 	files = {};
 	for iFile = 1:length(indS)
-		files{iFile} = fuillfile( STUDY.datasetinfo(indS(iFile)).filepath, STUDY.datasetinfo(indS(iFile)).filename);
+		files{iFile} = fullfile( STUDY.datasetinfo(indS(iFile)).filepath, STUDY.datasetinfo(indS(iFile)).filename);
 	end
 	if length(files) == 1, files = files{1}; end
-	allfiles{end+1} = files;
+	allFiles{end+1} = files;
 end
-bids_export(allfiles, options{:});
+bids_export(allFiles, options{:});
 
 % history
 % -------

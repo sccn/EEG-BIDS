@@ -339,13 +339,14 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype)
         fclose(fileIDOut);
         tInfo.EEGReference = 'CMS/DRL';
         tInfo.Manufacturer = 'BIOSEMI';
+        EEG = pop_biosig(fileOut);
     elseif strcmpi(ext, '.set')
         copyfile(fileIn, fileOut);
+        EEG = pop_loadset(fileOut);
     else
         error('Data format not supported');
     end
 
-    EEG = pop_biosig(fileOut);
         
     % old conversion using data2bids
     %     addpath(fullfile(p, 'fieldtrip'));
@@ -512,7 +513,7 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype)
         'CapManufacturer' 'RECOMMENDED' 'char' 'Unknown';
         'CapManufacturersModelName' 'OPTIONAL' 'char' '';
         'HardwareFilters' 'OPTIONAL' 'char' '';
-        'SoftwareFilters' 'RECOMMENDED' 'char' '';
+        'SoftwareFilters' 'REQUIRED' 'char' 'n/a';
         'RecordingDuration' 'RECOMMENDED' '' 'n/a';
         'RecordingType' 'RECOMMENDED' 'char' '';
         'EpochLength' 'RECOMMENDED' '' 'n/a';
@@ -546,7 +547,9 @@ function s = checkfields(s, f, structName)
     for iRow = 1:size(f,1)
         if isempty(s) || ~isfield(s, f{iRow,1})
             if strcmpi(f{iRow,2}, 'required') % required or optional
-                fprintf('Warning: "%s" set to %s\n', f{iRow,1}, num2str(f{iRow,4}));
+                if ~iscell(f{iRow,4})
+                    fprintf('Warning: "%s" set to %s\n', f{iRow,1}, num2str(f{iRow,4}));
+                end
                 s = setfield(s, {1}, f{iRow,1}, f{iRow,4});
             end
         elseif ~isempty(f{iRow,3}) && ~isa(s.(f{iRow,1}), f{iRow,3})
