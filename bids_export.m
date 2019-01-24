@@ -188,7 +188,7 @@ mkdir( fullfile(opt.targetdir, 'stimuli'));
 % ------------------
 gInfoFields = { 'ReferencesAndLinks' 'required' 'cell' { 'n/a' };
     'Name'               'required' 'char' '';
-    'License'            'required' 'char' '';
+    'License'            'required' 'char' 'CC0';
     'BIDSVersion'        'required' 'char' '1.1.1' };
 opt.gInfo = checkfields(opt.gInfo, gInfoFields, 'gInfo');
 jsonwrite(fullfile(opt.targetdir, 'dataset_description.json'), opt.gInfo, struct('indent','  '));
@@ -304,39 +304,6 @@ end
 % check task info
 % ---------------
 opt.tInfo(1).TaskName = opt.taskName;
-tInfoFields = {...
-    'TaskName' 'REQUIRED' '' '';
-    'TaskDescription' 'RECOMMENDED' '' '';
-    'Instructions' 'RECOMMENDED' 'char' '';
-    'CogAtlasID' 'RECOMMENDED' 'char' '';
-    'CogPOID' 'RECOMMENDED' 'char' '';
-    'InstitutionName' 'RECOMMENDED' 'char' '';
-    'InstitutionAddress' 'RECOMMENDED' 'char' '';
-    'InstitutionalDepartmentName' ' RECOMMENDED' 'char' '';
-    'DeviceSerialNumber' 'RECOMMENDED' 'char' '';
-    'SamplingFrequency' 'REQUIRED' '' '';
-    'EEGChannelCount' 'REQUIRED' '' '';
-    'EOGChannelCount' 'REQUIRED' '' 0;
-    'ECGChannelCount' 'REQUIRED' '' 0;
-    'EMGChannelCount' 'REQUIRED' '' 0;
-    'EEGReference' 'REQUIRED' 'char' 'Unknown';
-    'PowerLineFrequency' 'REQUIRED' '' 0;
-    'EEGGround' 'RECOMMENDED ' 'char' '';
-    'MiscChannelCount' ' OPTIONAL' 'char' '';
-    'TriggerChannelCount' 'RECOMMENDED' 'char' '';
-    'EEGPlacementScheme' 'RECOMMENDED' 'char' '';
-    'Manufacturer' 'RECOMMENDED' 'char' '';
-    'ManufacturersModelName' 'OPTIONAL' 'char' '';
-    'CapManufacturer' 'RECOMMENDED' 'char' 'Unknown';
-    'CapManufacturersModelName' 'OPTIONAL' 'char' '';
-    'HardwareFilters' 'OPTIONAL' 'char' '';
-    'SoftwareFilters' 'RECOMMENDED' 'char' '';
-    'RecordingDuration' 'RECOMMENDED' 'char' 'n/a';
-    'RecordingType' 'RECOMMENDED' 'char' '';
-    'EpochLength' 'RECOMMENDED' '' 'n/a';
-    'SoftwareVersions' 'RECOMMENDED' 'char' '';
-    'SubjectArtefactDescription' 'OPTIONAL' 'char' '' };
-opt.tInfo = checkfields(opt.tInfo, tInfoFields, 'tInfo');
 
 % copy EEG files
 % --------------
@@ -458,6 +425,7 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype)
 
     % write channel file information
     fid = fopen( [ fileOut(1:end-7) 'channels.tsv' ], 'w');
+    miscChannels = 0;
     if isempty(EEG.chanlocs)
         fprintf(fid, 'name\n');
         for iChan = 1:EEG.nbchan, printf(fid, 'E%d\n', iChan); end
@@ -471,9 +439,10 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype)
                 type = EEG.chanlocs(iChan).type;
             end
             if strcmpi(type, 'eeg')
-                unit = 'uV';
+                unit = 'microV';
             else
                 unit = 'n/a';
+                miscChannels = miscChannels+1;
             end
 
             fprintf(fid, '%s\t%s\t%s\n', EEG.chanlocs(iChan).labels, type, unit);
@@ -497,7 +466,10 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype)
     end
 
     % write task information
-    tInfo.EEGChannelCount = EEG.nbchan;
+    tInfo.EEGChannelCount = EEG.nbchan-miscChannels;
+    if miscChannels > 0
+        tInfo.MiscChannelCount  = miscChannels;
+    end
     if ~isfield(tInfo, 'EEGReference')
         tInfo.EEGReference    = EEG.ref;
     end
@@ -513,6 +485,41 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype)
 %     fid = fopen( [fileOut(1:end-7) 'eeg.json' ], 'w');
 %     fprintf(fid, '%s', jsonStr);
 %     fclose(fid);
+
+    tInfoFields = {...
+        'TaskName' 'REQUIRED' '' '';
+        'TaskDescription' 'RECOMMENDED' '' '';
+        'Instructions' 'RECOMMENDED' 'char' '';
+        'CogAtlasID' 'RECOMMENDED' 'char' '';
+        'CogPOID' 'RECOMMENDED' 'char' '';
+        'InstitutionName' 'RECOMMENDED' 'char' '';
+        'InstitutionAddress' 'RECOMMENDED' 'char' '';
+        'InstitutionalDepartmentName' ' RECOMMENDED' 'char' '';
+        'DeviceSerialNumber' 'RECOMMENDED' 'char' '';
+        'SamplingFrequency' 'REQUIRED' '' '';
+        'EEGChannelCount' 'REQUIRED' '' '';
+        'EOGChannelCount' 'REQUIRED' '' 0;
+        'ECGChannelCount' 'REQUIRED' '' 0;
+        'EMGChannelCount' 'REQUIRED' '' 0;
+        'EEGReference' 'REQUIRED' 'char' 'Unknown';
+        'PowerLineFrequency' 'REQUIRED' '' 0;
+        'EEGGround' 'RECOMMENDED ' 'char' '';
+        'MiscChannelCount' ' OPTIONAL' '' '';
+        'TriggerChannelCount' 'RECOMMENDED' 'char' '';
+        'EEGPlacementScheme' 'RECOMMENDED' 'char' '';
+        'Manufacturer' 'RECOMMENDED' 'char' '';
+        'ManufacturersModelName' 'OPTIONAL' 'char' '';
+        'CapManufacturer' 'RECOMMENDED' 'char' 'Unknown';
+        'CapManufacturersModelName' 'OPTIONAL' 'char' '';
+        'HardwareFilters' 'OPTIONAL' 'char' '';
+        'SoftwareFilters' 'RECOMMENDED' 'char' '';
+        'RecordingDuration' 'RECOMMENDED' '' 'n/a';
+        'RecordingType' 'RECOMMENDED' 'char' '';
+        'EpochLength' 'RECOMMENDED' '' 'n/a';
+        'SoftwareVersions' 'RECOMMENDED' 'char' '';
+        'SubjectArtefactDescription' 'OPTIONAL' 'char' '' };
+    tInfo = checkfields(tInfo, tInfoFields, 'tInfo');
+
     jsonwrite([fileOut(1:end-7) 'eeg.json' ], tInfo,struct('indent','  '));
 
     % write channel information
@@ -539,6 +546,7 @@ function s = checkfields(s, f, structName)
     for iRow = 1:size(f,1)
         if isempty(s) || ~isfield(s, f{iRow,1})
             if strcmpi(f{iRow,2}, 'required') % required or optional
+                fprintf('Warning: "%s" set to %s\n', f{iRow,1}, num2str(f{iRow,4}));
                 s = setfield(s, {1}, f{iRow,1}, f{iRow,4});
             end
         elseif ~isempty(f{iRow,3}) && ~isa(s.(f{iRow,1}), f{iRow,3})

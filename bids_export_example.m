@@ -112,11 +112,12 @@ pInfo = { 'gender'   'age'   'group'; % originally from file mw_expe_may28_2015 
        
 % participant column description for participants.json file
 % ---------------------------------------------------------
-pInfoDesc.gender.Description = 'gender, classified as male or female';
+pInfoDesc.gender.Description = 'sex of the participant';
 pInfoDesc.gender.Levels.M = 'male';
 pInfoDesc.gender.Levels.F = 'female';
 pInfoDesc.participant_id.Description = 'unique participant identifier';
-pInfoDesc.age.Description = 'age in years';
+pInfoDesc.age.Description = 'age of the participant';
+pInfoDesc.age.Units       = 'years';
 pInfoDesc.group.Description = 'group, expert or novice meditators';
 pInfoDesc.group.Levels.expert = 'expert meditator';
 pInfoDesc.group.Levels.novice = 'novice meditator';
@@ -150,10 +151,10 @@ README = sprintf( [ 'This meditation experiment contains 24 subjects. Subjects w
 % Content for CHANGES file
 % ------------------------
 CHANGES = sprintf([ 'Revision history for meditation dataset\n\n' ...
-                    'version 0.1 beta - 2018-10-17\n' ...
+                    'version 1.0 beta - 17 Oct 2018\n' ...
                     ' - Initial release\n' ...
                     '\n' ...
-                    'version 1.0 - 4 Jan 2019\n' ...
+                    'version 2.0 - 9 Jan 2019\n' ...
                     ' - Fixing event field names and various minor issues\n' ]);                    
                 
 % List of stimuli to be copied to the stimuli folder

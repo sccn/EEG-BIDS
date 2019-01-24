@@ -1,5 +1,5 @@
-% pop_importbids() - Import BIDS format folder structure
-%
+% pop_importbids() - Import BIDS format folder structure into an EEGLAB
+%                    study.
 % Usage:
 %           >> [STUDY ALLEEG] = pop_importbids(bidsfolder);
 % Inputs:
@@ -39,7 +39,7 @@ if nargin < 1
         'clear tmpfolder;' ];
     
     promptstr    = { { 'style'  'checkbox'  'string' 'Overwrite events with BIDS event files' 'tag' 'events' 'value' 0 } ...
-        { 'style'  'checkbox'  'string' 'Overwrite channel location with BIDS channel location files' 'tag' 'chanlocs' 'value' 0 } ...
+        { 'style'  'checkbox'  'string' 'Overwrite channel locations with BIDS channel location files' 'tag' 'chanlocs' 'value' 0 } ...
         { 'style'  'text'      'string' 'Select study output folder (default is BIDS folder)' } ...
         { 'style'  'edit'        'string' '' 'tag' 'folder' } ...
         { 'style'  'pushbutton'  'string' '...' 'callback' cb_select } ...
@@ -238,6 +238,10 @@ for iSubject = 2:size(bids.participants,1)
                 EEG = eeg_checkset(EEG, 'eventconsistency');
             end
             
+            % copy information inside dataset
+            EEG.subject = bids.participants{iSubject,1};
+            EEG.session = iFold;
+            
             if exist(subjectFolderOut{iFold}) ~= 7
                 mkdir(subjectFolderOut{iFold});
             end
@@ -245,7 +249,7 @@ for iSubject = 2:size(bids.participants,1)
         end
         
         % building study command
-        commands = { commands{:} 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,1} 'session' num2str(iFold) };
+        commands = { commands{:} 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,1} 'session' iFold };
         for iCol = 2:size(bids.participants,2)
             commands = { commands{:} bids.participants{1,iCol} bids.participants{iSubject,iCol} };
         end
@@ -257,7 +261,8 @@ end
 % -----------------------------
 [~,studyName] = fileparts(bidsFolder);
 studyName = fullfile(opt.outputdir, [ studyName '.study' ]);
-[STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', 'adsf');
+[STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', task);
+commands = sprintf('std_editset([],[], %s);', vararg2str( { 'commands', commands, 'filename', studyName, 'task', task } ));
 
 % Import full text file
 % ---------------------
