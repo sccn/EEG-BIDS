@@ -196,7 +196,9 @@ for iSubject = 2:size(bids.participants,1)
                     chanlocs(iChan-1).labels = channelData{iChan,1};
                     chanlocs(iChan-1).unit   = channelData{iChan,2};
                     chanlocs(iChan-1).type   = channelData{iChan,3};
-                    chanlocs(iChan-1).status = channelData{iChan,4};
+                    if size(channelData,2) > 3
+                        chanlocs(iChan-1).status = channelData{iChan,4};
+                    end
                     if ~isempty(elecData)
                         indElec = strmatch(chanlocs(iChan-1).labels, elecData(:,1), 'exact');
                         chanlocs(iChan-1).X = elecData{indElec,2};
