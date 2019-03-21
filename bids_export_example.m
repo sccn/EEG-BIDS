@@ -13,69 +13,69 @@
 % raw data files (replace with your own)
 % ----------------------------------
 files = { 
-    {'/Users/arno/temp/BIDS_delorme/sub-Expert01/ses-01/eeg/sub-Expert01_ses-01_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Expert01/ses-02/eeg/sub-Expert01_ses-02_task-medprobe_eeg.bdf' }
+    {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-001/ses-01/eeg/sub-001_ses-01_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-001/ses-02/eeg/sub-001_ses-02_task-meditation_eeg.bdf' }
 
-{'/Users/arno/temp/BIDS_delorme/sub-Expert02/ses-01/eeg/sub-Expert02_ses-01_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Expert02/ses-02/eeg/sub-Expert02_ses-02_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-002/ses-01/eeg/sub-002_ses-01_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-002/ses-02/eeg/sub-002_ses-02_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Expert03/ses-01/eeg/sub-Expert03_ses-01_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Expert03/ses-02/eeg/sub-Expert03_ses-02_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-003/ses-01/eeg/sub-003_ses-01_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-003/ses-02/eeg/sub-003_ses-02_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Expert04/ses-01/eeg/sub-Expert04_ses-01_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Expert04/ses-02/eeg/sub-Expert04_ses-02_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-004/ses-01/eeg/sub-004_ses-01_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-004/ses-02/eeg/sub-004_ses-02_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Expert05/ses-01/eeg/sub-Expert05_ses-01_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Expert05/ses-02/eeg/sub-Expert05_ses-02_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-005/ses-01/eeg/sub-005_ses-01_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-005/ses-02/eeg/sub-005_ses-02_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Expert06/ses-01/eeg/sub-Expert06_ses-01_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Expert06/ses-02/eeg/sub-Expert06_ses-02_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-006/ses-01/eeg/sub-006_ses-01_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-006/ses-02/eeg/sub-006_ses-02_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Expert07/ses-01/eeg/sub-Expert07_ses-01_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Expert07/ses-02/eeg/sub-Expert07_ses-02_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-007/ses-01/eeg/sub-007_ses-01_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-007/ses-02/eeg/sub-007_ses-02_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Expert08/ses-01/eeg/sub-Expert08_ses-01_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-008/ses-01/eeg/sub-008_ses-01_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Expert09/ses-01/eeg/sub-Expert09_ses-01_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Expert09/ses-02/eeg/sub-Expert09_ses-02_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-009/ses-01/eeg/sub-009_ses-01_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-009/ses-02/eeg/sub-009_ses-02_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Expert10/ses-01/eeg/sub-Expert10_ses-01_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Expert10/ses-02/eeg/sub-Expert10_ses-02_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-010/ses-01/eeg/sub-010_ses-01_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-010/ses-02/eeg/sub-010_ses-02_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Expert11/ses-01/eeg/sub-Expert11_ses-01_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Expert11/ses-02/eeg/sub-Expert11_ses-02_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-011/ses-01/eeg/sub-011_ses-01_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-011/ses-02/eeg/sub-011_ses-02_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Expert12/ses-01/eeg/sub-Expert12_ses-01_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-012/ses-01/eeg/sub-012_ses-01_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Novice01/ses-01/eeg/sub-Novice01_ses-01_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-013/ses-01/eeg/sub-013_ses-01_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Novice02/ses-02/eeg/sub-Novice02_ses-02_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-014/ses-01/eeg/sub-014_ses-01_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Novice03/ses-01/eeg/sub-Novice03_ses-01_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-015/ses-01/eeg/sub-015_ses-01_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Novice04/ses-01/eeg/sub-Novice04_ses-01_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Novice04/ses-02/eeg/sub-Novice04_ses-02_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-016/ses-01/eeg/sub-016_ses-01_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-016/ses-02/eeg/sub-016_ses-02_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Novice05/ses-01/eeg/sub-Novice05_ses-01_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Novice05/ses-02/eeg/sub-Novice05_ses-02_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-017/ses-01/eeg/sub-017_ses-01_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-017/ses-02/eeg/sub-017_ses-02_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Novice06/ses-01/eeg/sub-Novice06_ses-01_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Novice06/ses-02/eeg/sub-Novice06_ses-02_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-018/ses-01/eeg/sub-018_ses-01_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-018/ses-02/eeg/sub-018_ses-02_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Novice07/ses-01/eeg/sub-Novice07_ses-01_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-019/ses-01/eeg/sub-019_ses-01_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Novice08/ses-01/eeg/sub-Novice08_ses-01_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-020/ses-01/eeg/sub-020_ses-01_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Novice09/ses-01/eeg/sub-Novice09_ses-01_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-021/ses-01/eeg/sub-021_ses-01_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Novice10/ses-01/eeg/sub-Novice10_ses-01_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Novice10/ses-02/eeg/sub-Novice10_ses-02_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Novice10/ses-03/eeg/sub-Novice10_ses-03_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-022/ses-01/eeg/sub-022_ses-01_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-022/ses-02/eeg/sub-022_ses-02_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-022/ses-03/eeg/sub-022_ses-03_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Novice11/ses-01/eeg/sub-Novice11_ses-01_task-medprobe_eeg.bdf'
-'/Users/arno/temp/BIDS_delorme/sub-Novice11/ses-02/eeg/sub-Novice11_ses-02_task-medprobe_eeg.bdf'}
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-023/ses-01/eeg/sub-023_ses-01_task-meditation_eeg.bdf'
+'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-023/ses-02/eeg/sub-023_ses-02_task-meditation_eeg.bdf'}
 
-{'/Users/arno/temp/BIDS_delorme/sub-Novice12/ses-01/eeg/sub-Novice12_ses-01_task-medprobe_eeg.bdf' } };
+{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-024/ses-01/eeg/sub-024_ses-01_task-meditation_eeg.bdf' } }; 
 
 % general information for dataset_description.json file
 % -----------------------------------------------------
@@ -155,7 +155,10 @@ CHANGES = sprintf([ 'Revision history for meditation dataset\n\n' ...
                     ' - Initial release\n' ...
                     '\n' ...
                     'version 2.0 - 9 Jan 2019\n' ...
-                    ' - Fixing event field names and various minor issues\n' ]);                    
+                    ' - Fixing event field names and various minor issues\n' ...
+                    '\n' ...
+                    'Version 3.0 - 20 March 2019\n' ...
+                    ' - Adding channel location information\n' ]);                    
                 
 % List of stimuli to be copied to the stimuli folder
 % --------------------------------------------------
@@ -195,6 +198,10 @@ trialTypes = { '2' 'response';
                '16' 'n/a';
                '128' 'stimulus' };
            
+% channel location file
+% ---------------------
+chanlocs = '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/channel_loc_file.ced';
+           
 % call to the export function
 % ---------------------------
-bids_export(files, 'targetdir', '/Users/arno/temp/bidsexport', 'taskName', 'meditation', 'trialtype', trialTypes, 'gInfo', generalInfo, 'pInfo', pInfo, 'pInfoDesc', pInfoDesc, 'eInfoDesc', eInfoDesc, 'README', README, 'CHANGES', CHANGES, 'stimuli', stimuli, 'codefiles', code, 'tInfo', tInfo);
+bids_export(files, 'targetdir', '/Users/arno/temp/bids_meditation_export', 'taskName', 'meditation', 'trialtype', trialTypes, 'gInfo', generalInfo, 'pInfo', pInfo, 'pInfoDesc', pInfoDesc, 'eInfoDesc', eInfoDesc, 'README', README, 'CHANGES', CHANGES, 'stimuli', stimuli, 'codefiles', code, 'tInfo', tInfo, 'chanlocs', chanlocs);
