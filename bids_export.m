@@ -28,9 +28,9 @@
 %  'codefiles' - [cell] cell array of file names containing code related
 %                to importing or processing the data.
 %
-%  'stimuli'   - [cell] cell array of type and corresponding file names.   XXXXXXXXXXXX
-%                For example: { 'sound1' '/Users/xxxx/sounds/sound1.mp3';  XXXXXXXXXXXX
-%                               'img1'   '/Users/xxxx/sounds/img1.jpg' }   XXXXXXXXXXXX
+%  'stimuli'   - [cell] cell array of type and corresponding file names.   
+%                For example: { 'sound1' '/Users/xxxx/sounds/sound1.mp3';  
+%                               'img1'   '/Users/xxxx/sounds/img1.jpg' }   
 %                (the semicolumn above is optional)
 %
 %  'gInfo'     - [struct] general information fields. See BIDS specifications.
@@ -103,6 +103,12 @@
 %                                                   '4'    'stimulus';
 %                                                   '128'  'response' }
 %
+%  'chanlocs'  - [cell or struct or file name] channel location structure or file 
+%                name to use when saving channel information. Note that
+%                this assumes that all the files have the same number of
+%                channels. If a cell array is given as input, the size
+%                must be the same as the one used for files given as input.
+%
 % Validation:
 %  If the BIDS data created with this function fails to pass the BIDS
 %  validator (npm install -g https://github.com/bids-standard/bids-validator.git
@@ -166,6 +172,7 @@ opt = finputcheck(varargin, { 'ReferencesAndLinks' 'cell'   {}   { 'n/a' };
     'eInfoDesc' 'struct'  {}   struct([]);
     'cInfoDesc' 'struct'  {}   struct([]);
     'trialtype' 'cell'    {}   {};
+    'chanlocs'  ''        {}   '';
     'README'    'string'  {}   '';
     'CHANGES'   'string'  {}   '' }, 'bids_format_eeglab');
 if isstr(opt), error(opt); end
@@ -305,6 +312,27 @@ end
 % ---------------
 opt.tInfo(1).TaskName = opt.taskName;
 
+% load channel information
+% ------------------------
+chanlocs = {};
+if ~isempty(opt.chanlocs) && isstr(opt.chanlocs)
+    opt.chanlocs = readlocs(opt.chanlocs);
+end
+if iscell(opt.chanlocs)
+    chanlocs = opt.chanlocs;
+else
+    chanlocs = {};
+    for iSubj = 1:length(files)
+        if iscell(files{iSubj})
+            for iSess = 1:length(files{iSubj})
+                chanlocs{iSubj}{iSess} = opt.chanlocs;
+            end
+        else
+            chanlocs{iSubj} = opt.chanlocs;
+        end
+    end
+end
+
 % copy EEG files
 % --------------
 disp('Copying EEG files...')
@@ -312,14 +340,14 @@ for iSubj = 1:length(files)
     subjectStr    = sprintf('sub-%3.3d', iSubj);
     if iscell(files{iSubj})
         for iSess = 1:length(files{iSubj})
-            copy_data_bids( files{iSubj}{iSess}, fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName '_eeg' files{iSubj}{iSess}(end-3:end)]),opt.tInfo, opt.trialtype);
+            copy_data_bids( files{iSubj}{iSess}, fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName '_eeg' files{iSubj}{iSess}(end-3:end)]),opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess});
         end
     else
-        copy_data_bids( files{iSubj}, fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' opt.taskName '_eeg' files{iSubj}(end-3:end) ]),opt.tInfo, opt.trialtype);
+        copy_data_bids( files{iSubj}, fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' opt.taskName '_eeg' files{iSubj}(end-3:end) ]),opt.tInfo, opt.trialtype, chanlocs{iSubj});
     end
 end
 
-function copy_data_bids(fileIn, fileOut, tInfo, trialtype)
+function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs)
 
     folderOut = fileparts(fileOut);
     if ~exist(folderOut)
@@ -423,10 +451,13 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype)
     end
     fclose(fid);
 
-
     % write channel file information
     fid = fopen( [ fileOut(1:end-7) 'channels.tsv' ], 'w');
     miscChannels = 0;
+    if ~isempty(chanlocs)
+        EEG.chanlocs = chanlocs;
+    end
+    
     if isempty(EEG.chanlocs)
         fprintf(fid, 'name\n');
         for iChan = 1:EEG.nbchan, printf(fid, 'E%d\n', iChan); end
@@ -454,16 +485,19 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype)
     % write electrode file information
     if ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isempty(EEG.chanlocs(1).X)
         fid = fopen( [ fileOut(1:end-7) 'electrodes.tsv' ], 'w');
-        fprintf(fid, 'name\ttype\tunits\n');
+        fprintf(fid, 'name\tx\ty\tz\n');
 
         for iChan = 1:EEG.nbchan
-            fprintf(fid, '%s\t%2.2f\t%2.2f\t%2.2f\n', EEG.chanlocs(iChan).labels, EEG.chanlocs(iChan).X, EEG.chanlocs(iChan).Y, EEG.chanlocs(iChan).Z );
+            if isempty(EEG.chanlocs(iChan).X)
+                fprintf(fid, '%s\tn/a\tn/a\tn/a\n', EEG.chanlocs(iChan).labels );
+            else
+                fprintf(fid, '%s\t%2.2f\t%2.2f\t%2.2f\n', EEG.chanlocs(iChan).labels, EEG.chanlocs(iChan).X, EEG.chanlocs(iChan).Y, EEG.chanlocs(iChan).Z );
+            end
         end
         fclose(fid);
-        fid = fopen( [ fileOut(1:end-7) 'electrodes.tsv' ], 'w');
-        coordsystemStruct.EEGCoordinateSystemUnits = 'mm';
+        coordsystemStruct.EEGCoordinateUnits = 'mm';
         coordsystemStruct.EEGCoordinateSystem = 'ARS'; % X=Anterior Y=Right Z=Superior
-        writejson(coordsystemStruct, [ fileOut(1:end-7) 'coordsystem.json' ]);
+        writejson( [ fileOut(1:end-7) 'coordsystem.json' ], coordsystemStruct);
     end
 
     % write task information
