@@ -5,3 +5,10 @@ This repository contains a collection of function to import and export BIDS-form
 # Use with EEGLAB
 
 Simply place the code in the plugin folder of EEGLAB and it will be automatically detected by EEGLAB.
+
+# Version history
+
+v1.0 - initial version
+
+v2.0 - add support for external channel location and fix minor bugs
+
