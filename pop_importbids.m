@@ -194,8 +194,8 @@ for iSubject = 2:size(bids.participants,1)
                 for iChan = 2:size(channelData,1)
                     % the fields below are all required
                     chanlocs(iChan-1).labels = channelData{iChan,1};
-                    chanlocs(iChan-1).unit   = channelData{iChan,2};
-                    chanlocs(iChan-1).type   = channelData{iChan,3};
+                    chanlocs(iChan-1).type   = channelData{iChan,2};
+                    chanlocs(iChan-1).unit   = channelData{iChan,3};
                     if size(channelData,2) > 3
                         chanlocs(iChan-1).status = channelData{iChan,4};
                     end
