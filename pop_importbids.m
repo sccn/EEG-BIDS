@@ -113,8 +113,11 @@ for iSubject = 2:size(bids.participants,1)
     % find folder containing eeg
     if exist(fullfile(parentSubjectFolder, 'eeg'))
         subjectFolder = { fullfile(parentSubjectFolder, 'eeg') };
+        subjectFolderOut = { fullfile(outputSubjectFolder, 'eeg') };
     else
         subFolders = dir(fullfile(parentSubjectFolder, 'ses*'));
+        subjectFolder    = {};
+        subjectFolderOut = {};
         
         for iFold = 1:length(subFolders)
             subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders(iFold).name, 'eeg');
