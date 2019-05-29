@@ -109,6 +109,12 @@
 %                channels. If a cell array is given as input, the size
 %                must be the same as the one used for files given as input.
 %
+% 'copydata'   -[0|1] While exporting EEGLAB data to BIDS (.set, .fdt), this flag
+%               will enable the copy of all the data files [1], or just create the
+%               BIDS files hierarchy without the large data files [0]. This
+%               options is aimed to be used to speedup the troubleshooting
+%               of bids_export execution. Default: [1]
+%
 % Validation:
 %  If the BIDS data created with this function fails to pass the BIDS
 %  validator (npm install -g https://github.com/bids-standard/bids-validator.git
@@ -156,25 +162,26 @@ if ~exist('jsonwrite')
     addpath(fullfile(fileparts(which(mfilename)), 'JSONio'));
 end
 
-opt = finputcheck(varargin, { 'ReferencesAndLinks' 'cell'   {}   { 'n/a' };
-    'Name'               'string' {}   'n/a';
-    'License'            'string' {}   'n/a';
-    'targetdir' 'string'  {}   fullfile(pwd, 'bidsexport');
-    'taskName'  'string'  {}   'meditation'; % TRY EMPTY TO SEE IF IT WORKS ***********************************
-    'codefiles' 'cell'    {}   {};
-    'stimuli'   'cell'    {}   {};
-    'pInfo'     'cell'    {}   {};
-    'eInfo'     'cell'    {}   {};
-    'cInfo'     'cell'    {}   {};
-    'gInfo'     'struct'  {}   struct([]);
-    'tInfo'     'struct'  {}   struct([]);
-    'pInfoDesc' 'struct'  {}   struct([]);
-    'eInfoDesc' 'struct'  {}   struct([]);
-    'cInfoDesc' 'struct'  {}   struct([]);
-    'trialtype' 'cell'    {}   {};
-    'chanlocs'  ''        {}   '';
-    'README'    'string'  {}   '';
-    'CHANGES'   'string'  {}   '' }, 'bids_format_eeglab');
+opt = finputcheck(varargin, {'ReferencesAndLinks' 'cell'   {}   { 'n/a' };
+                            'Name'      'string'  {}    'n/a';
+                            'License'   'string'  {}    'n/a';
+                            'targetdir' 'string'  {}    fullfile(pwd, 'bidsexport');
+                            'taskName'  'string'  {}    'Experiment';
+                            'codefiles' 'cell'    {}    {};
+                            'stimuli'   'cell'    {}    {};
+                            'pInfo'     'cell'    {}    {};
+                            'eInfo'     'cell'    {}    {};
+                            'cInfo'     'cell'    {}    {};
+                            'gInfo'     'struct'  {}    struct([]);
+                            'tInfo'     'struct'  {}    struct([]);
+                            'pInfoDesc' 'struct'  {}    struct([]);
+                            'eInfoDesc' 'struct'  {}    struct([]);
+                            'cInfoDesc' 'struct'  {}    struct([]);
+                            'trialtype' 'cell'    {}    {};
+                            'chanlocs'  ''        {}    '';
+                            'README'    'string'  {}    '';
+                            'CHANGES'   'string'  {}    '' ;
+                            'copydata'   'real'   [0 1] 1 }, 'bids_format_eeglab');
 if isstr(opt), error(opt); end
 if size(opt.stimuli,1) == 1 || size(opt.stimuli,1) == 1
     opt.stimuli = reshape(opt.stimuli, [2 length(opt.stimuli)/2])';
@@ -340,15 +347,14 @@ for iSubj = 1:length(files)
     subjectStr    = sprintf('sub-%3.3d', iSubj);
     if iscell(files{iSubj})
         for iSess = 1:length(files{iSubj})
-            copy_data_bids( files{iSubj}{iSess}, fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName '_eeg' files{iSubj}{iSess}(end-3:end)]),opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess});
+            copy_data_bids( files{iSubj}{iSess}, fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName '_eeg' files{iSubj}{iSess}(end-3:end)]),opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, copydata);
         end
     else
-        copy_data_bids( files{iSubj}, fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' opt.taskName '_eeg' files{iSubj}(end-3:end) ]),opt.tInfo, opt.trialtype, chanlocs{iSubj});
+        copy_data_bids( files{iSubj}, fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' opt.taskName '_eeg' files{iSubj}(end-3:end) ]),opt.tInfo, opt.trialtype, chanlocs{iSubj},copydata);
     end
 end
 
-function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs)
-
+function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata)
     folderOut = fileparts(fileOut);
     if ~exist(folderOut)
         mkdir(folderOut);
@@ -369,8 +375,14 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs)
         tInfo.Manufacturer = 'BIOSEMI';
         EEG = pop_biosig(fileOut);
     elseif strcmpi(ext, '.set')
-        copyfile(fileIn, fileOut);
-        EEG = pop_loadset(fileOut);
+        [outfilepath, outfilename,outfileext] = fileparts(fileOut);
+        if copydata      
+            EEGin = pop_loadset(fileIn);
+            EEG   = pop_saveset(EEGin, 'filename',[outfilename outfileext], 'filepath', outfilepath);
+        else
+            copyfile(fileIn, fileOut);
+           EEG = pop_loadset([outfilename outfileext],outfilepath, 'loadmode', 'info');
+        end
     else
         error('Data format not supported');
     end
