@@ -12,70 +12,117 @@
 
 % raw data files (replace with your own)
 % ----------------------------------
-files = { 
-    {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-001/ses-01/eeg/sub-001_ses-01_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-001/ses-02/eeg/sub-001_ses-02_task-meditation_eeg.bdf' }
+data(1).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-001/ses-01/eeg/sub-001_ses-01_task-meditation_eeg.bdf'
+                '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-001/ses-02/eeg/sub-001_ses-02_task-meditation_eeg.bdf' };
+data(1).session = [1 2];
+data(1).run     = [1 1];
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-002/ses-01/eeg/sub-002_ses-01_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-002/ses-02/eeg/sub-002_ses-02_task-meditation_eeg.bdf'}
+data(2).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-002/ses-01/eeg/sub-002_ses-01_task-meditation_eeg.bdf'
+                '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-002/ses-02/eeg/sub-002_ses-02_task-meditation_eeg.bdf'};
+data(2).session = [1 2];
+data(2).run     = [1 1];
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-003/ses-01/eeg/sub-003_ses-01_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-003/ses-02/eeg/sub-003_ses-02_task-meditation_eeg.bdf'}
+data(3).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-003/ses-01/eeg/sub-003_ses-01_task-meditation_eeg.bdf'
+                '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-003/ses-02/eeg/sub-003_ses-02_task-meditation_eeg.bdf'};
+data(3).session = [1 2];
+data(3).run     = [1 1];           
+            
+data(4).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-004/ses-01/eeg/sub-004_ses-01_task-meditation_eeg.bdf'
+                '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-004/ses-02/eeg/sub-004_ses-02_task-meditation_eeg.bdf'};
+data(4).session = [1 2];
+data(4).run     = [1 1];            
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-004/ses-01/eeg/sub-004_ses-01_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-004/ses-02/eeg/sub-004_ses-02_task-meditation_eeg.bdf'}
+data(5).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-005/ses-01/eeg/sub-005_ses-01_task-meditation_eeg.bdf'
+                '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-005/ses-02/eeg/sub-005_ses-02_task-meditation_eeg.bdf'};
+data(5).session = [1 2];
+data(5).run     = [1 1];
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-005/ses-01/eeg/sub-005_ses-01_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-005/ses-02/eeg/sub-005_ses-02_task-meditation_eeg.bdf'}
+data(6).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-006/ses-01/eeg/sub-006_ses-01_task-meditation_eeg.bdf'
+                '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-006/ses-02/eeg/sub-006_ses-02_task-meditation_eeg.bdf'};
+data(6).session = [1 2];
+data(6).run     = [1 1];
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-006/ses-01/eeg/sub-006_ses-01_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-006/ses-02/eeg/sub-006_ses-02_task-meditation_eeg.bdf'}
+data(7).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-007/ses-01/eeg/sub-007_ses-01_task-meditation_eeg.bdf'
+                '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-007/ses-02/eeg/sub-007_ses-02_task-meditation_eeg.bdf'};
+data(7).session = [1 2];
+data(7).run     = [1 1];
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-007/ses-01/eeg/sub-007_ses-01_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-007/ses-02/eeg/sub-007_ses-02_task-meditation_eeg.bdf'}
+data(8).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-008/ses-01/eeg/sub-008_ses-01_task-meditation_eeg.bdf'};
+data(8).session = 1;
+data(8).run     = 1;
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-008/ses-01/eeg/sub-008_ses-01_task-meditation_eeg.bdf'}
+data(9).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-009/ses-01/eeg/sub-009_ses-01_task-meditation_eeg.bdf'
+                '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-009/ses-02/eeg/sub-009_ses-02_task-meditation_eeg.bdf'};
+data(9).session = [1 2];
+data(9).run     = [1 1];
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-009/ses-01/eeg/sub-009_ses-01_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-009/ses-02/eeg/sub-009_ses-02_task-meditation_eeg.bdf'}
+data(10).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-010/ses-01/eeg/sub-010_ses-01_task-meditation_eeg.bdf'
+                '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-010/ses-02/eeg/sub-010_ses-02_task-meditation_eeg.bdf'};
+data(10).session = [1 2];
+data(10).run     = [1 1];
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-010/ses-01/eeg/sub-010_ses-01_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-010/ses-02/eeg/sub-010_ses-02_task-meditation_eeg.bdf'}
+data(11).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-011/ses-01/eeg/sub-011_ses-01_task-meditation_eeg.bdf'
+                 '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-011/ses-02/eeg/sub-011_ses-02_task-meditation_eeg.bdf'};
+data(11).session = [1 2];
+data(11).run     = [1 1];
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-011/ses-01/eeg/sub-011_ses-01_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-011/ses-02/eeg/sub-011_ses-02_task-meditation_eeg.bdf'}
+data(12).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-012/ses-01/eeg/sub-012_ses-01_task-meditation_eeg.bdf'};
+data(12).session = 1;
+data(12).run     = 1;
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-012/ses-01/eeg/sub-012_ses-01_task-meditation_eeg.bdf'}
+data(13).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-013/ses-01/eeg/sub-013_ses-01_task-meditation_eeg.bdf'};
+data(13).session = 1;
+data(13).run     = 1;
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-013/ses-01/eeg/sub-013_ses-01_task-meditation_eeg.bdf'}
+data(14).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-014/ses-01/eeg/sub-014_ses-01_task-meditation_eeg.bdf'};
+data(14).session = 1;
+data(14).run     = 1;
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-014/ses-01/eeg/sub-014_ses-01_task-meditation_eeg.bdf'}
+data(15).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-015/ses-01/eeg/sub-015_ses-01_task-meditation_eeg.bdf'};
+data(15).session = 1;
+data(15).run     = 1;
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-015/ses-01/eeg/sub-015_ses-01_task-meditation_eeg.bdf'}
+data(16).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-016/ses-01/eeg/sub-016_ses-01_task-meditation_eeg.bdf'
+                 '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-016/ses-02/eeg/sub-016_ses-02_task-meditation_eeg.bdf'};
+data(16).session = [1 2];
+data(16).run     = [1 1];
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-016/ses-01/eeg/sub-016_ses-01_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-016/ses-02/eeg/sub-016_ses-02_task-meditation_eeg.bdf'}
+data(17).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-017/ses-01/eeg/sub-017_ses-01_task-meditation_eeg.bdf'
+                 '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-017/ses-02/eeg/sub-017_ses-02_task-meditation_eeg.bdf'};
+data(17).session = [1 2];
+data(17).run     = [1 1];
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-017/ses-01/eeg/sub-017_ses-01_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-017/ses-02/eeg/sub-017_ses-02_task-meditation_eeg.bdf'}
+data(18).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-018/ses-01/eeg/sub-018_ses-01_task-meditation_eeg.bdf'
+                 '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-018/ses-02/eeg/sub-018_ses-02_task-meditation_eeg.bdf'};
+data(18).session = [1 2];
+data(18).run     = [1 1];
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-018/ses-01/eeg/sub-018_ses-01_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-018/ses-02/eeg/sub-018_ses-02_task-meditation_eeg.bdf'}
+data(19).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-019/ses-01/eeg/sub-019_ses-01_task-meditation_eeg.bdf'};
+data(19).session = 1;
+data(19).run     = 1;
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-019/ses-01/eeg/sub-019_ses-01_task-meditation_eeg.bdf'}
+data(20).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-020/ses-01/eeg/sub-020_ses-01_task-meditation_eeg.bdf'};
+data(20).session = 1;
+data(20).run     = 1;
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-020/ses-01/eeg/sub-020_ses-01_task-meditation_eeg.bdf'}
+data(21).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-021/ses-01/eeg/sub-021_ses-01_task-meditation_eeg.bdf'};
+data(21).session = 1;
+data(21).run     = 1;
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-021/ses-01/eeg/sub-021_ses-01_task-meditation_eeg.bdf'}
+data(22).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-022/ses-01/eeg/sub-022_ses-01_task-meditation_eeg.bdf'
+                 '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-022/ses-02/eeg/sub-022_ses-02_task-meditation_eeg.bdf'
+                 '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-022/ses-03/eeg/sub-022_ses-03_task-meditation_eeg.bdf'};
+data(22).session = [1 2 3];
+data(22).run     = [1 1 1];
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-022/ses-01/eeg/sub-022_ses-01_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-022/ses-02/eeg/sub-022_ses-02_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-022/ses-03/eeg/sub-022_ses-03_task-meditation_eeg.bdf'}
+data(23).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-023/ses-01/eeg/sub-023_ses-01_task-meditation_eeg.bdf'
+                 '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-023/ses-02/eeg/sub-023_ses-02_task-meditation_eeg.bdf'};
+data(23).session = [1 2];
+data(23).run     = [1 1];
 
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-023/ses-01/eeg/sub-023_ses-01_task-meditation_eeg.bdf'
-'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-023/ses-02/eeg/sub-023_ses-02_task-meditation_eeg.bdf'}
-
-{'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-024/ses-01/eeg/sub-024_ses-01_task-meditation_eeg.bdf' } }; 
+data(24).file = {'/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/sub-024/ses-01/eeg/sub-024_ses-01_task-meditation_eeg.bdf' }; 
+data(24).session = 1;
+data(24).run     = 1;
 
 % general information for dataset_description.json file
 % -----------------------------------------------------
@@ -204,4 +251,4 @@ chanlocs = '/data/matlab/bids_matlab/BIDS_EEG_meditation_raw_do_not_delete/chann
            
 % call to the export function
 % ---------------------------
-bids_export(files, 'targetdir', '/Users/arno/temp/bids_meditation_export', 'taskName', 'meditation', 'trialtype', trialTypes, 'gInfo', generalInfo, 'pInfo', pInfo, 'pInfoDesc', pInfoDesc, 'eInfoDesc', eInfoDesc, 'README', README, 'CHANGES', CHANGES, 'stimuli', stimuli, 'codefiles', code, 'tInfo', tInfo, 'chanlocs', chanlocs);
+bids_export(data, 'targetdir', '/Users/arno/temp/bids_meditation_export', 'taskName', 'meditation', 'trialtype', trialTypes, 'gInfo', generalInfo, 'pInfo', pInfo, 'pInfoDesc', pInfoDesc, 'eInfoDesc', eInfoDesc, 'README', README, 'CHANGES', CHANGES, 'stimuli', stimuli, 'codefiles', code, 'tInfo', tInfo, 'chanlocs', chanlocs);
