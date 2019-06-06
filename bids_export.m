@@ -406,7 +406,7 @@ for iSubj = 1:length(files)
             
         case 2 % Single-Session Mult-Run
             
-            for iRun = 1:length(length(files(iSubj).run))
+            for iRun = 1:length(files(iSubj).run)
                 fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' opt.taskName sprintf('_run-%2.2d', iRun) '_eeg' files(iSubj).file{iRun}(end-3:end) ]);
                 copy_data_bids( files(iSubj).file{iRun}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
             end
