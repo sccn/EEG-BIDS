@@ -62,17 +62,16 @@ end
 
 % export STUDY to BIDS
 % --------------------
-allFiles = {};
+files = struct('file',{}, 'session', [], 'run', []);
 for iSubj = 1:length(uniqueSubjects)
-	indS = strmatch( STUDY.subject{iSubj}, { STUDY.datasetinfo.subject }, 'exact' );
-	files = {};
-	for iFile = 1:length(indS)
-		files{iFile} = fullfile( STUDY.datasetinfo(indS(iFile)).filepath, STUDY.datasetinfo(indS(iFile)).filename);
-	end
-	if length(files) == 1, files = files{1}; end
-	allFiles{end+1} = files;
+    indS = strmatch( STUDY.subject{iSubj}, { STUDY.datasetinfo.subject }, 'exact' );
+    for iFile = 1:length(indS)
+        files(iSubj).file{iFile} = fullfile( STUDY.datasetinfo(indS(iFile)).filepath, STUDY.datasetinfo(indS(iFile)).filename);
+        files(iSubj).session(iFile) = iFile; % In this tool we allow only one file per session. Number of session = length(files per subject)
+        files(iSubj).run(iFile) = 1; % In this tool we allow only one file per session -> run = 1
+    end
 end
-bids_export(allFiles, options{:});
+bids_export(files, options{:});
 
 % history
 % -------
