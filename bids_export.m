@@ -489,7 +489,7 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata)
 
         % duration
         if isfield(EEG.event, 'duration') && ~isempty(EEG.event(iEvent).duration)
-            duration = num2str(numEEG.event(iEvent).duration, '%1.10f') ;
+            duration = num2str(EEG.event(iEvent).duration, '%1.10f') ;
         else
             duration = 'n/a';
         end
