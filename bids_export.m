@@ -5,10 +5,19 @@
 %    bids_export(files, varargin)
 %
 % Input:
-%   files      - [cell] cell array of binary EEG files. If several sessions
-%                are present for some subjects, they may be placed in a
-%                sublist. For example { { file1subject1.set
-%                file2subject1.set } file1subject2.set file1subject3.set }
+%   files      - Structure with the fields 'file','session' and 'run'.
+%                The field 'file' should be a cell array of strings 
+%                with the path to the data files. The fields 'session'
+%                and 'run' will contain the session index and the run index
+%                within the session for the corresponding data file in the
+%                same index. See example below for a case with 2 subjects with
+%                2 sessions and 2 run each:
+%                 subject(1).file    = {'subj-1_ss-1-run1' 'subj-1_ss-1-run2' 'subj-1_ss-2-run1' 'subj-1_ss-2-run2'};    
+%                 subject(1).session = [ 1 1 2 2 ];
+%                 subject(1).run     = [ 1 2 1 2 ];
+%                 subject(1).file    = {'subj-2_ss-1-run1' 'subj-2_ss-1-run2' 'subj-2_ss-2-run1' 'subj-2_ss-2-run2'}; 
+%                 subject(2).session = [ 1 1 2 2 ];
+%                 subject(2).run     = [ 1 2 1 2 ];
 %
 % Optional inputs:
 %  'targetdir' - [string] target directory. Default is 'bidsexport' in the
@@ -45,6 +54,7 @@
 %                tInfo.InstitutionName = 'Univesity of California, San Diego';
 %                tInfo.InstitutionalDepartmentName = 'Institute of Neural Computation';
 %                tInfo.PowerLineFrequency = 50;
+%                tInfo.SoftwareFilters = struct('NotchFilter', struct('cutof', '50 (Hz)'));
 %
 %  'pInfo'     - [cell] cell array of participant values, with one row
 %                per participants. The first row contains columns names.
@@ -122,20 +132,22 @@
 %  email eeglab@sccn.ucsd.edu
 %
 % Example: The following examples will pass the bids validator.
-%
-% bids_export( { subject1.set subject2.set } );
+% data(1).file = 'subject1.set'; data(1).run  = 1; data(1).session = 1;
+% data(2).file = 'subject2.set'; data(2).run  = 1; data(2).session = 1;
+% bids_export(data);
 %
 % Note that important information might be missing. For example, line noise
 % is set to 0. Use input 'tInfo' to set the line noise as below.
 %
-% bids_export( { subject1.set subject2.set }, 'tInfo', struct('PowerLineFrequency', 50 );
+% bids_export( data, 'tInfo', struct('PowerLineFrequency', 50 );
 %
 % In general, you will want to describe your events and include as much
 % information as possible. A detailed and comprehensive example is provided 
 % in bids_export_example.m
 %
 %
-% Author: Arnaud Delorme, 2019
+% Authors: Arnaud Delorme, 2019
+%          Ramon Martinez-Cancino, 2019
 
 %  The following are automatically
 %                populated using channel structure info ('eeg', 'ecg', 'emg', 'eog', 'trigger')
@@ -189,7 +201,7 @@ end
 
 % deleting folder
 fprintf('Exporting data to %s...\n', opt.targetdir);
-if exist(opt.targetdir)
+if exist(opt.targetdir,'dir')
     disp('Deleting folder...')
     rmdir(opt.targetdir, 's');
 end
@@ -198,17 +210,23 @@ disp('Creating sub-directories...')
 mkdir( fullfile(opt.targetdir, 'code'));
 mkdir( fullfile(opt.targetdir, 'stimuli'));
 
-% write dataset info
-% ------------------
+% write dataset info (dataset_description.json)
+% ---------------------------------------------
 gInfoFields = { 'ReferencesAndLinks' 'required' 'cell' { 'n/a' };
-    'Name'               'required' 'char' '';
-    'License'            'required' 'char' 'CC0';
-    'BIDSVersion'        'required' 'char' '1.1.1' };
+                'Name'               'required' 'char' '';
+                'License'            'required' 'char' 'CC0';
+                'BIDSVersion'        'required' 'char' '1.1.1' ;
+                'Authors'            'optional' 'cell' { 'n/a' };
+                'Acknowledgements'   'optional' 'char' '';
+                'HowToAcknowledge'   'optional' 'char' '';
+                'Funding'            'optional' 'cell' { 'n/a' };
+                'DatasetDOI'         'optional' 'char' { 'n/a' }};
+            
 opt.gInfo = checkfields(opt.gInfo, gInfoFields, 'gInfo');
 jsonwrite(fullfile(opt.targetdir, 'dataset_description.json'), opt.gInfo, struct('indent','  '));
 
-% write participant information
-% -----------------------------
+% write participant information (participants.tsv)
+% -----------------------------------------------
 if ~isempty(opt.pInfo)
     participants = { 'participant_id' };
     for iSubj=1:length(files)
@@ -223,13 +241,13 @@ if ~isempty(opt.pInfo)
     writetsv(fullfile(opt.targetdir, 'participants.tsv'), participants);
 end
 
-% write participation field description
-% -------------------------------------
-descFields = { 'LongName'     'optional' 'char' '';
-    'Levels'       'optional' 'struct' {};
-    'Description'  'optional' 'char' '';
-    'Units'        'optional' 'char' '';
-    'TermURL'      'optional' 'char' '' };
+% write participants field description (participants.json)
+% --------------------------------------------------------
+descFields = { 'LongName'     'optional' 'char'   '';
+               'Levels'       'optional' 'struct' {};
+               'Description'  'optional' 'char'   '';
+               'Units'        'optional' 'char'   '';
+               'TermURL'      'optional' 'char'   '' };
 if ~isempty(opt.pInfo)
     fields = fieldnames(opt.pInfoDesc);
     if ~isempty(setdiff(fields, participants(1,:)))
@@ -244,7 +262,7 @@ if ~isempty(opt.pInfo)
     jsonwrite(fullfile(opt.targetdir, 'participants.json'), opt.pInfoDesc,struct('indent','  '));
 end
 
-% write event file information
+% write event file information (task-xxxxx_events.json)
 % ----------------------------
 events = { 'onset' 'duration' };
 fields = fieldnames(opt.eInfoDesc);
@@ -265,8 +283,8 @@ for iField = 1:length(fields)
 end
 jsonwrite(fullfile(opt.targetdir, [ 'task-' opt.taskName '_events.json' ]), opt.eInfoDesc,struct('indent','  '));
 
-% Write README and CHANGES files
-% ------------------------------
+% Write README files (README)
+% ---------------------------
 if ~isempty(opt.README)
     if ~exist(opt.README)
         fid = fopen(fullfile(opt.targetdir, 'README'), 'w');
@@ -277,6 +295,9 @@ if ~isempty(opt.README)
         copyfile(opt.README, fullfile(opt.targetdir, 'README'));
     end
 end
+
+% Write CHANGES files (CHANGES)
+% -----------------------------
 if ~isempty(opt.CHANGES)
     if ~exist(opt.CHANGES)
         fid = fopen(fullfile(opt.targetdir, 'CHANGES'), 'w');
@@ -288,8 +309,8 @@ if ~isempty(opt.CHANGES)
     end
 end
 
-% write code files
-% ----------------
+% Write code files (code)
+% -----------------------
 if ~isempty(opt.codefiles)
     for iFile = 1:length(opt.codefiles)
         [~,fileName,Ext] = fileparts(opt.codefiles{iFile});
@@ -301,7 +322,7 @@ if ~isempty(opt.codefiles)
     end
 end
 
-% write stimulus files
+% Write stimulus files
 % --------------------
 if ~isempty(opt.stimuli)
     if size(opt.stimuli,1) == 1, opt.stimuli = opt.stimuli'; end
@@ -330,8 +351,9 @@ if iscell(opt.chanlocs)
 else
     chanlocs = {};
     for iSubj = 1:length(files)
-        if iscell(files{iSubj})
-            for iSess = 1:length(files{iSubj})
+        nsessions = length(unique(files(iSubj).session));
+        if nsessions > 1 %iscell(files{iSubj})
+            for iSess = 1:nsessions %length(files{iSubj})
                 chanlocs{iSubj}{iSess} = opt.chanlocs;
             end
         else
@@ -340,20 +362,77 @@ else
     end
 end
 
+% Heuristic for identifying multiple/single-run/sessions
+%--------------------------------------------------------------------------
+for iSubj = 1:length(files)
+    allsubjnruns(iSubj)    = length(unique(files(iSubj).run)); 
+   allsubjnsessions(iSubj) = length(unique(files(iSubj).session)); 
+end
+tmpuniqueruns = unique(allsubjnruns);
+tmpuniquesessions = unique(allsubjnsessions);
+
+multsessionflag = 1;
+if length(tmpuniquesessions) == 1 && tmpuniquesessions == 1
+        multsessionflag = 0;
+end
+
+multrunflag = 1;
+if length(tmpuniqueruns) == 1 && tmpuniqueruns == 1
+        multrunflag = 0;
+end
+
+tmpsessrun = [multsessionflag multrunflag];
+if tmpsessrun == [0 0]    % Single-Session Single-Run
+    bidscase = 1';
+elseif tmpsessrun == [0 1]% Single-Session Mult-Run
+    bidscase = 2';
+elseif tmpsessrun == [1 0] % Mult-Session Single-Run
+    bidscase = 3;
+elseif tmpsessrun == [1 1] % Mult-Session Mult-Run
+    bidscase = 4;
+end
+%--------------------------------------------------------------------------
 % copy EEG files
 % --------------
 disp('Copying EEG files...')
 for iSubj = 1:length(files)
     subjectStr    = sprintf('sub-%3.3d', iSubj);
-    if iscell(files{iSubj})
-        for iSess = 1:length(files{iSubj})
-            copy_data_bids( files{iSubj}{iSess}, fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName '_eeg' files{iSubj}{iSess}(end-3:end)]),opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, copydata);
-        end
-    else
-        copy_data_bids( files{iSubj}, fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' opt.taskName '_eeg' files{iSubj}(end-3:end) ]),opt.tInfo, opt.trialtype, chanlocs{iSubj},copydata);
+    
+    switch bidscase
+        case 1 % Single-Session Single-Run
+            
+            fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' opt.taskName '_eeg' files(iSubj).file{1}(end-3:end)]);
+            copy_data_bids( files(iSubj).file{1}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
+            
+        case 2 % Single-Session Mult-Run
+            
+            for iRun = 1:length(length(files(iSubj).run))
+                fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' opt.taskName sprintf('_run-%2.2d', iRun) '_eeg' files(iSubj).file{iRun}(end-3:end) ]);
+                copy_data_bids( files(iSubj).file{iRun}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
+            end
+            
+        case 3 % Mult-Session Single-Run
+            
+            for iSess = 1:length(unique(files(iSubj).session))
+                fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName '_eeg' files(iSubj).file{iSess}(end-3:end)]);
+                copy_data_bids( files(iSubj).file{iSess}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, opt.copydata);
+            end           
+            
+        case 4 % Mult-Session Mult-Run
+            
+            for iSess = 1:length(unique(files(iSubj).session))
+                runindx = find(files(iSubj).session == iSess);
+                for iSet = runindx
+                    iRun = files(iSubj).run(iSet);
+                    fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName  sprintf('_run-%2.2d', iRun) '_eeg' files(iSubj).file{iSet}(end-3:end)]);
+                    copy_data_bids(files(iSubj).file{iSet}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, opt.copydata);
+                end
+            end      
     end
 end
 
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
 function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata)
     folderOut = fileparts(fileOut);
     if ~exist(folderOut)
@@ -386,29 +465,8 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata)
     else
         error('Data format not supported');
     end
-
-        
-    % old conversion using data2bids
-    %     addpath(fullfile(p, 'fieldtrip'));
-    %     cfg = [];
-    %     cfg.dataset                     = fileOut;
-    %
-    %     cfg.eeg.writesidecar            = 'replace';
-    %     cfg.channels.writesidecar       = 'replace';
-    %     cfg.events.writesidecar         = 'replace';
-    %
-    %     cfg.InstitutionName             = 'Paul Sabatier University';
-    %     cfg.InstitutionalDepartmentName = 'Centre de Recherche Cerveau et Cognition';
-    %     cfg.InstitutionAddress          = 'ISCT - Centre de Recherche Cerveau et Cognition, Place du Docteur Baylac, Pavillon Baudot, 31059 Toulouse';
-    %
-    %     % provide the long rescription of the task
-    %     cfg.TaskName = taskName;
-    %
-    %     % these are EEG specific
-    %     cfg.eeg.PowerLineFrequency      = 50;
-    %     cfg.eeg.EEGReference            ='Na';
-    %     %data2bids(cfg)
-
+    
+    % Getting events latency
     insertEpoch = false;
     if EEG.trials > 1
         % get TLE events
@@ -463,9 +521,11 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata)
     end
     fclose(fid);
 
-    % write channel file information
+    % Write channel file information (channels.tsv)
+    % Note: Consider using here electrodes_to_tsv.m
     fid = fopen( [ fileOut(1:end-7) 'channels.tsv' ], 'w');
     miscChannels = 0;
+    
     if ~isempty(chanlocs)
         EEG.chanlocs = chanlocs;
     end
@@ -494,7 +554,7 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata)
     end
     fclose(fid);
     
-    % write electrode file information
+    % Write electrode file information (electrodes.tsv)
     if ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isempty(EEG.chanlocs(1).X)
         fid = fopen( [ fileOut(1:end-7) 'electrodes.tsv' ], 'w');
         fprintf(fid, 'name\tx\ty\tz\n');
@@ -507,12 +567,14 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata)
             end
         end
         fclose(fid);
+        
+        % Write coordinate file information (coordsystem.json)
         coordsystemStruct.EEGCoordinateUnits = 'mm';
         coordsystemStruct.EEGCoordinateSystem = 'ARS'; % X=Anterior Y=Right Z=Superior
         writejson( [ fileOut(1:end-7) 'coordsystem.json' ], coordsystemStruct);
     end
 
-    % write task information
+    % Write task information (eeg.json) Note: depends on channels
     tInfo.EEGChannelCount = EEG.nbchan-miscChannels;
     if miscChannels > 0
         tInfo.MiscChannelCount  = miscChannels;
@@ -559,7 +621,7 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata)
         'CapManufacturer' 'RECOMMENDED' 'char' 'Unknown';
         'CapManufacturersModelName' 'OPTIONAL' 'char' '';
         'HardwareFilters' 'OPTIONAL' 'char' '';
-        'SoftwareFilters' 'REQUIRED' 'char' 'n/a';
+        'SoftwareFilters' 'REQUIRED' 'struct' 'n/a';
         'RecordingDuration' 'RECOMMENDED' '' 'n/a';
         'RecordingType' 'RECOMMENDED' 'char' '';
         'EpochLength' 'RECOMMENDED' '' 'n/a';
