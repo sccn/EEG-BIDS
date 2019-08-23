@@ -184,6 +184,7 @@ opt = finputcheck(varargin, {'ReferencesAndLinks' 'cell'   {}   { 'n/a' };
                             'pInfo'     'cell'    {}    {};
                             'eInfo'     'cell'    {}    {};
                             'cInfo'     'cell'    {}    {};
+                            'bidsOpt'   'struct'  {}    struct([]);
                             'gInfo'     'struct'  {}    struct([]);
                             'tInfo'     'struct'  {}    struct([]);
                             'pInfoDesc' 'struct'  {}    struct([]);
@@ -199,9 +200,9 @@ if size(opt.stimuli,1) == 1 || size(opt.stimuli,1) == 1
     opt.stimuli = reshape(opt.stimuli, [2 length(opt.stimuli)/2])';
 end
 
-% deleting folder
+% deleting folder - only if internal use is disabled.
 fprintf('Exporting data to %s...\n', opt.targetdir);
-if exist(opt.targetdir,'dir')
+if exist(opt.targetdir,'dir') && ~opt.bidsOpt.InteralUse
     disp('Deleting folder...')
     rmdir(opt.targetdir, 's');
 end
@@ -402,20 +403,20 @@ for iSubj = 1:length(files)
         case 1 % Single-Session Single-Run
             
             fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' opt.taskName '_eeg' files(iSubj).file{1}(end-3:end)]);
-            copy_data_bids( files(iSubj).file{1}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
+            copy_data_bids( files(iSubj).file{1}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata, opt.bidsOpt);
             
         case 2 % Single-Session Mult-Run
             
             for iRun = 1:length(files(iSubj).run)
                 fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' opt.taskName sprintf('_run-%2.2d', iRun) '_eeg' files(iSubj).file{iRun}(end-3:end) ]);
-                copy_data_bids( files(iSubj).file{iRun}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
+                copy_data_bids( files(iSubj).file{iRun}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata, opt.bidsOpt);
             end
             
         case 3 % Mult-Session Single-Run
             
             for iSess = 1:length(unique(files(iSubj).session))
                 fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName '_eeg' files(iSubj).file{iSess}(end-3:end)]);
-                copy_data_bids( files(iSubj).file{iSess}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, opt.copydata);
+                copy_data_bids( files(iSubj).file{iSess}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, opt.copydata, opt.bidsOpt);
             end           
             
         case 4 % Mult-Session Mult-Run
@@ -425,7 +426,7 @@ for iSubj = 1:length(files)
                 for iSet = runindx
                     iRun = files(iSubj).run(iSet);
                     fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName  sprintf('_run-%2.2d', iRun) '_eeg' files(iSubj).file{iSet}(end-3:end)]);
-                    copy_data_bids(files(iSubj).file{iSet}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, opt.copydata);
+                    copy_data_bids(files(iSubj).file{iSet}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, opt.copydata, opt.bidsOpt);
                 end
             end      
     end
@@ -433,7 +434,7 @@ end
 
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
-function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata)
+function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata, bidsOpt)
     folderOut = fileparts(fileOut);
     if ~exist(folderOut)
         mkdir(folderOut);
@@ -455,9 +456,13 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata)
         EEG = pop_biosig(fileOut);
     elseif strcmpi(ext, '.set')
         [outfilepath, outfilename,outfileext] = fileparts(fileOut);
-        if copydata      
-            EEGin = pop_loadset(fileIn);
-            EEG   = pop_saveset(EEGin, 'filename',[outfilename outfileext], 'filepath', outfilepath);
+        if copydata
+            EEG = pop_loadset(fileIn);
+            if strcmp(bidsOpt.FileExt,'edf')
+                pop_writeeeg(EEG, [outfilepath '/' outfilename '.edf'], 'TYPE','EDF');
+            else
+                EEG = pop_saveset(EEG, 'filename',[outfilename outfileext], 'filepath', outfilepath);
+            end
         else
             copyfile(fileIn, fileOut);
            EEG = pop_loadset([outfilename outfileext],outfilepath, 'loadmode', 'info');
