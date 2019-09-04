@@ -540,7 +540,7 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata, b
     else
         fprintf(fid, 'name\ttype\tunits\n');
 
-        for iChan = 1:EEG.nbchan
+        for iChan = 1:length(EEG.chanlocs)
             if ~isfield(EEG.chanlocs, 'type') || isempty(EEG.chanlocs(iChan).type)
                 type = 'n/a';
             else
@@ -563,11 +563,11 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata, b
         fid = fopen( [ fileOut(1:end-7) 'electrodes.tsv' ], 'w');
         fprintf(fid, 'name\tx\ty\tz\n');
 
-        for iChan = 1:EEG.nbchan
+        for iChan = 1:length(EEG.chanlocs)
             if isempty(EEG.chanlocs(iChan).X)
                 fprintf(fid, '%s\tn/a\tn/a\tn/a\n', EEG.chanlocs(iChan).labels );
             else
-                fprintf(fid, '%s\t%2.2f\t%2.2f\t%2.2f\n', EEG.chanlocs(iChan).labels, EEG.chanlocs(iChan).X, EEG.chanlocs(iChan).Y, EEG.chanlocs(iChan).Z );
+                fprintf(fid, '%s\t%f\t%f\t%f\n', EEG.chanlocs(iChan).labels, EEG.chanlocs(iChan).X, EEG.chanlocs(iChan).Y, EEG.chanlocs(iChan).Z );
             end
         end
         fclose(fid);
