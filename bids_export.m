@@ -170,8 +170,8 @@ if nargin < 1
     help bids_format_eeglab;
     return
 end
-if ~exist('jsonwrite')
-    addpath(fullfile(fileparts(which(mfilename)), 'JSONio'));
+if ~exist('savejson')
+    addpath(fullfile(fileparts(which(mfilename)), 'jsonlab'));
 end
 
 opt = finputcheck(varargin, {'ReferencesAndLinks' 'cell'   {}   { 'n/a' };
@@ -224,7 +224,7 @@ gInfoFields = { 'ReferencesAndLinks' 'required' 'cell' { 'n/a' };
                 'DatasetDOI'         'optional' 'char' { 'n/a' }};
             
 opt.gInfo = checkfields(opt.gInfo, gInfoFields, 'gInfo');
-jsonwrite(fullfile(opt.targetdir, 'dataset_description.json'), opt.gInfo, struct('indent','  '));
+savejson('',opt.gInfo,fullfile(opt.targetdir, 'dataset_description.json'));
 
 % write participant information (participants.tsv)
 % -----------------------------------------------
@@ -260,7 +260,7 @@ if ~isempty(opt.pInfo)
         if ~isfield(opt.pInfoDesc, fields{iField}), opt.pInfoDesc(1).(fields{iField}) = struct([]); end
         opt.pInfoDesc.(fields{iField}) = checkfields(opt.pInfoDesc.(fields{iField}), descFields, 'pInfoDesc');
     end
-    jsonwrite(fullfile(opt.targetdir, 'participants.json'), opt.pInfoDesc,struct('indent','  '));
+    savejson('',opt.pInfoDesc,fullfile(opt.targetdir, 'participants.json'));
 end
 
 % write event file information (task-xxxxx_events.json)
@@ -282,8 +282,7 @@ for iField = 1:length(fields)
     if ~isfield(opt.eInfoDesc, fields{iField}), opt.eInfoDesc(1).(fields{iField}) = struct([]); end
     opt.eInfoDesc.(fields{iField}) = checkfields(opt.eInfoDesc.(fields{iField}), descFields, 'eInfoDesc');
 end
-jsonwrite(fullfile(opt.targetdir, [ 'task-' opt.taskName '_events.json' ]), opt.eInfoDesc,struct('indent','  '));
-
+savejson('',opt.eInfoDesc,fullfile(opt.targetdir, [ 'task-' opt.taskName '_events.json' ]));
 % Write README files (README)
 % ---------------------------
 if ~isempty(opt.README)
@@ -576,7 +575,7 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata, b
         % Write coordinate file information (coordsystem.json)
         coordsystemStruct.EEGCoordinateUnits = 'mm';
         coordsystemStruct.EEGCoordinateSystem = 'ARS'; % X=Anterior Y=Right Z=Superior
-        writejson( [ fileOut(1:end-7) 'coordsystem.json' ], coordsystemStruct);
+        savejson('',coordsystemStruct, [ fileOut(1:end-7) 'coordsystem.json' ]);
     end
 
     % Write task information (eeg.json) Note: depends on channels
@@ -634,7 +633,7 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata, b
         'SubjectArtefactDescription' 'OPTIONAL' 'char' '' };
     tInfo = checkfields(tInfo, tInfoFields, 'tInfo');
 
-    jsonwrite([fileOut(1:end-7) 'eeg.json' ], tInfo,struct('indent','  '));
+    savejson('',tInfo,[fileOut(1:end-7) 'eeg.json' ]);
 
     % write channel information
 %     cInfo.name.LongName = 'Channel name';
