@@ -1,4 +1,4 @@
-% bids_export - This function allows for the ingesting of a single BIDS
+% pop_bidsload - This function allows for the ingesting of a single BIDS
 %               file. In the case of EDFs, the directory of the data file
 %               is searched for an event tsv and an electrodes tsv. These
 %               are then read back into the EEG structure.
@@ -47,7 +47,11 @@ function EEG = pop_bidsload(fileLocation, varargin)
         % Relabel events
         eventData = validateBidsFile(fullFile, opt.eventLoc, 'events');
         for i=1:length(eventData.value)
-            EEG.event(i).type = strtrim(eventData.value(i,:));
+            try % Octave case
+                EEG.event(i).type = strtrim(eventData.value{i,:});
+            catch % Matlab case
+                EEG.event(i).type = strtrim(eventData.value(i,:));
+            end
         end
 
         % Update channel/electrode locations
@@ -120,5 +124,25 @@ function dataStruct = validateBidsFile(file, fileStruct, fileSuffix)
     else
         disp(['Using explicit BIDS ' fileSuffix ' file at: ' fileStruct]);
     end
-    dataStruct = tdfread(fileStruct);
+    
+    try
+        dataStruct = tdfread(fileStruct); % Matlab case
+    catch ME
+        disp('Running in Octave mode...');
+        holdMe = csv2cell(fileStruct,'	'); % Octave case
+        if strcmp(fileSuffix,'events')
+            colID = find(strcmp('value',holdMe(1,:))); % Search for value column
+            dataStruct.value = holdMe(2:end,colID);
+        elseif strcmp(fileSuffix,'electrodes')
+            xID = find(strcmp('x',holdMe(1,:)));
+            yID = find(strcmp('y',holdMe(1,:)));
+            zID = find(strcmp('z',holdMe(1,:)));
+            nameID = find(strcmp('name',holdMe(1,:)));
+            dataStruct.x = [holdMe{2:end,xID}];
+            dataStruct.y = [holdMe{2:end,yID}];
+            dataStruct.z = [holdMe{2:end,zID}];
+            dataStruct.name = holdMe(2:end,nameID);
+        end
+    end
 end
+    
