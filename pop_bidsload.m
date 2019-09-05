@@ -1,3 +1,26 @@
+% bids_export - This function allows for the ingesting of a single BIDS
+%               file. In the case of EDFs, the directory of the data file
+%               is searched for an event tsv and an electrodes tsv. These
+%               are then read back into the EEG structure.
+%
+% Usage:
+%    bids_export(fileLocation, varargin)
+%
+% Input:
+%  fileLocation - [String] location of a file. In the case of EDFs, the
+%                 directory the file is located in will be searched for an
+%                 events/electrodes file.
+%
+% Optional inputs:
+%  'elecLoc'  - [String] explicit location of the electrodes tsv.
+%
+%  'eventLoc' - [String] explicit location of the events tsv.
+%
+%  'gui'      - [logical] toggle for redrawing main eeglab figure. Defaults
+%               to true.
+%
+% Author: Tyler K. Collins, 2019
+
 function EEG = pop_bidsload(fileLocation, varargin)
 
     if nargin < 1
@@ -8,6 +31,7 @@ function EEG = pop_bidsload(fileLocation, varargin)
     % Future proofing against wanting to point a datafile to different
     % locations due to inheritence principle.
     opt = finputcheck(varargin, {'elecLoc' 'string' {} '';
+                                 'gui' 'integer' {} 1;
                                  'eventLoc' 'string' {} ''}, 'bids_format_eeglab');
 
     [fPath,fName,fType] = fileparts(fileLocation);
@@ -82,7 +106,10 @@ function EEG = pop_bidsload(fileLocation, varargin)
         EEG = eeg_checkset(EEG,'chanconsist');
     end
     % Draw to main figure
-    eval('eeglab redraw;');
+    if opt.gui
+        eval('eeglab redraw;'); % Double draw for edge case.
+        eval('eeglab redraw;');
+    end
 end
 
 % Helper function for grabbing data out of a BIDS tsv given a location
