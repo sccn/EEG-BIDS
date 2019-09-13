@@ -16,6 +16,10 @@ function vers = eegplugin_bids(fig, trystrs, catchstrs)
         error('eegplugin_bids requires 3 arguments');
     end
     
+    if ~exist('savejson')
+        addpath(fullfile(fileparts(which(mfilename)), 'jsonlab'));
+    end
+    
     % add folder to path
     % ------------------
     p = which('pop_importbids.m');
