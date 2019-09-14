@@ -28,8 +28,8 @@
 %                 complete loading. This option will also be used to read a
 %                 json which contains the channels that the ICA was run on.
 %
-%  'annoLoc'    - [String] location of discrete annotation BIDS json. The
-%                 paired json will be assumed to be in the same location.
+%  'annoLoc'    - [String] location of discrete annotation BIDS tsv. The
+%                 paired files will be assumed to be in the same location.
 %                 By using this option, EEG.marks will be cleared first.
 %                 See other options for continuous marks integration.
 %
@@ -169,9 +169,9 @@ function EEG = pop_bidsload(fileLocation, varargin)
             % Chan or comp marker
             if isempty(onsetTime) && isempty(durationTime)
                 if strncmpi(currentLabel,'chan',4)
-                    EEG = ingestMark(EEG, 0, currentLabel,'chan_', 'EEG',strtrim(annoData.channels(1,:)));
+                    EEG = ingestMark(EEG, 0, currentLabel,'chan_', 'EEG',strtrim(annoData.channels(i,:)));
                 elseif strncmpi(currentLabel,'comp',4)
-                    EEG = ingestMark(EEG, 1, currentLabel,'comp_','ICA',strtrim(annoData.channels(1,:)));
+                    EEG = ingestMark(EEG, 1, currentLabel,'comp_','ICA',strtrim(annoData.channels(i,:)));
                 else
                     warning('Mark ingest not defined for mark of this type.');
                 end
@@ -183,6 +183,26 @@ function EEG = pop_bidsload(fileLocation, varargin)
                     EEG.marks.time_info(markID).flags(index) = 1;
                 end
             end
+        end
+        
+        % Test if continuous annotations need to be handled
+        contMarkTsv = strrep(opt.annoLoc,'_annotations.tsv','timeinfo_annotations.tsv');
+        contMarkJson = strrep(contMarkTsv,'.tsv','.json');
+        if exist(contMarkTsv) && exist(contMarkJson)
+            disp('Continuous marks files found at:');
+            disp(contMarkTsv);
+            disp(contMarkJson);
+            
+            % Get headers from json
+            contMarkInfo = loadjson(contMarkJson);
+            contData = dlmread(contMarkTsv, '\t');
+            % For each header in the colums, make a new mark and read from
+            % the data tsv
+            for i=1:length(contMarkInfo.Columns)
+                [EEG, markID] = timeMarkExist(EEG,contMarkInfo.Columns{i});
+                EEG.marks.time_info(markID).flags = contData(:,i)';
+            end
+            disp('Continuous marks loaded.');
         end
     end
     

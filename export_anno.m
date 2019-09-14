@@ -1,4 +1,4 @@
-function export_anno(EEG, file)
+function export_anno(EEG, file, descLabel)
 
 %timeToAnno = {'in_task_fhbc_onset', 'in_leadup_fhbc_onset', 'out_task','in_task_fhbc_fade','in_leadup_fhbc_fade'};
 timeToAnno = {};
@@ -60,8 +60,8 @@ s.LabelDescription.ic_hg = 'Pipeline decision flag indicating that time points w
 s.LabelDescription.manual = 'The interactive label (modified by analysts interactively or by a pipeline decision along with other labels) typically used to indicate which time points are considered artifactual for any reason.';
 
 % File IO
-savejson('',s,strrep(file,'eeg.edf','desc-qc_annotations.json'));
-fID = fopen(strrep(file,'eeg.edf','desc-qc_annotations.tsv'),'w');
+savejson('',s,strrep(file,'eeg.edf',['desc-' descLabel '_annotations.json']));
+fID = fopen(strrep(file,'eeg.edf',['desc-' descLabel '_annotations.tsv']),'w');
 fprintf(fID,annoOut);
 fclose(fID);
 
@@ -91,13 +91,13 @@ s.ColumnDescription.ic_a = 'Pipeline decision flag indicating that time points w
 s.ColumnDescription.ic_b = 'Pipeline decision flag indicating that time points were too often outliers across initial components compared to other time points for the measure of component spectral Beta within one second epochs.';
 s.ColumnDescription.ic_lg = 'Pipeline decision flag indicating that time points were too often outliers across initial components compared to other time points for the measure of component spectral Low Gama within one second epochs.';
 
-% Time info json io
-savejson('',s,strrep(file,'eeg.edf','desc-qctimeinfo.json'));
+% Time info json io 
+savejson('',s,strrep(file,'eeg.edf',['desc-' descLabel 'timeinfo_annotations.json']));
 
 disp('Starting continuous mark export');
 
 % Time info gz output
-tFileName = strrep(file,'eeg.edf','desc-qctimeinfo.tsv');
+tFileName = strrep(file,'eeg.edf',['desc-' descLabel 'timeinfo_annotations.tsv']);
 fID = fopen(tFileName,'W');
 for i=1:length(EEG.marks.time_info(1).flags)
     rowOut = '';
