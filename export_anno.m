@@ -92,27 +92,37 @@ s.ColumnDescription.ic_b = 'Pipeline decision flag indicating that time points w
 s.ColumnDescription.ic_lg = 'Pipeline decision flag indicating that time points were too often outliers across initial components compared to other time points for the measure of component spectral Low Gama within one second epochs.';
 
 % Time info json io 
-savejson('',s,strrep(file,'eeg.edf',['desc-' descLabel 'timeinfo_annotations.json']));
+savejson('',s,strrep(file,'eeg.edf',['desc-' descLabel 'mat_annotations.json']));
 
 disp('Starting continuous mark export');
 
-% Time info gz output
-tFileName = strrep(file,'eeg.edf',['desc-' descLabel 'timeinfo_annotations.tsv']);
-fID = fopen(tFileName,'W');
-for i=1:length(EEG.marks.time_info(1).flags)
-    rowOut = '';
-    for j=1:length(EEG.marks.time_info)
-        if ~sum(ismember(timeToAnno,EEG.marks.time_info(j).label))
-            rowOut = sprintf('%s%d\t',rowOut,EEG.marks.time_info(j).flags(i));
-        end
-    end
-    fprintf(fID,'%s\n',rowOut);
-end
-fclose(fID);
+% % Time info gz output
+% % Legacy export:
+% tFileName = strrep(file,'eeg.edf',['desc-' descLabel 'timeinfo_annotations.tsv']);
+% fID = fopen(tFileName,'Wb');
+% for i=1:length(EEG.marks.time_info(1).flags)
+%     rowOut = '';
+%     for j=1:length(EEG.marks.time_info)
+%         if ~sum(ismember(timeToAnno,EEG.marks.time_info(j).label))
+%             rowOut = sprintf('%s%d\t',rowOut,EEG.marks.time_info(j).flags(i));
+%         end
+%     end
+%     fprintf(fID,'%s\n',rowOut);
+% end
+% fclose(fID);
+% 
+% % Zip and delete for storage - be careful with this
+% %gzip(tFileName);
+% %system(['rm ' tFileName]);
 
-% Zip and delete for storage - be careful with this
-%gzip(tFileName);
-%system(['rm ' tFileName]);
+tFileName = strrep(file,'eeg.edf',['desc-' descLabel '_annotations.mat']);
+timeAccum = {};
+for i=1:length(EEG.marks.time_info)
+    if ~ismember(EEG.marks.time_info(i).label,timeToAnno)
+        timeAccum = [timeAccum EEG.marks.time_info(i)];
+    end
+end
+save(tFileName, 'timeAccum');
 
 disp([file ' COMPLETE']);
 

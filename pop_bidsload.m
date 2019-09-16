@@ -186,23 +186,32 @@ function EEG = pop_bidsload(fileLocation, varargin)
         end
         
         % Test if continuous annotations need to be handled
-        contMarkTsv = strrep(opt.annoLoc,'_annotations.tsv','timeinfo_annotations.tsv');
-        contMarkJson = strrep(contMarkTsv,'.tsv','.json');
-        if exist(contMarkTsv) && exist(contMarkJson)
-            disp('Continuous marks files found at:');
-            disp(contMarkTsv);
-            disp(contMarkJson);
-            
-            % Get headers from json
-            contMarkInfo = loadjson(contMarkJson);
-            contData = dlmread(contMarkTsv, '\t');
-            % For each header in the colums, make a new mark and read from
-            % the data tsv
-            for i=1:length(contMarkInfo.Columns)
-                [EEG, markID] = timeMarkExist(EEG,contMarkInfo.Columns{i});
-                EEG.marks.time_info(markID).flags = contData(:,i)';
+%         contMarkTsv = strrep(opt.annoLoc,'_annotations.tsv','timeinfo_annotations.tsv');
+%         contMarkJson = strrep(contMarkTsv,'.tsv','.json');
+%         if exist(contMarkTsv) && exist(contMarkJson)
+%             disp('Continuous marks files found at:');
+%             disp(contMarkTsv);
+%             disp(contMarkJson);
+%             
+%             % Get headers from json
+%             contMarkInfo = loadjson(contMarkJson);
+%             contData = dlmread(contMarkTsv, '\t');
+%             % For each header in the colums, make a new mark and read from
+%             % the data tsv
+%             for i=1:length(contMarkInfo.Columns)
+%                 [EEG, markID] = timeMarkExist(EEG,contMarkInfo.Columns{i});
+%                 EEG.marks.time_info(markID).flags = contData(:,i)';
+%             end
+%             disp('Continuous marks loaded.');
+%         end
+        contMarkMat = strrep(opt.annoLoc,'.tsv','.mat');
+        if exist(contMarkMat)
+            disp('Continuous mark file found. Loading at: ');
+            disp(contMarkMat);
+            contData = load(contMarkMat);
+            for i=1:length(contData.timeAccum)
+                EEG.marks.time_info(end+1) = contData.timeAccum{i};
             end
-            disp('Continuous marks loaded.');
         end
     end
     
