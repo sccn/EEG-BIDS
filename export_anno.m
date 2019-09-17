@@ -1,6 +1,8 @@
 function export_anno(EEG, file, descLabel)
 
-%timeToAnno = {'in_task_fhbc_onset', 'in_leadup_fhbc_onset', 'out_task','in_task_fhbc_fade','in_leadup_fhbc_fade'};
+% For Face13 and lossless debugging:
+% timeToAnno = {'in_task_fhbc_onset', 'in_leadup_fhbc_onset', 'out_task','in_task_fhbc_fade','in_leadup_fhbc_fade'};
+
 timeToAnno = {};
 for i=1:length(EEG.marks.time_info)
     if length(unique(EEG.marks.time_info(i).flags)) == 2
@@ -23,7 +25,14 @@ for i=1:length(timeToAnno)
     cellAccum = [cellAccum; parseBinaryMarks(EEG, index)];
 end
 
-cellAccum = sortrows(cellAccum,1);
+try % Matlab
+    cellAccum = sortrows(cellAccum,1);
+catch ME % Octave
+    vector2sort=cell2mat(cellAccum(:,1));
+    [~,idx] = sort(vector2sort);
+    cellAccum = cellAccum(idx,:);
+end
+
 binaryLabelSize = size(cellAccum);
 for i=1:binaryLabelSize(1)
     annoOut = sprintf('%s%s\t%s\t%s\tn/a\n',annoOut,num2str(cellAccum{i,1}),num2str(cellAccum{i,2}),num2str(cellAccum{i,3}));
@@ -146,13 +155,19 @@ end
 
 function outCell = parseBinaryMarks(EEG, index)
     A = EEG.marks.time_info(index).flags;
-    out = zeros(size(A));
-    ii = strfind([0,A(:)'],[0 1]);
-    out(ii) = strfind([A(:)',0],[1 0]) - ii + 1;
+    try % Matlab case
+        out = zeros(size(A));
+        ii = strfind([0,A(:)'],[0 1]);
+        out(ii) = strfind([A(:)',0],[1 0]) - ii + 1;
+        onsetTimes = find(out);
+        durations = out(onsetTimes);
+    catch ME % Octave case
+        tempHold = find(diff([0,A,0]==1));
+        onsetTimes = tempHold(1:2:end-1);  % Start indices
+        durations = tempHold(2:2:end)-onsetTimes;  % Consecutive ones’ counts
+    end
     
     outCell = {};
-    onsetTimes = find(out);
-    durations = out(onsetTimes);
     for i=1:length(onsetTimes)
         singleCell = {onsetTimes(i) / EEG.srate, durations(i) / EEG.srate, EEG.marks.time_info(index).label};
         outCell = [outCell; singleCell];
