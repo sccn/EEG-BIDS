@@ -2,7 +2,7 @@ function export_anno(EEG, file, descLabel)
 
 % Allows for empty label exporting.
 labelOut = '';
-if strcmp(descLabel,'')
+if ~strcmp(descLabel,'')
     labelOut = ['desc-' descLabel];
 end
 
