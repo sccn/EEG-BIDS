@@ -3,7 +3,7 @@ function export_anno(EEG, file, descLabel)
 % Allows for empty label exporting.
 labelOut = '';
 if ~strcmp(descLabel,'')
-    labelOut = ['desc-' descLabel];
+    labelOut = ['_desc-' descLabel];
 end
 
 % For Face13 and lossless debugging:
@@ -75,8 +75,8 @@ s.LabelDescription.ic_hg = 'Pipeline decision flag indicating that time points w
 s.LabelDescription.manual = 'The interactive label (modified by analysts interactively or by a pipeline decision along with other labels) typically used to indicate which time points are considered artifactual for any reason.';
 
 % File IO
-savejson('',s,strrep(file,'eeg.edf',[labelOut '_annotations.json']));
-fID = fopen(strrep(file,'eeg.edf',[labelOut '_annotations.tsv']),'w');
+savejson('',s,strrep(file,'_eeg.edf',[labelOut '_annotations.json']));
+fID = fopen(strrep(file,'_eeg.edf',[labelOut '_annotations.tsv']),'w');
 fprintf(fID,annoOut);
 fclose(fID);
 
@@ -107,7 +107,7 @@ s.ColumnDescription.ic_b = 'Pipeline decision flag indicating that time points w
 s.ColumnDescription.ic_lg = 'Pipeline decision flag indicating that time points were too often outliers across initial components compared to other time points for the measure of component spectral Low Gama within one second epochs.';
 
 % Time info json io 
-savejson('',s,strrep(file,'eeg.edf',[labelOut 'mat_annotations.json']));
+savejson('',s,strrep(file,'_eeg.edf',[labelOut '_matannotations.json']));
 
 disp('Starting continuous mark export');
 
@@ -130,7 +130,7 @@ disp('Starting continuous mark export');
 % %gzip(tFileName);
 % %system(['rm ' tFileName]);
 
-tFileName = strrep(file,'eeg.edf',[labelOut '_annotations.mat']);
+tFileName = strrep(file,'_eeg.edf',[labelOut '_annotations.mat']);
 timeAccum = {};
 for i=1:length(EEG.marks.time_info)
     if ~ismember(EEG.marks.time_info(i).label,timeToAnno)
