@@ -75,7 +75,6 @@ s.LabelDescription.ic_hg = 'Pipeline decision flag indicating that time points w
 s.LabelDescription.manual = 'The interactive label (modified by analysts interactively or by a pipeline decision along with other labels) typically used to indicate which time points are considered artifactual for any reason.';
 
 % File IO
-savejson('',s,strrep(file,'_eeg.edf',[labelOut '_annotations.json']));
 fID = fopen(strrep(file,'_eeg.edf',[labelOut '_annotations.tsv']),'w');
 fprintf(fID,annoOut);
 fclose(fID);
@@ -87,27 +86,25 @@ for i=1:length(EEG.marks.time_info)
     end
 end
 
-s = {};
 s.SamplingFrequency = EEG.srate;
 s.StartTime = 0.0;
 s.Columns = columnList';
-s.ColumnDescription.init_ind = 'Continuous variable indicating the initial time point index within the session.';
-s.ColumnDescription.mark_gap = 'Pipeline decision flag indicating that time points are within a short gap between other annotations.';
-s.ColumnDescription.ch_sd = 'Pipeline decision flag indicating that time points were too often outliers across channels compared to other time points for the measure of standard deviation of voltage within one second epochs.';
-s.ColumnDescription.low_r = 'Pipeline decision flag indicating that time points were too often outliers across channels compared to other time points for the measure of correlation coefficient to spatially neighbouring channels within one second epochs.';
-s.ColumnDescription.logl_init = 'Log likelihood of initial AMICA decomposition.';
-s.ColumnDescription.ic_sd1 = 'Pipeline decision flag indicating that time points were too often outliers across initial components compared to other time points for the measure of component standard deviation of voltage within one second epochs.';
-s.ColumnDescription.logl_A = 'Log likelihood of final AMICA decomposition (replication A).';
-s.ColumnDescription.logl_B = 'Log likelihood of final AMICA decomposition (replication B).';
-s.ColumnDescription.logl_C = 'Log likelihood of final AMICA decomposition (replication C).';
-s.ColumnDescription.ic_sd2 = 'Pipeline decision flag indicating that time points were too often outliers across final components compared to other time points for the measure of component standard deviation of voltage within one second epochs.';
-s.ColumnDescription.ic_dt = 'Pipeline decision flag indicating that time points were too often outliers across initial components compared to other time points for the measure of component spectral Theta within one second epochs.';
-s.ColumnDescription.ic_a = 'Pipeline decision flag indicating that time points were too often outliers across initial components compared to other time points for the measure of component spectral Alpha within one second epochs.';
-s.ColumnDescription.ic_b = 'Pipeline decision flag indicating that time points were too often outliers across initial components compared to other time points for the measure of component spectral Beta within one second epochs.';
-s.ColumnDescription.ic_lg = 'Pipeline decision flag indicating that time points were too often outliers across initial components compared to other time points for the measure of component spectral Low Gama within one second epochs.';
+s.LabelDescription.init_ind = 'Continuous variable indicating the initial time point index within the session.';
+s.LabelDescription.mark_gap = 'Pipeline decision flag indicating that time points are within a short gap between other annotations.';
+s.LabelDescription.ch_sd = 'Pipeline decision flag indicating that time points were too often outliers across channels compared to other time points for the measure of standard deviation of voltage within one second epochs.';
+s.LabelDescription.low_r = 'Pipeline decision flag indicating that time points were too often outliers across channels compared to other time points for the measure of correlation coefficient to spatially neighbouring channels within one second epochs.';
+s.LabelDescription.logl_init = 'Log likelihood of initial AMICA decomposition.';
+s.LabelDescription.ic_sd1 = 'Pipeline decision flag indicating that time points were too often outliers across initial components compared to other time points for the measure of component standard deviation of voltage within one second epochs.';
+s.LabelDescription.logl_A = 'Log likelihood of final AMICA decomposition (replication A).';
+s.LabelDescription.logl_B = 'Log likelihood of final AMICA decomposition (replication B).';
+s.LabelDescription.logl_C = 'Log likelihood of final AMICA decomposition (replication C).';
+s.LabelDescription.ic_sd2 = 'Pipeline decision flag indicating that time points were too often outliers across final components compared to other time points for the measure of component standard deviation of voltage within one second epochs.';
+s.LabelDescription.ic_dt = 'Pipeline decision flag indicating that time points were too often outliers across initial components compared to other time points for the measure of component spectral Theta within one second epochs.';
+s.LabelDescription.ic_a = 'Pipeline decision flag indicating that time points were too often outliers across initial components compared to other time points for the measure of component spectral Alpha within one second epochs.';
+s.LabelDescription.ic_b = 'Pipeline decision flag indicating that time points were too often outliers across initial components compared to other time points for the measure of component spectral Beta within one second epochs.';
+s.LabelDescription.ic_lg = 'Pipeline decision flag indicating that time points were too often outliers across initial components compared to other time points for the measure of component spectral Low Gama within one second epochs.';
 
-% Time info json io 
-savejson('',s,strrep(file,'_eeg.edf',[labelOut '_matannotations.json']));
+savejson('',s,strrep(file,'_eeg.edf',[labelOut '_annotations.json']));
 
 disp('Starting continuous mark export');
 
