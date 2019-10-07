@@ -481,7 +481,9 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata, b
     miscChannels = 0;
     
     if ~isempty(chanlocs)
-        EEG.chanlocs = chanlocs;
+        % Commenting this out for now as it relies on EEGLAB knowing which
+        % channels are what type. It doesn't.
+        % EEG.chanlocs = chanlocs;
     end
     
     if isempty(EEG.chanlocs)
@@ -568,7 +570,7 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata, b
         'PowerLineFrequency' 'REQUIRED' '' 0;
         'EEGGround' 'RECOMMENDED ' 'char' '';
         'MiscChannelCount' ' OPTIONAL' '' '';
-        'TriggerChannelCount' 'RECOMMENDED' 'char' '';
+        'TriggerChannelCount' 'RECOMMENDED' 'double' '';
         'EEGPlacementScheme' 'RECOMMENDED' 'char' '';
         'Manufacturer' 'RECOMMENDED' 'char' '';
         'ManufacturersModelName' 'OPTIONAL' 'char' '';
@@ -615,7 +617,12 @@ function s = checkfields(s, f, structName)
                 s = setfield(s, {1}, f{iRow,1}, f{iRow,4});
             end
         elseif ~isempty(f{iRow,3}) && ~isa(s.(f{iRow,1}), f{iRow,3})
-            error(sprintf('Parameter %s.%s must be a %s', structName, f{iRow,1}, f{iRow,3}));
+            % Special case for structs being allowed to be n/a
+            if strcmp(f{iRow,1},'SoftwareFilters')
+                disp([f{iRow,1} ' is n/a']);
+            else
+                error(sprintf('Parameter %s.%s must be a %s', structName, f{iRow,1}, f{iRow,3}));
+            end
         end
     end
 
