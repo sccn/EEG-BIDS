@@ -193,7 +193,8 @@ opt = finputcheck(varargin, {'ReferencesAndLinks' 'cell'   {}   { 'n/a' };
                             'trialtype' 'cell'    {}    {};
                             'chanlocs'  ''        {}    '';
                             'README'    'string'  {}    '';
-                            'CHANGES'   'string'  {}    '' ;
+                            'CHANGES'   'string'  {}    '';
+                            'coordsys'  'string'  {}    '';
                             'copydata'   'real'   [0 1] 1 }, 'bids_format_eeglab');
 if isstr(opt), error(opt); end
 if size(opt.stimuli,1) == 1 || size(opt.stimuli,1) == 1
@@ -402,20 +403,20 @@ for iSubj = 1:length(files)
         case 1 % Single-Session Single-Run
             
             fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' opt.taskName '_eeg' files(iSubj).file{1}(end-3:end)]);
-            copy_data_bids( files(iSubj).file{1}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata, opt.bidsOpt);
+            copy_data_bids( files(iSubj).file{1}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata, opt.bidsOpt, opt.coordsys);
             
         case 2 % Single-Session Mult-Run
             
             for iRun = 1:length(files(iSubj).run)
                 fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' opt.taskName sprintf('_run-%2.2d', iRun) '_eeg' files(iSubj).file{iRun}(end-3:end) ]);
-                copy_data_bids( files(iSubj).file{iRun}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata, opt.bidsOpt);
+                copy_data_bids( files(iSubj).file{iRun}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata, opt.bidsOpt, opt.coordsys);
             end
             
         case 3 % Mult-Session Single-Run
             
             for iSess = 1:length(unique(files(iSubj).session))
                 fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName '_eeg' files(iSubj).file{iSess}(end-3:end)]);
-                copy_data_bids( files(iSubj).file{iSess}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, opt.copydata, opt.bidsOpt);
+                copy_data_bids( files(iSubj).file{iSess}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, opt.copydata, opt.bidsOpt, opt.coordsys);
             end           
             
         case 4 % Mult-Session Mult-Run
@@ -425,7 +426,7 @@ for iSubj = 1:length(files)
                 for iSet = runindx
                     iRun = files(iSubj).run(iSet);
                     fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName  sprintf('_run-%2.2d', iRun) '_eeg' files(iSubj).file{iSet}(end-3:end)]);
-                    copy_data_bids(files(iSubj).file{iSet}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, opt.copydata, opt.bidsOpt);
+                    copy_data_bids(files(iSubj).file{iSet}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, opt.copydata, opt.bidsOpt, opt.coordsys);
                 end
             end      
     end
@@ -433,7 +434,7 @@ end
 
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
-function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata, bidsOpt)
+function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata, bidsOpt, coordsys)
     folderOut = fileparts(fileOut);
     if ~exist(folderOut)
         mkdir(folderOut);
@@ -522,10 +523,9 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata, b
         end
         fclose(fid);
         
-        % Write coordinate file information (coordsystem.json)
-        coordsystemStruct.EEGCoordinateUnits = 'mm';
-        coordsystemStruct.EEGCoordinateSystem = 'ARS'; % X=Anterior Y=Right Z=Superior
-        savejson('',coordsystemStruct, [ fileOut(1:end-7) 'coordsystem.json' ]);
+        fid = fopen( [ fileOut(1:end-7) 'coordsystem.json' ], 'w');
+        fprintf(fid,'%s',coordsys);
+        fclose(fid);
     end
 
     % Write task information (eeg.json) Note: depends on channels
