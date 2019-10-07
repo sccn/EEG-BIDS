@@ -470,8 +470,6 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata, b
         error('Data format not supported');
     end
     
-    
-
     % write event file information
     event_helper(fileOut, EEG, trialtype);
 
