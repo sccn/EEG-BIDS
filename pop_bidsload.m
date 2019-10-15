@@ -113,13 +113,13 @@ function EEG = pop_bidsload(fileLocation, varargin)
                     EEG.chaninfo.nodatchans(1).type = 'FID';
                     EEG.chaninfo.nodatchans(1).datachan = 0;
                 else % Just copy from the previous
-                    EEG.chaninfo.nodatchans(i) = EEG.chaninfo.nodatchans(1);
+                    EEG.chaninfo.nodatchans(end+1) = EEG.chaninfo.nodatchans(1);
                 end
                 % Read info
-                EEG.chaninfo.nodatchans(i).labels = parsedElec{i,1};
-                EEG.chaninfo.nodatchans(i).X = elecData.x(i);
-                EEG.chaninfo.nodatchans(i).Y = elecData.y(i);
-                EEG.chaninfo.nodatchans(i).Z = elecData.z(i);
+                EEG.chaninfo.nodatchans(end).labels = parsedElec{i,1};
+                EEG.chaninfo.nodatchans(end).X = elecData.x(i);
+                EEG.chaninfo.nodatchans(end).Y = elecData.y(i);
+                EEG.chaninfo.nodatchans(end).Z = elecData.z(i);
             end
         end
         
@@ -219,77 +219,5 @@ function EEG = pop_bidsload(fileLocation, varargin)
     if opt.gui
         eval('eeglab redraw'); % Double draw for edge case.
         % eval('eeglab redraw');
-    end
-end
-
-% Helper function for adding a mark if it does not exist yet
-function [EEG, outID] = timeMarkExist(EEG, labelQuery)
-    found = false;
-    outID = -1;
-    markSize = length(EEG.marks.time_info);
-    for i=1:markSize
-        if strcmp(EEG.marks.time_info(i).label,labelQuery)
-            found = true;
-            outID = i;
-        end
-    end
-    if ~found
-        disp(['Creating new mark with label: ' labelQuery]);
-        outID = markSize + 1;
-        EEG.marks = marks_add_label(EEG.marks,'time_info', {labelQuery,[0,0,1],zeros(1,length(EEG.marks.time_info(1).flags))});
-    end
-end
-
-% Helper function for ingesting chan or comp marks
-% Second parameter: chan -> 0, comp -> 1
-function EEG = ingestMark(EEG, chanOrComp, label,labelPrefix, signalPrefix, dataList)
-    markName = strrep(label,labelPrefix,'');
-    dataList = strrep(dataList,signalPrefix,'');
-    dataList = strrep(dataList,'"',' '); % Trying to make this backwards compatable...
-    dataList = strrep(dataList,',',' ');
-    dataList = str2num(dataList);
-    if chanOrComp % Comp
-        allFlags = zeros(1,length(EEG.icachansind));
-        allFlags(dataList) = 1;
-        EEG.marks = marks_add_label(EEG.marks,'comp_info', {markName,[.7,.7,1],[.2,.2,1],-1,allFlags'});
-    else % Chan
-        allFlags = zeros(1,EEG.nbchan);
-        allFlags(dataList) = 1;
-        EEG.marks = marks_add_label(EEG.marks,'chan_info', {markName,[.7,.7,1],[.2,.2,1],-1,allFlags'});
-    end
-end
-
-% Helper function for grabbing data out of a BIDS tsv given a location
-function dataStruct = validateBidsFile(file, fileStruct, fileSuffix)
-    if strcmp(fileStruct,'')
-        fileStruct = strrep(file,'_eeg.edf',['_' fileSuffix '.tsv']);
-        disp(['Assuming local BIDS ' fileSuffix ' file at: ' fileStruct]);
-    else
-        disp(['Using explicit BIDS ' fileSuffix ' file at: ' fileStruct]);
-    end
-    
-    % BIDS Files not found
-    if ~exist(fileStruct)
-        error('BIDS Files not found. Try explicitly specifying files.');
-    end
-    
-    try
-        dataStruct = tdfread(fileStruct); % Matlab case
-    catch ME
-        disp('Running in Octave mode...');
-        holdMe = csv2cell(fileStruct,'	'); % Octave case
-        if strcmp(fileSuffix,'events')
-            colID = find(strcmp('value',holdMe(1,:))); % Search for value column
-            dataStruct.value = holdMe(2:end,colID);
-        elseif strcmp(fileSuffix,'electrodes')
-            xID = find(strcmp('x',holdMe(1,:)));
-            yID = find(strcmp('y',holdMe(1,:)));
-            zID = find(strcmp('z',holdMe(1,:)));
-            nameID = find(strcmp('name',holdMe(1,:)));
-            dataStruct.x = [holdMe{2:end,xID}];
-            dataStruct.y = [holdMe{2:end,yID}];
-            dataStruct.z = [holdMe{2:end,zID}];
-            dataStruct.name = holdMe(2:end,nameID);
-        end
     end
 end
