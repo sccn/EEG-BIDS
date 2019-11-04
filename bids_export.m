@@ -397,7 +397,11 @@ end
 % --------------
 disp('Copying EEG files...')
 for iSubj = 1:length(files)
-    subjectStr    = sprintf('sub-%3.3d', iSubj);
+    if isfield(files(iSubj),'subID')
+        subjectStr = ['sub-' files(iSubj).subID];
+    else
+        subjectStr    = sprintf('sub-%3.3d', iSubj);
+    end
     
     switch bidscase
         case 1 % Single-Session Single-Run
