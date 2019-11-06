@@ -39,7 +39,8 @@ function EEG = pop_bidsload(fileLocation, varargin)
 
     if nargin < 1
         help pop_bidsload;
-        return;
+        [fa fb] = uigetfile('*.edf','Select an EDF file');
+        fileLocation = [fb fa];
     end
 
     % Future proofing against wanting to point a datafile to different
