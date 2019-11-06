@@ -208,7 +208,7 @@ if exist(opt.targetdir,'dir') && ~opt.bidsOpt.InteralUse
     rmdir(opt.targetdir, 's');
 end
 
-disp('Creating sub-directories...')
+disp('Creating directories...')
 mkdir( fullfile(opt.targetdir, 'code'));
 mkdir( fullfile(opt.targetdir, 'stimuli'));
 
@@ -221,11 +221,40 @@ gInfoFields = { 'ReferencesAndLinks' 'required' 'cell' { 'n/a' };
                 'Authors'            'optional' 'cell' { 'n/a' };
                 'Acknowledgements'   'optional' 'char' '';
                 'HowToAcknowledge'   'optional' 'char' '';
+                'byJson'             'required' 'logical' false;
                 'Funding'            'optional' 'cell' { 'n/a' };
                 'DatasetDOI'         'optional' 'char' { 'n/a' }};
             
 opt.gInfo = checkfields(opt.gInfo, gInfoFields, 'gInfo');
+% Handles how arrays are loaded in via json and that it aggravates matlab
+toFix = find(contains(gInfoFields(:,3),'cell'));
+if ~isempty(toFix) && opt.gInfo.byJson
+    opt.gInfo = jsonArrayFix(opt.gInfo,gInfoFields(toFix));
+end
+opt.gInfo = rmfield(opt.gInfo,'byJson');
 savejson('',opt.gInfo,fullfile(opt.targetdir, 'dataset_description.json'));
+
+% Correction for files array when loading by json
+if isfield(files,'byJson') && files.byJson
+    % Trim off the extra field
+    mainFiles = files.dataStruct;
+    % Rebuild the struct explicitly
+    newStruct = struct;
+    for i=1:length(mainFiles)
+        newStruct(i).file = mainFiles{i}.file;
+        newStruct(i).session = mainFiles{i}.session;
+        newStruct(i).run = mainFiles{i}.run;
+        if isfield(mainFiles{i},'subID')
+            newStruct(i).subID = mainFiles{i}.subID;
+        end
+    end
+    % Correct the cell array syntax/typing and overwrite files struct
+    for i=1:length(newStruct)
+        newStruct(i) = jsonArrayFix(newStruct(i),{'file'});
+    end
+    files = newStruct;
+end
+% disp('hold here2');
 
 % write participant information (participants.tsv)
 % -----------------------------------------------
@@ -397,10 +426,10 @@ end
 % --------------
 disp('Copying EEG files...')
 for iSubj = 1:length(files)
-    if isfield(files(iSubj),'subID')
+    if isfield(files(iSubj),'subID') && ~isempty(files(iSubj).subID)
         subjectStr = ['sub-' files(iSubj).subID];
     else
-        subjectStr    = sprintf('sub-%3.3d', iSubj);
+        subjectStr = sprintf('sub-%3.3d', iSubj);
     end
     
     switch bidscase
@@ -584,9 +613,15 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata, b
         'RecordingType' 'RECOMMENDED' 'char' '';
         'EpochLength' 'RECOMMENDED' '' 'n/a';
         'SoftwareVersions' 'RECOMMENDED' 'char' '';
+        'byJson' 'REQUIRED' 'logical' false;
         'SubjectArtefactDescription' 'OPTIONAL' 'char' '' };
     tInfo = checkfields(tInfo, tInfoFields, 'tInfo');
-
+    % Leaving the below code commented out for potential future use
+%     toFix = find(contains(tInfoFields(:,3),'cell'));
+%     if ~isempty(toFix) && opt.tInfo.byJson
+%         opt.tInfo = jsonArrayFix(opt.tInfo,gInfoFields(toFix));
+%     end
+    tInfo = rmfield(tInfo,'byJson');
     savejson('',tInfo,[fileOut(1:end-7) 'eeg.json' ]);
 
     % write channel information
@@ -664,3 +699,18 @@ function writetsv(fileName, matlabArray)
         fprintf(fid, '\n');
     end
     fclose(fid);
+    
+% Helper function to fix the goofy problems with ingesting arrays and the
+% dealing with them as cell arrays in matlab.
+function outJson = jsonArrayFix(fixStruct, fields)
+    outJson = fixStruct;
+    for i=1:length(fields)
+        tempArray = cell(0);
+        oldArray = getfield(fixStruct,fields{i});
+        for j=1:length(oldArray)
+            hackyTrick = oldArray{j};
+            tempArray = [tempArray; hackyTrick{1}];
+        end
+        
+        outJson = setfield(outJson,fields{i},tempArray');
+    end
