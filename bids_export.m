@@ -227,7 +227,7 @@ gInfoFields = { 'ReferencesAndLinks' 'required' 'cell' { 'n/a' };
             
 opt.gInfo = checkfields(opt.gInfo, gInfoFields, 'gInfo');
 % Handles how arrays are loaded in via json and that it aggravates matlab
-toFix = find(contains(gInfoFields(:,3),'cell'));
+toFix = find(strcmp(gInfoFields(:,3),'cell'));
 if ~isempty(toFix) && opt.gInfo.byJson
     opt.gInfo = jsonArrayFix(opt.gInfo,gInfoFields(toFix));
 end
