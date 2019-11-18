@@ -1,3 +1,6 @@
+% Helper function to export the EEG.marks structure of a file into a BIDS
+% accepted state. Currently this function is specialized for exporting the
+% Lossless state.
 function export_anno(EEG, file, descLabel)
 
 % Allows for empty label exporting.

@@ -148,7 +148,7 @@
 %
 % Authors: Arnaud Delorme, 2019
 %          Ramon Martinez-Cancino, 2019
-
+%          Tyler K. Collins, 2019
 %  The following are automatically
 %                populated using channel structure info ('eeg', 'ecg', 'emg', 'eog', 'trigger')
 %                tInfo.ECGChannelCount = xxx;
@@ -254,7 +254,6 @@ if isfield(files,'byJson') && files.byJson
     end
     files = newStruct;
 end
-% disp('hold here2');
 
 % write participant information (participants.tsv)
 % -----------------------------------------------

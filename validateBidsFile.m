@@ -1,4 +1,5 @@
 % Helper function for grabbing data out of a BIDS tsv given a location
+% Includes Octave and legacy Matlab support.
 function dataStruct = validateBidsFile(file, fileStruct, fileSuffix)
     if strcmp(fileStruct,'')
         fileStruct = strrep(file,'_eeg.edf',['_' fileSuffix '.tsv']);
