@@ -228,16 +228,22 @@ jsonwrite(fullfile(opt.targetdir, 'dataset_description.json'), opt.gInfo, struct
 % write participant information (participants.tsv)
 % -----------------------------------------------
 if ~isempty(opt.pInfo)
+    if size(opt.pInfo,1)-1 ~= length(files) % header row not counted
+        error(sprintf('Wrong number of participant (%d) in pInfo structure, should be %d based on the number of files', size(opt.pInfo,1)-1, length(files)));
+    end
     participants = { 'participant_id' };
     for iSubj=1:length(files)
-        participants{iSubj+1, 1} = sprintf('sub-%3.3d', iSubj);
-    end
-    if ~isempty(opt.pInfo)
-        if size(opt.pInfo,1) ~= length(participants)
-            error(sprintf('Wrong number of participant (%d) in pInfo structure, should be %d based on the number of files', size(opt.pInfo,1)-1, length(files)));
+        if strcmp('participant_id', opt.pInfo{1,1})
+            participants{iSubj+1, 1} = sprintf('sub-%s', opt.pInfo{iSubj+1,1});
+        else
+            participants{iSubj+1, 1} = sprintf('sub-%3.3d', iSubj);
         end
-        participants(:,2:size(opt.pInfo,2)+1) = opt.pInfo;
     end
+    if strcmp('participant_id', opt.pInfo{1,1})
+        opt.pInfo = opt.pInfo(:,2:end);
+    end
+    participants(:,2:size(opt.pInfo,2)+1) = opt.pInfo;
+
     writetsv(fullfile(opt.targetdir, 'participants.tsv'), participants);
 end
 
@@ -396,7 +402,8 @@ end
 % --------------
 disp('Copying EEG files...')
 for iSubj = 1:length(files)
-    subjectStr    = sprintf('sub-%3.3d', iSubj);
+%     subjectStr    = sprintf('sub-%3.3d', iSubj);
+    subjectStr = participants{iSubj+1,1}; % first row of participants contains header
     
     switch bidscase
         case 1 % Single-Session Single-Run
