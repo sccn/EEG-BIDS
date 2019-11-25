@@ -79,8 +79,8 @@
 %                automatically as columns "onset" (latency in sec), "duration"
 %                (duration in sec), "event_sample" (latency), "event_type"
 %                (time locking event), "event_value" (type). For example
-%                { 'HED' 'reaction_time';
-%                  'HED' 'rt' }
+%                { 'HED' 'usertag';
+%                  'value' 'type' }
 %
 %  'eInfoDesc' - [struct] structure describing additional or/and original
 %                event fields if you wish to redefine these.
@@ -228,16 +228,22 @@ jsonwrite(fullfile(opt.targetdir, 'dataset_description.json'), opt.gInfo, struct
 % write participant information (participants.tsv)
 % -----------------------------------------------
 if ~isempty(opt.pInfo)
+    if size(opt.pInfo,1)-1 ~= length(files) % header row not counted
+        error(sprintf('Wrong number of participant (%d) in pInfo structure, should be %d based on the number of files', size(opt.pInfo,1)-1, length(files)));
+    end
     participants = { 'participant_id' };
     for iSubj=1:length(files)
-        participants{iSubj+1, 1} = sprintf('sub-%3.3d', iSubj);
-    end
-    if ~isempty(opt.pInfo)
-        if size(opt.pInfo,1) ~= length(participants)
-            error(sprintf('Wrong number of participant (%d) in tInfo structure, should be %d based on the number of files', size(opt.pInfo,1)-1, length(files)));
+        if strcmp('participant_id', opt.pInfo{1,1})
+            participants{iSubj+1, 1} = sprintf('sub-%s', opt.pInfo{iSubj+1,1});
+        else
+            participants{iSubj+1, 1} = sprintf('sub-%3.3d', iSubj);
         end
-        participants(:,2:size(opt.pInfo,2)+1) = opt.pInfo;
     end
+    if strcmp('participant_id', opt.pInfo{1,1})
+        opt.pInfo = opt.pInfo(:,2:end);
+    end
+    participants(:,2:size(opt.pInfo,2)+1) = opt.pInfo;
+
     writetsv(fullfile(opt.targetdir, 'participants.tsv'), participants);
 end
 
@@ -262,26 +268,14 @@ if ~isempty(opt.pInfo)
     jsonwrite(fullfile(opt.targetdir, 'participants.json'), opt.pInfoDesc,struct('indent','  '));
 end
 
-% write event file information (task-xxxxx_events.json)
+% prepare event file information (_events.json)
 % ----------------------------
-events = { 'onset' 'duration' };
 fields = fieldnames(opt.eInfoDesc);
-% if ~ismember('onset', fields)
-%     disp('"onset" event field names in the eInfoDesc structure is missing, creating one');
-%     eInfoDesc.onset.Description = 'Event onset';
-%     eInfoDesc.onset.Units = 'second';
-% end
-% if ~ismember('onset', fields)
-%     disp('"duration" event field names in the eInfoDesc structure is missing, creating one');
-%     eInfoDesc.duration.Description = 'Event duration';
-%     eInfoDesc.duration.Units = 'second';
-% end
 for iField = 1:length(fields)
     descFields{1,4} = fields{iField};
     if ~isfield(opt.eInfoDesc, fields{iField}), opt.eInfoDesc(1).(fields{iField}) = struct([]); end
     opt.eInfoDesc.(fields{iField}) = checkfields(opt.eInfoDesc.(fields{iField}), descFields, 'eInfoDesc');
 end
-jsonwrite(fullfile(opt.targetdir, [ 'task-' opt.taskName '_events.json' ]), opt.eInfoDesc,struct('indent','  '));
 
 % Write README files (README)
 % ---------------------------
@@ -396,26 +390,28 @@ end
 % --------------
 disp('Copying EEG files...')
 for iSubj = 1:length(files)
-    subjectStr    = sprintf('sub-%3.3d', iSubj);
+%     subjectStr    = sprintf('sub-%3.3d', iSubj);
+    subjectStr = participants{iSubj+1,1}; % first row of participants contains header
     
     switch bidscase
         case 1 % Single-Session Single-Run
             
             fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' opt.taskName '_eeg' files(iSubj).file{1}(end-3:end)]);
-            copy_data_bids( files(iSubj).file{1}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
+%             copy_data_bids( files(iSubj).file{1}, fileOut, opt.eInfo, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
+            copy_data_bids( files(iSubj).file{1}, fileOut, opt, chanlocs{iSubj}, opt.copydata);
             
         case 2 % Single-Session Mult-Run
             
             for iRun = 1:length(files(iSubj).run)
                 fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' opt.taskName sprintf('_run-%2.2d', iRun) '_eeg' files(iSubj).file{iRun}(end-3:end) ]);
-                copy_data_bids( files(iSubj).file{iRun}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
+                copy_data_bids( files(iSubj).file{iRun}, fileOut, opt, chanlocs{iSubj}, opt.copydata);
             end
             
         case 3 % Mult-Session Single-Run
             
             for iSess = 1:length(unique(files(iSubj).session))
                 fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName '_eeg' files(iSubj).file{iSess}(end-3:end)]);
-                copy_data_bids( files(iSubj).file{iSess}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, opt.copydata);
+                copy_data_bids( files(iSubj).file{iSess}, fileOut, opt, chanlocs{iSubj}{iSess}, opt.copydata);
             end           
             
         case 4 % Mult-Session Mult-Run
@@ -425,7 +421,7 @@ for iSubj = 1:length(files)
                 for iSet = runindx
                     iRun = files(iSubj).run(iSet);
                     fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName  sprintf('_run-%2.2d', iRun) '_eeg' files(iSubj).file{iSet}(end-3:end)]);
-                    copy_data_bids(files(iSubj).file{iSet}, fileOut, opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, opt.copydata);
+                    copy_data_bids(files(iSubj).file{iSet}, fileOut, opt, chanlocs{iSubj}{iSess}, opt.copydata);
                 end
             end      
     end
@@ -433,7 +429,8 @@ end
 
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
-function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata)
+%function copy_data_bids(fileIn, fileOut, eInfo, tInfo, trialtype, chanlocs, copydata)
+function copy_data_bids(fileIn, fileOut, opt, chanlocs, copydata)
     folderOut = fileparts(fileOut);
     if ~exist(folderOut)
         mkdir(folderOut);
@@ -441,6 +438,7 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata)
     if ~exist(fileOut)
     end
     % if BDF file anonymize records
+    tInfo = opt.tInfo;
     [~,~,ext] = fileparts(fileOut);
     if strcmpi(ext, '.bdf')
         fileIDIn  = fopen(fileIn,'rb','ieee-le');  % see sopen
@@ -482,42 +480,135 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata)
     end
 
     % write event file information
+    % --- _events.json
+    jsonwrite([ fileOut(1:end-7) 'events.json' ], opt.eInfoDesc,struct('indent','  '));
+    
+    % --- _events.tsv
     fid = fopen( [ fileOut(1:end-7) 'events.tsv' ], 'w');
-    fprintf(fid, 'onset\tduration\ttrial_type\tresponse_time\tsample\tvalue\n');
-    for iEvent = 1:length(EEG.event)
-        onset = (EEG.event(iEvent).latency-1)/EEG.srate;
-
-        % duration
-        if isfield(EEG.event, 'duration') && ~isempty(EEG.event(iEvent).duration)
-            duration = num2str(EEG.event(iEvent).duration, '%1.10f') ;
-        else
-            duration = 'n/a';
+    % -- parse eInfo
+    fields = {'onset','duration','trial_type','response_time','sample','value','HED'}; % field list. Initialized with default fields whose values can be provided by EEG.event fields
+    uncheckedFields = {}; % any extra field specified using eInfo
+    if ~isempty(opt.eInfo)
+        eInfoBIDSName = {opt.eInfo{:,1}};
+        eInfoEEGLABName = {opt.eInfo{:,2}};
+        uncheckedFields = setdiff(eInfoBIDSName,{'onset','duration','trial_type','response_time','sample','value'});
+        fields = [fields uncheckedFields];
+    end
+    eeglabFields = cell(numel(fields),1);
+    fieldMap = []; % contains mapping between BIDS and EEG.event field names
+    for i=1:numel(fields)
+        if ~isempty(opt.eInfo)
+            fieldMask = strcmp(fields{i},eInfoBIDSName);
+            if any(fieldMask)
+                if isfield(EEG.event, eInfoEEGLABName(fieldMask))
+                    eeglabFields(i) = eInfoEEGLABName(fieldMask);    
+                else
+                    error(['Error writing ' fileOut ': Event field ' opt.eInfo{:,2}(fieldMask) ' specified for ' fields{i} ' does not exist in EEG.event structure']);
+                end
+            end       
         end
+        fieldMap.(fields{i}) = eeglabFields{i};
+    end
 
-        % event value
-        if isstr(EEG.event(iEvent).type)
-            eventValue = EEG.event(iEvent).type;
+    % -- write header
+    fprintf(fid, '%s',fields{1});
+    for i=2:numel(fields)
+        fprintf(fid,'\t%s',fields{i});
+    end
+    fprintf(fid,'\n');
+    
+    for iEvent = 1:length(EEG.event)
+        % -- prepare value
+        fieldValueMap = fieldMap; % contains BIDS field-value pairs
+        % onset
+        if ~isempty(fieldMap.('onset'))
+            fieldValueMap.('onset') = EEG.event(iEvent).(fieldMap.('onset'));
         else
-            eventValue = num2str(EEG.event(iEvent).type);
+            fieldValueMap.('onset') = (EEG.event(iEvent).latency-1)/EEG.srate;
+        end
+        
+        % duration
+        if ~isempty(fieldMap.('duration'))
+            fieldValueMap.('duration') = EEG.event(iEvent).(fieldMap.('duration'));
+        else
+            if isfield(EEG.event, 'duration') && ~isempty(EEG.event(iEvent).duration)
+                fieldValueMap.('duration') = num2str(EEG.event(iEvent).duration, '%1.10f') ;
+            else
+                fieldValueMap.('duration') = 'n/a';
+            end
+        end
+            
+        % event value
+        if ~isempty(fieldMap.('value'))
+            fieldValueMap.('value') = EEG.event(iEvent).(fieldMap.('value'));
+        else
+            if isstr(EEG.event(iEvent).('type'))
+                fieldValueMap.('value') = EEG.event(iEvent).('type');
+            else
+                fieldValueMap.('value') = num2str(EEG.event(iEvent).('type'));
+            end
         end
 
         % event type (which is the type of event - not the same as EEGLAB)
-        trialType = 'STATUS';
-        if isfield(EEG.event, 'trial_type')
-            trialType = EEG.event(iEvent).trial_type;
-        elseif ~isempty(trialtype)
-            indTrial = strmatch(eventValue, trialtype(:,1), 'exact');
-            if ~isempty(indTrial)
-                trialType = trialtype{indTrial,2};
+        if ~isempty(fieldMap.('trial_type'))
+            fieldValueMap.('trial_type') = EEG.event(iEvent).(fieldMap.('trial_type'));
+        else
+            fieldValueMap.('trial_type') = 'STATUS';
+            if isfield(EEG.event, 'trial_type')
+                fieldValueMap.('trial_type') = EEG.event(iEvent).trial_type;
+            elseif ~isempty(opt.trialtype)
+                indTrial = strmatch(eventValue, opt.trialtype(:,1), 'exact');
+                if ~isempty(indTrial)
+                    fieldValueMap.('trial_type') = opt.trialtype{indTrial,2};
+                end
             end
-        end
-        if insertEpoch
-            if any(indtle == iEvent)
-                trialType = 'Epoch';
+            if insertEpoch
+                if any(indtle == iEvent)
+                    fieldValueMap.('trial_type') = 'Epoch';
+                end
             end
         end
 
-        fprintf(fid, '%1.10f\t%s\t%s\t%s\t%1.10f\t%s\n', onset, duration, trialType, 'n/a', EEG.event(iEvent).latency-1, eventValue);
+        % sample
+        if ~isempty(fieldMap.('sample'))
+            fieldValueMap.('sample') = EEG.event(iEvent).(fieldMap.('sample'));
+        else
+            fieldValueMap.('sample') = EEG.event(iEvent).latency-1;
+        end
+        
+        % response time
+        if ~isempty(fieldMap.('sample'))
+            fieldValueMap.('response_time') = EEG.event(iEvent).(fieldMap.('response_time'));
+        else
+            fieldValueMap.('response_time') = 'n/a';
+        end
+        
+        % HED tags
+        if isfield(EEG.event, 'usertags'), userTags = convertCharsToStrings(EEG.event(iEvent).usertags); else, userTags = ''; end
+        if isfield(EEG.event, 'hedtags'), hedTags = convertCharsToStrings(EEG.event(iEvent).hedtags); else, hedTags = ''; end
+        tagString = join([userTags, hedTags],',');
+        if ~isempty(tagString)
+            fieldValueMap.('HED') = tagString;
+        else
+            fieldValueMap.('HED') = 'n/a';
+        end
+        
+        % extra fields (if any)
+        for iField=1:numel(uncheckedFields)
+            fieldValueMap.(uncheckedFields{iField}) = EEG.event(iEvent).(fieldMap.(uncheckedFields{iField}));
+        end
+        
+        % -- write value
+        fprintf(fid, '%1.10f',fieldValueMap.(fields{1}));
+        for i=2:numel(fields)
+            if ischar(fieldValueMap.(fields{i})) || isstring(fieldValueMap.(fields{i}))
+                fprintf(fid,'\t%s',fieldValueMap.(fields{i}));
+            else
+                fprintf(fid,'\t%1.10f',fieldValueMap.(fields{i}));
+            end
+        end
+        fprintf(fid,'\n');
+%         fprintf(fid, '%1.10f\t%s\t%s\t%s\t%1.10f\t%s\n', onset, duration, trialType, 'n/a', sample, eventValue);
     end
     fclose(fid);
 
@@ -555,7 +646,7 @@ function copy_data_bids(fileIn, fileOut, tInfo, trialtype, chanlocs, copydata)
     fclose(fid);
     
     % Write electrode file information (electrodes.tsv)
-    if ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isempty(EEG.chanlocs(1).X)
+    if ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isempty(EEG.chanlocs(2).X)
         fid = fopen( [ fileOut(1:end-7) 'electrodes.tsv' ], 'w');
         fprintf(fid, 'name\tx\ty\tz\n');
 
@@ -665,6 +756,10 @@ function s = checkfields(s, f, structName)
         end
     end
 
+function printEventHeader(eInfo)
+    fields = eInfo{:,1};
+    
+    
 % write JSON file
 % ---------------
 function writejson(fileName, matlabStruct)
