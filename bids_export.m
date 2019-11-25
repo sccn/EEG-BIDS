@@ -268,26 +268,14 @@ if ~isempty(opt.pInfo)
     jsonwrite(fullfile(opt.targetdir, 'participants.json'), opt.pInfoDesc,struct('indent','  '));
 end
 
-% write event file information (task-xxxxx_events.json)
+% prepare event file information (_events.json)
 % ----------------------------
-events = { 'onset' 'duration' };
 fields = fieldnames(opt.eInfoDesc);
-% if ~ismember('onset', fields)
-%     disp('"onset" event field names in the eInfoDesc structure is missing, creating one');
-%     eInfoDesc.onset.Description = 'Event onset';
-%     eInfoDesc.onset.Units = 'second';
-% end
-% if ~ismember('onset', fields)
-%     disp('"duration" event field names in the eInfoDesc structure is missing, creating one');
-%     eInfoDesc.duration.Description = 'Event duration';
-%     eInfoDesc.duration.Units = 'second';
-% end
 for iField = 1:length(fields)
     descFields{1,4} = fields{iField};
     if ~isfield(opt.eInfoDesc, fields{iField}), opt.eInfoDesc(1).(fields{iField}) = struct([]); end
     opt.eInfoDesc.(fields{iField}) = checkfields(opt.eInfoDesc.(fields{iField}), descFields, 'eInfoDesc');
 end
-jsonwrite(fullfile(opt.targetdir, [ 'task-' opt.taskName '_events.json' ]), opt.eInfoDesc,struct('indent','  '));
 
 % Write README files (README)
 % ---------------------------
@@ -409,20 +397,21 @@ for iSubj = 1:length(files)
         case 1 % Single-Session Single-Run
             
             fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' opt.taskName '_eeg' files(iSubj).file{1}(end-3:end)]);
-            copy_data_bids( files(iSubj).file{1}, fileOut, opt.eInfo, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
+%             copy_data_bids( files(iSubj).file{1}, fileOut, opt.eInfo, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
+            copy_data_bids( files(iSubj).file{1}, fileOut, opt, chanlocs{iSubj}, opt.copydata);
             
         case 2 % Single-Session Mult-Run
             
             for iRun = 1:length(files(iSubj).run)
                 fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' opt.taskName sprintf('_run-%2.2d', iRun) '_eeg' files(iSubj).file{iRun}(end-3:end) ]);
-                copy_data_bids( files(iSubj).file{iRun}, fileOut, opt.eInfo, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
+                copy_data_bids( files(iSubj).file{iRun}, fileOut, opt, chanlocs{iSubj}, opt.copydata);
             end
             
         case 3 % Mult-Session Single-Run
             
             for iSess = 1:length(unique(files(iSubj).session))
                 fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName '_eeg' files(iSubj).file{iSess}(end-3:end)]);
-                copy_data_bids( files(iSubj).file{iSess}, fileOut, opt.eInfo, opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, opt.copydata);
+                copy_data_bids( files(iSubj).file{iSess}, fileOut, opt, chanlocs{iSubj}{iSess}, opt.copydata);
             end           
             
         case 4 % Mult-Session Mult-Run
@@ -432,7 +421,7 @@ for iSubj = 1:length(files)
                 for iSet = runindx
                     iRun = files(iSubj).run(iSet);
                     fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName  sprintf('_run-%2.2d', iRun) '_eeg' files(iSubj).file{iSet}(end-3:end)]);
-                    copy_data_bids(files(iSubj).file{iSet}, fileOut, opt.eInfo, opt.tInfo, opt.trialtype, chanlocs{iSubj}{iSess}, opt.copydata);
+                    copy_data_bids(files(iSubj).file{iSet}, fileOut, opt, chanlocs{iSubj}{iSess}, opt.copydata);
                 end
             end      
     end
@@ -440,7 +429,8 @@ end
 
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
-function copy_data_bids(fileIn, fileOut, eInfo, tInfo, trialtype, chanlocs, copydata)
+%function copy_data_bids(fileIn, fileOut, eInfo, tInfo, trialtype, chanlocs, copydata)
+function copy_data_bids(fileIn, fileOut, opt, chanlocs, copydata)
     folderOut = fileparts(fileOut);
     if ~exist(folderOut)
         mkdir(folderOut);
@@ -448,6 +438,7 @@ function copy_data_bids(fileIn, fileOut, eInfo, tInfo, trialtype, chanlocs, copy
     if ~exist(fileOut)
     end
     % if BDF file anonymize records
+    tInfo = opt.tInfo;
     [~,~,ext] = fileparts(fileOut);
     if strcmpi(ext, '.bdf')
         fileIDIn  = fopen(fileIn,'rb','ieee-le');  % see sopen
@@ -489,36 +480,36 @@ function copy_data_bids(fileIn, fileOut, eInfo, tInfo, trialtype, chanlocs, copy
     end
 
     % write event file information
-    fid = fopen( [ fileOut(1:end-7) 'events.tsv' ], 'w');
+    % --- _events.json
+    jsonwrite([ fileOut(1:end-7) 'events.json' ], opt.eInfoDesc,struct('indent','  '));
     
-    % parse eInfo
+    % --- _events.tsv
+    fid = fopen( [ fileOut(1:end-7) 'events.tsv' ], 'w');
+    % -- parse eInfo
     fields = {'onset','duration','trial_type','response_time','sample','value','HED'}; % field list. Initialized with default fields whose values can be provided by EEG.event fields
     uncheckedFields = {}; % any extra field specified using eInfo
-    if ~isempty(eInfo)
-        eInfoBIDSName = {eInfo{:,1}};
-        eInfoEEGLABName = {eInfo{:,2}};
+    if ~isempty(opt.eInfo)
+        eInfoBIDSName = {opt.eInfo{:,1}};
+        eInfoEEGLABName = {opt.eInfo{:,2}};
         uncheckedFields = setdiff(eInfoBIDSName,{'onset','duration','trial_type','response_time','sample','value'});
         fields = [fields uncheckedFields];
     end
     eeglabFields = cell(numel(fields),1);
     fieldMap = []; % contains mapping between BIDS and EEG.event field names
     for i=1:numel(fields)
-        if ~isempty(eInfo)
+        if ~isempty(opt.eInfo)
             fieldMask = strcmp(fields{i},eInfoBIDSName);
             if any(fieldMask)
                 if isfield(EEG.event, eInfoEEGLABName(fieldMask))
                     eeglabFields(i) = eInfoEEGLABName(fieldMask);    
                 else
-                    error(['Error writing ' fileOut ': Event field ' eInfo{:,2}(fieldMask) ' specified for ' fields{i} ' does not exist in EEG.event structure']);
+                    error(['Error writing ' fileOut ': Event field ' opt.eInfo{:,2}(fieldMask) ' specified for ' fields{i} ' does not exist in EEG.event structure']);
                 end
             end       
         end
         fieldMap.(fields{i}) = eeglabFields{i};
     end
-%     fprintf(fid, 'onset\tduration\ttrial_type\tresponse_time\tsample\tvalue');
-%     fields = eInfo{:,1};
-%     eeglabFields = eInfo{:,2};
-%     uncheckedFields = setdiff(fields,{'onset','duration','trial_type','response_time','sample','value'});
+
     % -- write header
     fprintf(fid, '%s',fields{1});
     for i=2:numel(fields)
@@ -565,10 +556,10 @@ function copy_data_bids(fileIn, fileOut, eInfo, tInfo, trialtype, chanlocs, copy
             fieldValueMap.('trial_type') = 'STATUS';
             if isfield(EEG.event, 'trial_type')
                 fieldValueMap.('trial_type') = EEG.event(iEvent).trial_type;
-            elseif ~isempty(trialtype)
-                indTrial = strmatch(eventValue, trialtype(:,1), 'exact');
+            elseif ~isempty(opt.trialtype)
+                indTrial = strmatch(eventValue, opt.trialtype(:,1), 'exact');
                 if ~isempty(indTrial)
-                    fieldValueMap.('trial_type') = trialtype{indTrial,2};
+                    fieldValueMap.('trial_type') = opt.trialtype{indTrial,2};
                 end
             end
             if insertEpoch
