@@ -59,9 +59,13 @@
 %  'pInfo'     - [cell] cell array of participant values, with one row
 %                per participants. The first row contains columns names.
 %                For example for 2 participants:
-%                { 'sex'     'age';
-%                  'male'    20;
-%                  'female'  25 };
+%                { 'participant_id' 'sex'     'age';
+%                  'control01'      'male'     20;
+%                  'control02'      'female'   25 };
+%                The columns above are optional and an arbitrary number of custom columns may 
+%                also be specified. When 'participant_id' is specified, it will be used for
+%                naming subject folders (folders names and file prefix will be sub-<label>,
+%                <label> being the participant ID).
 %
 %  'pInfoDesc' - [struct] structure describing participant file columns.
 %                The fields are described in the BIDS format.
