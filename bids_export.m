@@ -394,8 +394,11 @@ end
 % --------------
 disp('Copying EEG files...')
 for iSubj = 1:length(files)
-%     subjectStr    = sprintf('sub-%3.3d', iSubj);
-    subjectStr = participants{iSubj+1,1}; % first row of participants contains header
+    if ~isempty(opt.pInfo)
+        subjectStr = participants{iSubj+1,1}; % first row of participants contains header
+    else
+        subjectStr    = sprintf('sub-%3.3d', iSubj);
+    end
     
     switch bidscase
         case 1 % Single-Session Single-Run
@@ -490,7 +493,10 @@ function copy_data_bids(fileIn, fileOut, opt, chanlocs, copydata)
     % --- _events.tsv
     fid = fopen( [ fileOut(1:end-7) 'events.tsv' ], 'w');
     % -- parse eInfo
-    fields = {'onset','duration','trial_type','response_time','sample','value','HED'}; % field list. Initialized with default fields whose values can be provided by EEG.event fields
+    fields = {'onset','duration','trial_type','response_time','sample','value'}; % field list. Initialized with default fields whose values can be provided by EEG.event fields
+    if isfield(EEG.event,'usertags') || isfield(EEG.event,'hedtags')
+        fields = [fields 'HED'];
+    end
     uncheckedFields = {}; % any extra field specified using eInfo
     if ~isempty(opt.eInfo)
         eInfoBIDSName = {opt.eInfo{:,1}};
@@ -588,15 +594,14 @@ function copy_data_bids(fileIn, fileOut, opt, chanlocs, copydata)
         end
         
         % HED tags
-        if isfield(EEG.event, 'usertags'), userTags = convertCharsToStrings(EEG.event(iEvent).usertags); else, userTags = ''; end
-        if isfield(EEG.event, 'hedtags'), hedTags = convertCharsToStrings(EEG.event(iEvent).hedtags); else, hedTags = ''; end
-        tagString = join([userTags, hedTags],',');
-        if ~isempty(tagString)
-            fieldValueMap.('HED') = tagString;
-        else
-            fieldValueMap.('HED') = 'n/a';
+        if isfield(EEG.event, 'usertags') || isfield(EEG.event,'hedtags')
+            if isfield(EEG.event, 'usertags'), userTags = convertCharsToStrings(EEG.event(iEvent).usertags); else, userTags = ''; end
+            if isfield(EEG.event, 'hedtags'), hedTags = convertCharsToStrings(EEG.event(iEvent).hedtags); else, hedTags = ''; end
+            tagString = join([userTags, hedTags],',');
+            if ~isempty(tagString)
+                fieldValueMap.('HED') = tagString;
+            end
         end
-        
         % extra fields (if any)
         for iField=1:numel(uncheckedFields)
             fieldValueMap.(uncheckedFields{iField}) = EEG.event(iEvent).(fieldMap.(uncheckedFields{iField}));
@@ -675,7 +680,14 @@ function copy_data_bids(fileIn, fileOut, opt, chanlocs, copydata)
         tInfo.MiscChannelCount  = miscChannels;
     end
     if ~isfield(tInfo, 'EEGReference')
-        tInfo.EEGReference    = EEG.ref;
+        if ~ischar(EEG.ref) && numel(EEG.ref) > 1 % untested for all cases
+            refChanLocs = EEG.chanlocs(EEG.ref);
+            ref = join({refChanLocs.labels},',');
+            ref = ref{1};
+        else
+            ref = EEG.ref;
+        end
+        tInfo.EEGReference    = ref;
     end
     if EEG.trials == 1
         tInfo.RecordingType = 'continuous';
