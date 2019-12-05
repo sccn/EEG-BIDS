@@ -66,9 +66,9 @@ function EEG = pop_bidsload(fileLocation, varargin)
         eventData = validateBidsFile(fullFile, opt.eventLoc, 'events');
         for i=1:length(eventData.value)
             try % Octave case
-                EEG.event(i).type = strtrim(eventData.value{i,:});
+                EEG.event(i).type = strtrim(num2str(eventData.value{i,:}));
             catch % Matlab case
-                EEG.event(i).type = strtrim(eventData.value(i,:));
+                EEG.event(i).type = strtrim(num2str(eventData.value(i,:)));
             end
         end
 

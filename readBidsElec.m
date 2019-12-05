@@ -11,7 +11,7 @@ function EEG = readBidsElec(EEG, parsedElec, elecData)
         for i=1:length(EEG.chanlocs)
             lookupID = -1;
             for j=1:length(parsedElec)
-                if strcmp(EEG.chanlocs(i).labels, parsedElec{j,1})
+                if strcmpi(strrep(EEG.chanlocs(i).labels,' ',''), parsedElec{j,1})
                     lookupID = j;
                     parsedElec{j,2} = true;
                     break;
