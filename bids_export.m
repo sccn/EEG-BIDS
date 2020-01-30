@@ -492,132 +492,84 @@ function copy_data_bids(fileIn, fileOut, opt, chanlocs, copydata)
     
     % --- _events.tsv
     fid = fopen( [ fileOut(1:end-7) 'events.tsv' ], 'w');
-    % -- parse eInfo
-    fields = {'onset','duration','trial_type','response_time','sample','value'}; % field list. Initialized with default fields whose values can be provided by EEG.event fields
-    if isfield(EEG.event,'usertags') || isfield(EEG.event,'hedtags')
-        fields = [fields 'HED'];
+    % -- parse eInfo 
+    fieldMap = []; % convert eInfo to struct for easy processing
+    for i=1:size(opt.eInfo,1)
+       fieldMap.(opt.eInfo{i,1}) = opt.eInfo{i,2}; 
     end
-    uncheckedFields = {}; % any extra field specified using eInfo
-    if ~isempty(opt.eInfo)
-        eInfoBIDSName = {opt.eInfo{:,1}};
-        eInfoEEGLABName = {opt.eInfo{:,2}};
-        uncheckedFields = setdiff(eInfoBIDSName,{'onset','duration','trial_type','response_time','sample','value'});
-        fields = [fields uncheckedFields];
+    isHED = isfield(EEG.event, 'usertags') || isfield(EEG.event,'hedtags') || isfield(fieldMap, 'HED');
+    if isHED
+        fprintf(fid, 'onset\tduration\ttrial_type\tresponse_time\tsample\tvalue\tHED\n');
+    else 
+        fprintf(fid, 'onset\tduration\ttrial_type\tresponse_time\tsample\tvalue\n');
     end
-    eeglabFields = cell(numel(fields),1);
-    fieldMap = []; % contains mapping between BIDS and EEG.event field names
-    for i=1:numel(fields)
-        if ~isempty(opt.eInfo)
-            fieldMask = strcmp(fields{i},eInfoBIDSName);
-            if any(fieldMask)
-                if isfield(EEG.event, eInfoEEGLABName(fieldMask))
-                    eeglabFields(i) = eInfoEEGLABName(fieldMask);    
-                else
-                    error(['Error writing ' fileOut ': Event field ' opt.eInfo{:,2}(fieldMask) ' specified for ' fields{i} ' does not exist in EEG.event structure']);
-                end
-            end       
-        end
-        fieldMap.(fields{i}) = eeglabFields{i};
-    end
-
-    % -- write header
-    fprintf(fid, '%s',fields{1});
-    for i=2:numel(fields)
-        fprintf(fid,'\t%s',fields{i});
-    end
-    fprintf(fid,'\n');
-    
     for iEvent = 1:length(EEG.event)
-        % -- prepare value
-        fieldValueMap = fieldMap; % contains BIDS field-value pairs
-        % onset
-        if ~isempty(fieldMap.('onset'))
-            fieldValueMap.('onset') = EEG.event(iEvent).(fieldMap.('onset'));
-        else
-            fieldValueMap.('onset') = (EEG.event(iEvent).latency-1)/EEG.srate;
-        end
-        
+        onset = (EEG.event(iEvent).latency-1)/EEG.srate;
+
         % duration
-        if ~isempty(fieldMap.('duration'))
-            fieldValueMap.('duration') = EEG.event(iEvent).(fieldMap.('duration'));
+        if  isfield(fieldMap, 'duration') && isfield(EEG.event, fieldMap.('duration')) && ~isempty(EEG.event(iEvent).(fieldMap.('duration')))
+            duration = num2str(EEG.event(iEvent).(fieldMap.('duration')), '%1.10f') ;
+        elseif isfield(EEG.event, 'duration') && ~isempty(EEG.event(iEvent).duration)
+            duration = num2str(EEG.event(iEvent).duration, '%1.10f') ;
         else
-            if isfield(EEG.event, 'duration') && ~isempty(EEG.event(iEvent).duration)
-                fieldValueMap.('duration') = num2str(EEG.event(iEvent).duration, '%1.10f') ;
-            else
-                fieldValueMap.('duration') = 'n/a';
-            end
+            duration = 'n/a';
         end
-            
+
         % event value
-        if ~isempty(fieldMap.('value'))
-            fieldValueMap.('value') = EEG.event(iEvent).(fieldMap.('value'));
-        else
-            if isstr(EEG.event(iEvent).('type'))
-                fieldValueMap.('value') = EEG.event(iEvent).('type');
+        if  isfield(fieldMap, 'value') && isfield(EEG.event, fieldMap.('value')) && ~isempty(EEG.event(iEvent).(fieldMap.('value')))
+            if isstr(EEG.event(iEvent).(fieldMap.('value')))
+                eventValue = EEG.event(iEvent).(fieldMap.('value'));
             else
-                fieldValueMap.('value') = num2str(EEG.event(iEvent).('type'));
+                eventValue = num2str(EEG.event(iEvent).(fieldMap.('value')));
+            end
+        else
+            if isstr(EEG.event(iEvent).type)
+                eventValue = EEG.event(iEvent).type;
+            else
+                eventValue = num2str(EEG.event(iEvent).type);
             end
         end
 
-        % event type (which is the type of event - not the same as EEGLAB)
-        if ~isempty(fieldMap.('trial_type'))
-            fieldValueMap.('trial_type') = EEG.event(iEvent).(fieldMap.('trial_type'));
-        else
-            fieldValueMap.('trial_type') = 'STATUS';
-            if isfield(EEG.event, 'trial_type')
-                fieldValueMap.('trial_type') = EEG.event(iEvent).trial_type;
-            elseif ~isempty(opt.trialtype)
-                indTrial = strmatch(eventValue, opt.trialtype(:,1), 'exact');
-                if ~isempty(indTrial)
-                    fieldValueMap.('trial_type') = opt.trialtype{indTrial,2};
-                end
-            end
-            if insertEpoch
-                if any(indtle == iEvent)
-                    fieldValueMap.('trial_type') = 'Epoch';
-                end
+        % trial type (which is the type of event - not the same as EEGLAB)
+        trialType = 'STATUS';
+        if isfield(fieldMap, 'trial_type') && isfield(EEG.event, fieldMap.('trial_type')) && ~isempty(EEG.event(iEvent).(fieldMap.('trial_type')))
+            trialType = EEG.event(iEvent).(fieldMap.('trial_type'));
+        elseif isfield(EEG.event, 'trial_type')
+            trialType = EEG.event(iEvent).trial_type;
+        elseif ~isempty(opt.trialtype)
+            indTrial = strmatch(eventValue, opt.trialtype(:,1), 'exact');
+            if ~isempty(indTrial)
+                trialType = opt.trialtype{indTrial,2};
             end
         end
-
-        % sample
-        if ~isempty(fieldMap.('sample'))
-            fieldValueMap.('sample') = EEG.event(iEvent).(fieldMap.('sample'));
-        else
-            fieldValueMap.('sample') = EEG.event(iEvent).latency-1;
-        end
-        
-        % response time
-        if ~isempty(fieldMap.('sample'))
-            fieldValueMap.('response_time') = EEG.event(iEvent).(fieldMap.('response_time'));
-        else
-            fieldValueMap.('response_time') = 'n/a';
-        end
-        
-        % HED tags
-        if isfield(EEG.event, 'usertags') || isfield(EEG.event,'hedtags')
-            if isfield(EEG.event, 'usertags'), userTags = convertCharsToStrings(EEG.event(iEvent).usertags); else, userTags = ''; end
-            if isfield(EEG.event, 'hedtags'), hedTags = convertCharsToStrings(EEG.event(iEvent).hedtags); else, hedTags = ''; end
-            tagString = join([userTags, hedTags],',');
-            if ~isempty(tagString)
-                fieldValueMap.('HED') = tagString;
+        if insertEpoch
+            if any(indtle == iEvent)
+                trialType = 'Epoch';
             end
         end
-        % extra fields (if any)
-        for iField=1:numel(uncheckedFields)
-            fieldValueMap.(uncheckedFields{iField}) = EEG.event(iEvent).(fieldMap.(uncheckedFields{iField}));
+        if isnumeric(trialType)
+            trialType = num2str(trialType);
         end
         
-        % -- write value
-        fprintf(fid, '%1.10f',fieldValueMap.(fields{1}));
-        for i=2:numel(fields)
-            if ischar(fieldValueMap.(fields{i})) || isstring(fieldValueMap.(fields{i}))
-                fprintf(fid,'\t%s',fieldValueMap.(fields{i}));
+        % HED (if exist)
+        if isHED
+            hed = 'n/a';
+            if isfield(fieldMap, 'HED') && isfield(EEG.event, fieldMap.('HED')) && ~isempty(EEG.event(iEvent).(fieldMap.('HED')))
+                hed = EEG.event(iEvent).(fieldMap.('HED'));
             else
-                fprintf(fid,'\t%1.10f',fieldValueMap.(fields{i}));
+                if isfield(EEG.event, 'usertags') && ~isempty(EEG.event(iEvent).usertags)
+                    hed = EEG.event(iEvent).usertags;
+                    if isfield(EEG.event, 'hedtags') && ~isempty(EEG.event(iEvent).hedtags)
+                        hed = [hed ',' EEG.event(iEvent).hedtags];
+                    end
+                elseif isfield(EEG.event, 'hedtags') && ~isempty(EEG.event(iEvent).hedtags)
+                    hed = EEG.event(iEvent).hedtags;
+                end
             end
+            fprintf(fid, '%1.10f\t%s\t%s\t%s\t%1.10f\t%s\t%s\n', onset, duration, trialType, 'n/a', EEG.event(iEvent).latency-1, eventValue, hed);
+        else
+            fprintf(fid, '%1.10f\t%s\t%s\t%s\t%1.10f\t%s\n', onset, duration, trialType, 'n/a', EEG.event(iEvent).latency-1, eventValue);
         end
-        fprintf(fid,'\n');
-%         fprintf(fid, '%1.10f\t%s\t%s\t%s\t%1.10f\t%s\n', onset, duration, trialType, 'n/a', sample, eventValue);
     end
     fclose(fid);
 
