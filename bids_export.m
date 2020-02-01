@@ -129,6 +129,12 @@
 %                                                   '4'    'stimulus';
 %                                                   '128'  'response' }
 %
+%  'anattype'  - [string] type of anatomical MRI image ('T1w', 'T2w', etc...)
+%                see BIDS specification for more information.
+%
+%  'defaced'   - ['on'|'off'] indicate if the MRI image is defaced or not.
+%                Default is 'on'.
+%
 %  'chanlocs'  - [struct or file name] channel location structure or file
 %                name to use when saving channel information. Note that
 %                this assumes that all the files have the same number of
@@ -206,6 +212,8 @@ opt = finputcheck(varargin, {'ReferencesAndLinks' 'cell'   {}   { 'n/a' };
     'cInfoDesc' 'struct'  {}    struct([]);
     'trialtype' 'cell'    {}    {};
     'chanlocs'  ''        {}    '';
+    'anattype'  ''        {}    'T1w';
+    'defaced'   'string'  {'on' 'off'}    'on';
     'README'    'string'  {}    '';
     'CHANGES'   'string'  {}    '' ;
     'copydata'   'real'   [0 1] 1 }, 'bids_format_eeglab');
@@ -442,6 +450,21 @@ for iSubj = 1:length(files)
         subjectStr = participants{iSubj+1,1}; % first row of participants contains header
     else
         subjectStr    = sprintf('sub-%3.3d', iSubj);
+    end
+    
+    % copy anatomical file if any
+    if isfield(files(iSubj), 'anat') && ~isempty(files(iSubj).anat)
+        mkdir(fullfile(opt.targetdir, subjectStr, 'anat'));
+        fileOut = fullfile(opt.targetdir, subjectStr, 'anat', [ subjectStr '_task-' opt.taskName '_' opt.anattype ]);
+        if strcmpi(opt.defaced, 'on')
+            fileOut = [ fileOut '_defaced' ];
+        end
+        if files(iSubj).anat(end) == 'z'
+            fileOut = [ fileOut '.nii.gz' ];
+        else
+            fileOut = [ fileOut '.nii' ];
+        end
+        copyfile(files(iSubj).anat, fileOut);
     end
     
     switch bidscase
