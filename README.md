@@ -16,9 +16,17 @@ The EEGLAB menu to import a BIDS dataset into an EEGLAB study is fully functiona
 
 ![pop_importbids.m interface](pop_importbids.png)
 
+Raw raw EEG data file often has events. However, BIDS also define events in dedicated event files. Sometimes the BIDS event files contain more information than the raw EEG data file. In that case, users may choose to overwrite raw EEG data events with the event information contained in the BIDS event files.
+
+Similarly raw EEG data files often define channel labels. However, BIDS also define channel labels and channel locations in dedicated event files. By pressing the second checkbox, users may choose to use the channel label and location information contained in the BIDS channel definition files.
+
+Finally, user may select an output folder for storing their EEGLAB STUDY. If a folder is not selected, EEGLAB will store STUDY files ''in place'' which means in the BIDS folder structure - resulting in the BIDS folder becoming non-BIDS compliant and failing to pass BIDS validation because of the additional EEGLAB files.
+
 # Version history
 
 v1.0 - initial version
 
 v2.0 - add support for external channel location and fix minor bugs
+
+v3.0 - better export for multiple runs and allowing importing BIDS folder with multiple runs
 
