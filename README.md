@@ -14,6 +14,8 @@ Because there is so much meta-data in BIDS, exporting a collection of dataset to
 
 The EEGLAB menu to import a BIDS dataset into an EEGLAB study is fully functional. A screen capture is shown below.
 
+![pop_importbids.m interface](pop_importbids.png)
+
 # Version history
 
 v1.0 - initial version
