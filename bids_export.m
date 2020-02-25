@@ -10,26 +10,44 @@
 %                with the path to the data files. The fields 'session'
 %                and 'run' will contain the session index and the run index
 %                within the session for the corresponding data file in the
-%                same index. See example below for a case with 2 subjects with
-%                2 sessions and 2 run each:
-%                 subject(1).file     = 'subj1.set';
-%                 subject(1).session  = 1; % optional
-%                 subject(1).run      = 1; % optional
-%                 subject(1).chanlocs = 'subj1.elp';  % optional
-%                 subject(2).file     = 'subj2.set';
-%                 subject(2).session  = 1; % optional
-%                 subject(2).run      = 1; % optional
-%                 subject(2).chanlocs = 'subj2.elp';  % optional
+%                same index. 
+%
 %                See example below for a case with 2 subjects with
 %                2 sessions and 2 run each:
+%                 subject(1).file     = 'subj1.set';
+%                 subject(1).chanlocs = 'subj1.elp';  % optional
+%                 subject(2).file     = 'subj2.set';
+%                 subject(2).chanlocs = 'subj2.elp';  % optional
+%
+%                See example below for a case with 2 subjects with
+%                2 sessions and 2 runs each:
 %                 subject(1).file    = {'subj-1_ss-1-run1' 'subj-1_ss-1-run2' 'subj-1_ss-2-run1' 'subj-1_ss-2-run2'};
 %                 subject(1).session = [ 1 1 2 2 ];
 %                 subject(1).run     = [ 1 2 1 2 ];
+%                 subject(1).task    = { 'go-no task' 'control task' 'go-no task' 'control task' };
+%                 subject(1).instructions = { 'Press button when you see an animal' 'Look passively at the images' 'Press button when you see an animal' 'Look passively at the images'  };
 %                 subject(1).chanlocs = {'subj-1_ss-1-run1.elp' 'subj-1_ss-1-run2.elp' 'subj-1_ss-2-run1.elp' 'subj-1_ss-2-run2.elp'};
 %                 subject(2).file    = {'subj-2_ss-1-run1' 'subj-2_ss-1-run2' 'subj-2_ss-2-run1' 'subj-2_ss-2-run2'};
 %                 subject(2).session = [ 1 1 2 2 ];
 %                 subject(2).run     = [ 1 2 1 2 ];
+%                 subject(2).task    = { 'go-no task' 'control task' 'go-no task' 'control task' };
+%                 subject(2).instructions = { 'Press button when you see an animal' 'Look passively at the images' 'Press button when you see an animal' 'Look passively at the images'  };
 %                 subject(2).chanlocs = {'subj-2_ss-1-run1.elp' 'subj-2_ss-1-run2.elp' 'subj-2_ss-2-run1.elp' 'subj-2_ss-2-run2.elp'};
+%
+%                Alternate representation that is also functional:
+%                 subject(1).file(1).file = 'subj-1_ss-1-run1';
+%                 subject(1).file(1).session = 1;
+%                 subject(1).file(1).run     = 1;
+%                 subject(1).file(1).task    = 'go-no task';
+%                 subject(1).file(1).instructions = 'Press button when you see an animal';
+%                 subject(1).file(1).chanlocs = 'subj-1_ss-1-run1.elp';
+%                 subject(1).file(2).file = 'subj-1_ss-1-run2';
+%                 subject(1).file(2).session = 1;
+%                 subject(1).file(2).run     = 2;
+%                 subject(1).file(2).task    = 'control task';
+%                 subject(1).file(2).instructions = 'Look passively at the images';
+%                 subject(1).file(2).chanlocs = 'subj-1_ss-1-run2.elp';
+%                 ...
 %
 % Optional inputs:
 %  'targetdir' - [string] target directory. Default is 'bidsexport' in the
@@ -93,10 +111,10 @@
 %                event fields in the EEGLAB event structure. Note that
 %                EEGLAB event latency, duration, and type are inserted
 %                automatically as columns "onset" (latency in sec), "duration"
-%                (duration in sec), "event_sample" (latency), "event_type"
-%                (time locking event), "event_value" (type). For example
+%                (duration in sec), "value" (EEGLAB event type). For example 
 %                { 'HED' 'usertag';
 %                  'value' 'type' }
+%                See also 'trial_type parameter.
 %
 %  'eInfoDesc' - [struct] structure describing additional or/and original
 %                event fields if you wish to redefine these.
@@ -252,7 +270,23 @@ jsonwrite(fullfile(opt.targetdir, 'dataset_description.json'), opt.gInfo, struct
 % ----------------------------------------
 for iSubj = 1:length(files)
     if ~iscell(files(iSubj).file)
-        files(iSubj).file = { files(iSubj).file };
+        if isstruct(files(iSubj).file)
+            if isfield(files(iSubj).file, 'session')
+                files(iSubj).session  = [ files(iSubj).file.session  ];
+            end
+            if isfield(files(iSubj).file, 'run')
+                files(iSubj).run      = [ files(iSubj).file.run  ];
+            end
+            if isfield(files(iSubj).file, 'task')
+                files(iSubj).task      = { files(iSubj).file.task  };
+            end
+            if isfield(files(iSubj).file, 'instructions')
+                files(iSubj).task      = { files(iSubj).file.instructions };
+            end
+            files(iSubj).file     = { files(iSubj).file.file };
+        else
+            files(iSubj).file = { files(iSubj).file };
+        end
     end
     
     % channel location
@@ -261,7 +295,11 @@ for iSubj = 1:length(files)
             files(iSubj).chanlocs = { files(iSubj).chanlocs };
         end
         if length(files(iSubj).chanlocs) ~= length(files(iSubj).file)
-            error('Length of channel list must be the same size as the number of file for each participant');
+            if length(files(iSubj).chanlocs) == 1
+                files(iSubj).chanlocs(1:length(files(iSubj).file)) = files(iSubj).chanlocs(1);
+            else
+                error('Length of channel list must be the same size as the number of file for each participant');
+            end
         end
     end
     
@@ -287,21 +325,28 @@ end
 % write participant information (participants.tsv)
 % -----------------------------------------------
 if ~isempty(opt.pInfo)
-    if size(opt.pInfo,1)-1 ~= length(files) % header row not counted
-        error(sprintf('Wrong number of participant (%d) in pInfo structure, should be %d based on the number of files', size(opt.pInfo,1)-1, length(files)));
+    if isfield(files, 'subject')
+        uniqueSubject = unique( { files.subject } );
+        if size(opt.pInfo,1)-1 ~= length( uniqueSubject )
+            error(sprintf('Wrong number of participant (%d) in pInfo structure, should be %d based on the number of files', size(opt.pInfo,1)-1, length( uniqueSubject )));
+        end
+    elseif ~isstruct(files(1).file)
+        if size(opt.pInfo,1)-1 ~= length( files )
+            error(sprintf('Wrong number of participant (%d) in pInfo structure, should be %d based on the number of files', size(opt.pInfo,1)-1, length( files )));
+        end
     end
     participants = { 'participant_id' };
-    for iSubj=1:length(files)
+    for iSubj=2:size(opt.pInfo)
         if strcmp('participant_id', opt.pInfo{1,1})
-            participants{iSubj+1, 1} = sprintf('sub-%s', opt.pInfo{iSubj+1,1});
+            participants{iSubj, 1} = sprintf('sub-%s', opt.pInfo{iSubj,1});
         else
-            participants{iSubj+1, 1} = sprintf('sub-%3.3d', iSubj);
+            participants{iSubj, 1} = sprintf('sub-%3.3d', iSubj);
         end
     end
     if strcmp('participant_id', opt.pInfo{1,1})
         opt.pInfo = opt.pInfo(:,2:end);
     end
-    participants(:,2:size(opt.pInfo,2)+1) = opt.pInfo;
+    participants(:,2:2+size(opt.pInfo,2)-1) = opt.pInfo;
     
     writetsv(fullfile(opt.targetdir, 'participants.tsv'), participants);
 end
@@ -401,13 +446,8 @@ if ~isempty(opt.chanlocs) && isstr(opt.chanlocs)
 end
 if ~isfield(files(1), 'chanlocs')
     for iSubj = 1:length(files)
-        nsessions = length(unique(files(iSubj).session));
-        if nsessions > 1 %iscell(files{iSubj})
-            for iSess = 1:nsessions %length(files{iSubj})
-                files(iSubj).chanlocs{iSess} = opt.chanlocs;
-            end
-        else
-            files(iSubj).chanlocs = { opt.chanlocs };
+        for iFile = 1:length(files(iSubj).file)
+            files(iSubj).chanlocs{iFile} = opt.chanlocs;
         end
     end
 end
@@ -455,7 +495,7 @@ for iSubj = 1:length(files)
     % copy anatomical file if any
     if isfield(files(iSubj), 'anat') && ~isempty(files(iSubj).anat)
         mkdir(fullfile(opt.targetdir, subjectStr, 'anat'));
-        fileOut = fullfile(opt.targetdir, subjectStr, 'anat', [ subjectStr '_task-' opt.taskName '_' opt.anattype ]);
+        fileOut = fullfile(opt.targetdir, subjectStr, 'anat', [ subjectStr '_' opt.anattype ]);
         if strcmpi(opt.defaced, 'on')
             fileOut = [ fileOut '_defaced' ];
         end
@@ -511,6 +551,7 @@ if ~exist(folderOut)
 end
 if ~exist(fileOut)
 end
+
 % if BDF file anonymize records
 tInfo = opt.tInfo;
 [~,~,ext] = fileparts(fileOut);
@@ -518,7 +559,7 @@ if strcmpi(ext, '.bdf')
     fileIDIn  = fopen(fileIn,'rb','ieee-le');  % see sopen
     fileIDOut = fopen(fileOut,'wb','ieee-le');  % see sopen
     data = fread(fileIDIn, Inf);
-    data(9:9+160-1) = ' ';
+    data(9:9+160-1) = ' '; % remove potential identity
     fwrite(fileIDOut, data);
     fclose(fileIDIn);
     fclose(fileIDOut);
@@ -534,6 +575,9 @@ elseif strcmpi(ext, '.set')
         copyfile(fileIn, fileOut);
         EEG = pop_loadset([outfilename outfileext],outfilepath, 'loadmode', 'info');
     end
+elseif strcmpi(ext, '.cnt')
+    EEG = pop_loadcnt(data(count).file, 'dataformat', 'int16');
+    pop_saveset(EEG, 'filename', fileOut);
 else
     error('Data format not supported');
 end
@@ -559,84 +603,158 @@ jsonwrite([ fileOut(1:end-7) 'events.json' ], opt.eInfoDesc,struct('indent','  '
 
 % --- _events.tsv
 fid = fopen( [ fileOut(1:end-7) 'events.tsv' ], 'w');
+
 % -- parse eInfo
-fieldMap = []; % convert eInfo to struct for easy processing
-for i=1:size(opt.eInfo,1)
-    fieldMap.(opt.eInfo{i,1}) = opt.eInfo{i,2};
+if isempty(opt.eInfo)
+    opt.eInfo                                                  = { 'onset'         'latency' };
+    if isfield(EEG.event, 'trial_type')     opt.eInfo(end+1,:) = { 'trial_type'    'trial_type' };
+    elseif ~isempty(opt.trialtype)          opt.eInfo(end+1,:) = { 'trial_type'    'xxxx' }; end % to be filled with event type based on opt.trialtype mapping
+    if isfield(EEG.event, 'duration')       opt.eInfo(end+1,:) = { 'duration'      'duration' }; end
+    if isfield(EEG.event, 'value')          opt.eInfo(end+1,:) = { 'value'         'value' };
+    else                                    opt.eInfo(end+1,:) = { 'value'         'type' }; end
+    if isfield(EEG.event, 'response_time'), opt.eInfo(end+1,:) = { 'response_time' 'response_time' }; end
+    if isfield(EEG.event, 'stim_file'),     opt.eInfo(end+1,:) = { 'stim_file'     'stim_file' }; end
+    if isfield(EEG.event, 'usertags'),      opt.eInfo(end+1,:) = { 'HED'           'on' }; end
+        
 end
-isHED = isfield(EEG.event, 'usertags') || isfield(EEG.event,'hedtags') || isfield(fieldMap, 'HED');
-if isHED
-    fprintf(fid, 'onset\tduration\ttrial_type\tresponse_time\tsample\tvalue\tHED\n');
-else
-    fprintf(fid, 'onset\tduration\ttrial_type\tresponse_time\tsample\tvalue\n');
+
+% reorder fields so it matches BIDS
+fieldOrder = { 'onset' 'duration' 'sample' 'trial_type' 'response_time' 'stim_file' 'value' 'HED' };
+newOrder = [];
+for iField = 1:length(fieldOrder)
+    ind = strmatch(fieldOrder{iField}, opt.eInfo(:,1)', 'exact');
+    if isempty(ind)
+        opt.eInfo(end+1,1:2) = { fieldOrder{iField} 'n/a' };
+        ind = size(opt.eInfo,1);
+    end
+    newOrder = [ newOrder ind ];
 end
+remainingInd = setdiff([1:size(opt.eInfo,1)], newOrder);
+newOrder = [ newOrder remainingInd];
+opt.eInfo = opt.eInfo(newOrder,:);
+fprintf(fid,'onset%s\n', sprintf('\t%s', opt.eInfo{2:end,1}));
+
+% scan events
 for iEvent = 1:length(EEG.event)
-    onset = (EEG.event(iEvent).latency-1)/EEG.srate;
     
-    % duration
-    if  isfield(fieldMap, 'duration') && isfield(EEG.event, fieldMap.('duration')) && ~isempty(EEG.event(iEvent).(fieldMap.('duration')))
-        duration = num2str(EEG.event(iEvent).(fieldMap.('duration')), '%1.10f') ;
-    elseif isfield(EEG.event, 'duration') && ~isempty(EEG.event(iEvent).duration)
-        duration = num2str(EEG.event(iEvent).duration, '%1.10f') ;
-    else
-        duration = 'n/a';
-    end
-    
-    % event value
-    if  isfield(fieldMap, 'value') && isfield(EEG.event, fieldMap.('value')) && ~isempty(EEG.event(iEvent).(fieldMap.('value')))
-        if isstr(EEG.event(iEvent).(fieldMap.('value')))
-            eventValue = EEG.event(iEvent).(fieldMap.('value'));
-        else
-            eventValue = num2str(EEG.event(iEvent).(fieldMap.('value')));
+    for iField = 1:size(opt.eInfo,1)
+        
+        tmpField = opt.eInfo{iField,2};
+        if strcmpi(tmpField, 'n/a')
+            fprintf(fid, '\t%s', tmpField);
+        else            
+            switch opt.eInfo{iField,1}
+
+                case 'onset'
+                    onset = (EEG.event(iEvent).(tmpField)-1)/EEG.srate;
+                    fprintf(fid, '%1.10f', onset);
+
+                case 'duration'
+                    if isfield(EEG.event, tmpField) && ~isempty(EEG.event(iEvent).(tmpField))
+                        duration = num2str(EEG.event(iEvent).(tmpField), '%1.10f');
+                    else
+                        duration = 'n/a';
+                    end
+                    if isempty(duration) || strcmpi(duration, 'NaN')
+                        duration = 'n/a';
+                    end
+                    fprintf(fid, '\t%s', duration);
+
+                case 'sample'
+                    if isfield(EEG.event, tmpField)
+                        sample = num2str(EEG.event.(tmpField));
+                    else
+                        sample = 'n/a';
+                    end
+                    if isempty(sample) || strcmpi(sample, 'NaN')
+                        sample = 'n/a';
+                    end
+                    fprintf(fid, '\t%s', sample);
+
+                case 'trial_type'
+                    % trial type (which is the type of event - not the same as EEGLAB)
+                    trialType = 'STATUS';
+                    if ~isempty(opt.trialtype)
+                        % mapping on event value
+                        if ~isempty(EEG.event(iEvent).type)
+                            indTrial = strmatch(EEG.event(iEvent).type, opt.trialtype(:,1), 'exact');
+                            if ~isempty(indTrial)
+                                trialType = opt.trialtype{indTrial,2};
+                            end
+                        end
+                    elseif ~isempty(EEG.event(iEvent).(tmpField))
+                        trialType = EEG.event(iEvent).(tmpField);
+                    end
+                    if insertEpoch
+                        if any(indtle == iEvent)
+                            trialType = 'Epoch';
+                        end
+                    end
+                    if isnumeric(trialType)
+                        trialType = num2str(trialType);
+                    end
+                    fprintf(fid, '\t%s', trialType);
+
+                case 'response_time'
+                    if isfield(EEG.event, tmpField)
+                        response_time = num2str(EEG.event(iEvent).(tmpField));
+                    else
+                        response_time = 'n/a';
+                    end
+                    if isempty(response_time) || strcmpi(response_time, 'NaN')
+                        response_time = 'n/a';
+                    end
+                    fprintf(fid, '\t%s', response_time);
+
+                case 'stim_file'
+                    if isfield(EEG.event, tmpField)
+                        stim_file = num2str(EEG.event(iEvent).(tmpField));
+                    else
+                        stim_file = 'n/a';
+                    end
+                    if isempty(stim_file) || strcmpi(stim_file, 'NaN')
+                        stim_file = 'n/a';
+                    end
+                    fprintf(fid, '\t%s', stim_file);
+
+                case 'value'
+                    if  isfield(EEG.event, tmpField) && ~isempty(EEG.event(iEvent).(tmpField))
+                        eventValue = num2str(EEG.event(iEvent).(tmpField));
+                    else
+                        eventValue = 'n/a';
+                    end
+                    if isequal(eventValue, 'NaN') || isempty(eventValue)
+                        eventValue = 'n/a';
+                    end
+                    fprintf(fid, '\t%s', eventValue);
+
+                case 'HED'
+                    hed = 'n/a';
+                    if isfield(EEG.event, tmpField) && ~isempty(EEG.event(iEvent).(tmpField))
+                        hed = EEG.event(iEvent).(tmpField);
+                    else
+                        if isfield(EEG.event, 'usertags') && ~isempty(EEG.event(iEvent).usertags)
+                            hed = EEG.event(iEvent).usertags;
+                            if isfield(EEG.event, 'hedtags') && ~isempty(EEG.event(iEvent).hedtags)
+                                hed = [hed ',' EEG.event(iEvent).hedtags];
+                            end
+                        elseif isfield(EEG.event, 'hedtags') && ~isempty(EEG.event(iEvent).hedtags)
+                            hed = EEG.event(iEvent).hedtags;
+                        end
+                    end
+                    fprintf(fid, '\t%s', hed);
+
+                otherwise
+                    if isfield(EEG.event, opt.eInfo{iField,2})
+                        tmpVal = num2str(EEG.event(iEvent).(opt.eInfo{iField,2}));
+                    else
+                        tmpVal = 'n/a';
+                    end
+                    fprintf(fid, '\t%s', tmpVal);
+            end % switch
         end
-    else
-        if isstr(EEG.event(iEvent).type)
-            eventValue = EEG.event(iEvent).type;
-        else
-            eventValue = num2str(EEG.event(iEvent).type);
-        end
     end
-    
-    % trial type (which is the type of event - not the same as EEGLAB)
-    trialType = 'STATUS';
-    if isfield(fieldMap, 'trial_type') && isfield(EEG.event, fieldMap.('trial_type')) && ~isempty(EEG.event(iEvent).(fieldMap.('trial_type')))
-        trialType = EEG.event(iEvent).(fieldMap.('trial_type'));
-    elseif isfield(EEG.event, 'trial_type')
-        trialType = EEG.event(iEvent).trial_type;
-    elseif ~isempty(opt.trialtype)
-        indTrial = strmatch(eventValue, opt.trialtype(:,1), 'exact');
-        if ~isempty(indTrial)
-            trialType = opt.trialtype{indTrial,2};
-        end
-    end
-    if insertEpoch
-        if any(indtle == iEvent)
-            trialType = 'Epoch';
-        end
-    end
-    if isnumeric(trialType)
-        trialType = num2str(trialType);
-    end
-    
-    % HED (if exist)
-    if isHED
-        hed = 'n/a';
-        if isfield(fieldMap, 'HED') && isfield(EEG.event, fieldMap.('HED')) && ~isempty(EEG.event(iEvent).(fieldMap.('HED')))
-            hed = EEG.event(iEvent).(fieldMap.('HED'));
-        else
-            if isfield(EEG.event, 'usertags') && ~isempty(EEG.event(iEvent).usertags)
-                hed = EEG.event(iEvent).usertags;
-                if isfield(EEG.event, 'hedtags') && ~isempty(EEG.event(iEvent).hedtags)
-                    hed = [hed ',' EEG.event(iEvent).hedtags];
-                end
-            elseif isfield(EEG.event, 'hedtags') && ~isempty(EEG.event(iEvent).hedtags)
-                hed = EEG.event(iEvent).hedtags;
-            end
-        end
-        fprintf(fid, '%1.10f\t%s\t%s\t%s\t%1.10f\t%s\t%s\n', onset, duration, trialType, 'n/a', EEG.event(iEvent).latency-1, eventValue, hed);
-    else
-        fprintf(fid, '%1.10f\t%s\t%s\t%s\t%1.10f\t%s\n', onset, duration, trialType, 'n/a', EEG.event(iEvent).latency-1, eventValue);
-    end
+    fprintf(fid, '\n');
 end
 fclose(fid);
 
@@ -651,7 +769,11 @@ if ~isempty(chanlocs)
         EEG.chanlocs = readlocs(EEG.chanlocs);
         EEG = eeg_checkchanlocs(EEG); 
     end
-    if length(EEG.chanlocs) ~= EEG.nbchan
+    if length(EEG.chanlocs) == EEG.nbchan+1
+        for iChan = 1:length(EEG.chanlocs)
+            EEG.chanlocs(iChan).ref = EEG.chanlocs(end).labels;
+        end
+    elseif length(EEG.chanlocs) ~= EEG.nbchan
         error(sprintf('Number of channels in channel location inconsistent with data for file %s', fileIn));
     end
 end
