@@ -495,9 +495,13 @@ for iSubj = 1:length(files)
     % copy anatomical file if any
     if isfield(files(iSubj), 'anat') && ~isempty(files(iSubj).anat)
         mkdir(fullfile(opt.targetdir, subjectStr, 'anat'));
+        
+        % Currently supporting Single-Session Single-Run of MRI anat only.
+        % If interested in other combinations of run/sessions please contact the authors.
         fileOut = fullfile(opt.targetdir, subjectStr, 'anat', [ subjectStr '_' opt.anattype ]);
+         
         if strcmpi(opt.defaced, 'on')
-            fileOut = [ fileOut '_defaced' ];
+            fileOut = [ fileOut '_defacemask' ];
         end
         if files(iSubj).anat(end) == 'z'
             fileOut = [ fileOut '.nii.gz' ];
