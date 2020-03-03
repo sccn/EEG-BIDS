@@ -338,7 +338,11 @@ if ~isempty(opt.pInfo)
     participants = { 'participant_id' };
     for iSubj=2:size(opt.pInfo)
         if strcmp('participant_id', opt.pInfo{1,1})
-            participants{iSubj, 1} = sprintf('sub-%s', opt.pInfo{iSubj,1});
+            if length(opt.pInfo{iSubj,1}) > 3 && isequal('sub-', opt.pInfo{iSubj,1}(1:4))
+                participants{iSubj, 1} = opt.pInfo{iSubj,1};
+            else
+                participants{iSubj, 1} = sprintf('sub-%s', opt.pInfo{iSubj,1});
+            end
         else
             participants{iSubj, 1} = sprintf('sub-%3.3d', iSubj);
         end
@@ -919,7 +923,7 @@ for iRow = 1:size(f,1)
             end
             s = setfield(s, {1}, f{iRow,1}, f{iRow,4});
         end
-    elseif ~isempty(f{iRow,3}) && ~isa(s.(f{iRow,1}), f{iRow,3})
+    elseif ~isempty(f{iRow,3}) && ~isa(s.(f{iRow,1}), f{iRow,3}) && ~strcmpi(s.(f{iRow,1}), 'n/a')
         error(sprintf('Parameter %s.%s must be a %s', structName, f{iRow,1}, f{iRow,3}));
     end
 end
