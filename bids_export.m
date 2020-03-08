@@ -213,9 +213,11 @@ if ~exist('jsonwrite')
     addpath(fullfile(fileparts(which(mfilename)), 'JSONio'));
 end
 
-opt = finputcheck(varargin, {'ReferencesAndLinks' 'cell'   {}   { 'n/a' };
-    'Name'      'string'  {}    'n/a';
-    'License'   'string'  {}    'n/a';
+opt = finputcheck(varargin, {
+    'Name'      'string'  {}    '';
+    'License'   'string'  {}    '';
+    'Authors'   'cell'    {}    {''};
+    'ReferencesAndLinks' 'cell' {}    {''};
     'targetdir' 'string'  {}    fullfile(pwd, 'bidsexport');
     'taskName'  'string'  {}    'Experiment';
     'codefiles' 'cell'    {}    {};
@@ -234,7 +236,7 @@ opt = finputcheck(varargin, {'ReferencesAndLinks' 'cell'   {}   { 'n/a' };
     'defaced'   'string'  {'on' 'off'}    'on';
     'README'    'string'  {}    '';
     'CHANGES'   'string'  {}    '' ;
-    'copydata'   'real'   [0 1] 1 }, 'bids_format_eeglab');
+    'copydata'   'real'   [0 1] 1 }, 'bids_export');
 if isstr(opt), error(opt); end
 if size(opt.stimuli,1) == 1 || size(opt.stimuli,1) == 1
     opt.stimuli = reshape(opt.stimuli, [2 length(opt.stimuli)/2])';
@@ -262,6 +264,11 @@ gInfoFields = { 'ReferencesAndLinks' 'required' 'cell' { 'n/a' };
     'HowToAcknowledge'   'optional' 'char' '';
     'Funding'            'optional' 'cell' { 'n/a' };
     'DatasetDOI'         'optional' 'char' { 'n/a' }};
+
+if ~isfield(opt.gInfo, 'Name'), opt.gInfo(1).Name = opt.Name; end
+if ~isfield(opt.gInfo, 'License'), opt.gInfo.License = opt.License; end
+if ~isfield(opt.gInfo, 'Authors'), opt.gInfo.Authors = opt.Authors; end
+if ~isfield(opt.gInfo, 'ReferencesAndLinks'), opt.gInfo.ReferencesAndLinks = opt.ReferencesAndLinks; end
 
 opt.gInfo = checkfields(opt.gInfo, gInfoFields, 'gInfo');
 jsonwrite(fullfile(opt.targetdir, 'dataset_description.json'), opt.gInfo, struct('indent','  '));
@@ -428,6 +435,7 @@ end
 % --------------------
 if ~isempty(opt.stimuli)
     if size(opt.stimuli,1) == 1, opt.stimuli = opt.stimuli'; end
+    disp('Copying images...');
     for iStim = 1:size(opt.stimuli,1)
         [~,fileName,Ext] = fileparts(opt.stimuli{iStim,1});
         if ~isempty(dir(opt.stimuli{iStim,1}))
@@ -502,7 +510,7 @@ for iSubj = 1:length(files)
         
         % Currently supporting Single-Session Single-Run of MRI anat only.
         % If interested in other combinations of run/sessions please contact the authors.
-        fileOut = fullfile(opt.targetdir, subjectStr, 'anat', [ subjectStr '_' opt.anattype ]);
+        fileOut = fullfile(opt.targetdir, subjectStr, 'anat', [ subjectStr '_mod-' opt.anattype ]);
          
         if strcmpi(opt.defaced, 'on')
             fileOut = [ fileOut '_defacemask' ];
@@ -584,7 +592,13 @@ elseif strcmpi(ext, '.set')
         EEG = pop_loadset([outfilename outfileext],outfilepath, 'loadmode', 'info');
     end
 elseif strcmpi(ext, '.cnt')
-    EEG = pop_loadcnt(data(count).file, 'dataformat', 'int16');
+    EEG = pop_loadcnt(fileIn, 'dataformat', 'int16');
+    pop_saveset(EEG, 'filename', fileOut);
+elseif strcmpi(ext, '.mff')
+    EEG = pop_mffimport(fileIn,{'code'});
+    pop_saveset(EEG, 'filename', fileOut);
+elseif strcmpi(ext, '.raw')
+    EEG = pop_readegi(fileIn);
     pop_saveset(EEG, 'filename', fileOut);
 else
     error('Data format not supported');
@@ -775,8 +789,8 @@ if ~isempty(chanlocs)
     EEG.chanlocs = chanlocs;
     if isstr(chanlocs)
         EEG.chanlocs = readlocs(EEG.chanlocs);
-        EEG = eeg_checkchanlocs(EEG); 
     end
+    EEG = eeg_checkchanlocs(EEG);
     if length(EEG.chanlocs) == EEG.nbchan+1
         for iChan = 1:length(EEG.chanlocs)
             EEG.chanlocs(iChan).ref = EEG.chanlocs(end).labels;
@@ -787,8 +801,8 @@ if ~isempty(chanlocs)
 end
 
 if isempty(EEG.chanlocs)
-    fprintf(fid, 'name\n');
-    for iChan = 1:EEG.nbchan, printf(fid, 'E%d\n', iChan); end
+    fprintf(fid, 'name\ttype\tunits\n');
+    for iChan = 1:EEG.nbchan, fprintf(fid, 'E%d\tEEG\tmicroV\n', iChan); end
 else
     fprintf(fid, 'name\ttype\tunits\n');
     
