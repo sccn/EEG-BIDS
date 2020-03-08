@@ -7,7 +7,7 @@
 %   bidsfolder - a loaded epoched EEG dataset structure.
 %
 % Note: 'key', val arguments are the same as the one in bids_export()
-% 
+%
 % Authors: Arnaud Delorme, SCCN, INC, UCSD, January, 2019
 
 % Copyright (C) Arnaud Delorme, 2019
@@ -34,10 +34,46 @@ if isempty(STUDY)
 end
 
 if nargin < 2
-    bidsFolder = uigetdir('Pick a BIDS output folder');
-    if isequal(bidsFolder,0), return; end
+    com = [ 'bidsFolderxx = uigetdir(''Pick a BIDS output folder'');' ...
+            'if ~isequal(bidsFolderxx, 0), set(findobj(gcbf, ''tag'', ''outputfolder''), ''string'', bidsFolderxx); end;' ...
+            'clear bidsFolderxx;' ];
+            
+    uilist = { ...
+        { 'Style', 'text', 'string', 'Export EEGLAB study to BIDS', 'fontweight', 'bold'  }, ...
+        {} ...
+        { 'Style', 'text', 'string', 'Output folder:' }, ...
+        { 'Style', 'edit', 'string',   fullfile('.', 'BIDS_EXPORT') 'tag' 'outputfolder' }, ...
+        { 'Style', 'pushbutton', 'string', '...' 'callback' com }, ...
+        { 'Style', 'text', 'string', 'Experiment name:' }, ...
+        { 'Style', 'edit', 'string', '' 'tag' 'name' }, ...
+        { 'Style', 'text', 'string', 'Reference and link:' }, ...
+        { 'Style', 'edit', 'string', '' 'tag' 'refs'  }, ...
+        { 'Style', 'text', 'string', 'Authors (A Lee; B Lin):' }, ...
+        { 'Style', 'edit', 'string', '' 'tag' 'authors'  }, ...
+        { 'Style', 'text', 'string', 'Licence for distributing:' }, ...
+        { 'Style', 'edit', 'string', 'Creative Common 0 (CC0)' 'tag' 'license'  }, ...
+        { 'Style', 'text', 'string', 'README (describe experiment in a one or two sentences):' }, ...
+        { 'Style', 'edit', 'string', '' 'tag' 'readme' 'HorizontalAlignment' 'left' 'max' 3 }, ...
+        { 'Style', 'text', 'string', 'CHANGES (current and previous version information):' }, ...
+        { 'Style', 'edit', 'string', '' 'tag' 'changes'  'HorizontalAlignment' 'left' 'max' 3   }, ...
+        };
+    relSize = 0.7;
+    geometry = { [1] [1] [1-relSize relSize*0.8 relSize*0.2] [1-relSize relSize] [1-relSize relSize] [1-relSize relSize] [1-relSize relSize] [1] [1] [1] [1]};
+    geomvert =   [1  0.2 1         1           1           1           1           1   3   1   3 ];
+    [results,~,~,restag] = inputgui( 'geometry', geometry, 'geomvert', geomvert, 'uilist', uilist, 'helpcom', 'pophelp(''pop_exportbids'');', 'title', 'Export EEGLAB STUDY to BIDS -- pop_exportbids()' );
+    if length(results) == 0, return; end
     
-    options = { 'targetdir' bidsFolder };
+    % decode some outputs
+    if ~isempty(strfind(restag.license, 'CC0')), restag.license = 'CC0'; end
+    if ~isempty(restag.authors)
+        authors = textscan(restag.authors, '%s', 'delimiter', ';');
+        authors = authors{1}';
+    else
+        authors = { '' };
+    end
+    
+    % options
+    options = { 'targetdir' restag.outputfolder 'Name' restag.name 'ReferencesAndLinks' { restag.refs } 'License' restag.license 'Authors' authors 'README' restag.readme 'CHANGES' restag.changes };
 else
     options = varargin;
 end
@@ -54,7 +90,7 @@ uniqueSessions = unique(allSessions);
 % check if STUDY is compatible
 % ----------------------------
 for iSubj = 1:length(uniqueSubjects)
-	indS = strmatch( STUDY.subject{iSubj}, { STUDY.datasetinfo.subject }, 'exact' );
+    indS = strmatch( STUDY.subject{iSubj}, { STUDY.datasetinfo.subject }, 'exact' );
     if length(indS) ~= length(unique(allSessions(indS)))
         error('STUDY is not compatible: some files need to be merged prior to exporting the data as there can only be one file per subject per session in BIDS');
     end
