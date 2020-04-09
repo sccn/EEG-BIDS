@@ -351,7 +351,7 @@ if ~isempty(opt.pInfo)
                 participants{iSubj, 1} = sprintf('sub-%s', opt.pInfo{iSubj,1});
             end
         else
-            participants{iSubj, 1} = sprintf('sub-%3.3d', iSubj);
+            participants{iSubj, 1} = sprintf('sub-%3.3d', iSubj-1);
         end
     end
     if strcmp('participant_id', opt.pInfo{1,1})
@@ -696,16 +696,19 @@ for iEvent = 1:length(EEG.event)
                 case 'trial_type'
                     % trial type (which is the type of event - not the same as EEGLAB)
                     trialType = 'STATUS';
+                    if ~isempty(EEG.event(iEvent).(tmpField))
+                        eventVal = EEG.event(iEvent).(tmpField);
+                    else
+                        eventVal = EEG.event(iEvent).type;
+                    end
                     if ~isempty(opt.trialtype)
                         % mapping on event value
-                        if ~isempty(EEG.event(iEvent).type)
-                            indTrial = strmatch(EEG.event(iEvent).type, opt.trialtype(:,1), 'exact');
+                        if ~isempty(eventVal)
+                            indTrial = strmatch(eventVal, opt.trialtype(:,1), 'exact');
                             if ~isempty(indTrial)
                                 trialType = opt.trialtype{indTrial,2};
                             end
                         end
-                    elseif ~isempty(EEG.event(iEvent).(tmpField))
-                        trialType = EEG.event(iEvent).(tmpField);
                     end
                     if insertEpoch
                         if any(indtle == iEvent)
