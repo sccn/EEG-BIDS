@@ -63,8 +63,9 @@ opt = finputcheck(options, { 'bidsevent'      'string'    { 'on' 'off' }    'off
 if isstr(opt), error(opt); end
 
 % Options:
-% - copy folder
-% - use channel location and event
+if ~exist(bidsFolder, 'dir')
+    error('Folder does not exist');
+end
 
 % load change file
 changesFile = fullfile(bidsFolder, 'CHANGES');
