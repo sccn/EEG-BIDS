@@ -239,17 +239,23 @@ for iSubject = 2:size(bids.participants,1)
                         eventData = importtsv( fullfile(subjectFolder{iFold}, eventFile.name));
                     end
                     events = struct([]);
+                    indTrial = strmatch( 'trial_type', lower(eventData(1,:)), 'exact');
                     for iEvent = 2:size(eventData,1)
                         events(end+1).latency  = eventData{iEvent,1}*EEG.srate+1; % convert to samples
                         events(end).duration   = eventData{iEvent,2}*EEG.srate;   % convert to samples
-                        if size(eventData,2) > 2 && strcmpi(eventData{1,3}, 'trial_type')
-                            events(end).type = eventData{iEvent,3};
+                        if ~isempty(indTrial)
+                            events(end).type = eventData{iEvent,indTrial};
                         end
-                        if size(eventData,2) > 3 && strcmpi(eventData{1,4}, 'response_time') && ~strcmpi(eventData{iEvent,4}, 'n/a')
-                            events(end+1).type   = 'response';
-                            events(end).latency  = (eventData{iEvent,1}+eventData{iEvent,4})*EEG.srate+1; % convert to samples
-                            events(end).duration = 0;
+                        for iField = 1:length(eventData(1,:))
+                            if ~strcmpi(eventData{1,iField}, 'onset') && ~strcmpi(eventData{1,iField}, 'duration')
+                                events(end).(eventData{1,iField}) = eventData{iEvent,iField};
+                            end
                         end
+%                         if size(eventData,2) > 3 && strcmpi(eventData{1,4}, 'response_time') && ~strcmpi(eventData{iEvent,4}, 'n/a')
+%                             events(end+1).type   = 'response';
+%                             events(end).latency  = (eventData{iEvent,1}+eventData{iEvent,4})*EEG.srate+1; % convert to samples
+%                             events(end).duration = 0;
+%                         end
                     end
                     EEG.event = events;
                     EEG = eeg_checkset(EEG, 'eventconsistency');
@@ -283,7 +289,11 @@ end
 [~,studyName] = fileparts(bidsFolder);
 studyName = fullfile(opt.outputdir, [ studyName '.study' ]);
 [STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', task);
-commands = sprintf('std_editset([],[], %s);', vararg2str( { 'commands', commands, 'filename', studyName, 'task', task } ));
+if ~isempty(options)
+    commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'', %s);', bidsFolder, vararg2str(options));
+else
+    commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'');', bidsFolder);
+end
 
 % Import full text file
 % ---------------------
@@ -314,7 +324,7 @@ function outFile = searchparent(folder, fileName)
 % ---------------
 function res = importtsv( fileName)
 
-res = loadtxt( fileName, 'verbose', 'off');
+res = loadtxt( fileName, 'verbose', 'off', 'delim', 9);
 
 for iCol = 1:size(res,2)
     % search for NaNs
