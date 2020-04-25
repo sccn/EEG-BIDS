@@ -1,11 +1,14 @@
 % pop_importbids() - Import BIDS format folder structure into an EEGLAB
 %                    study.
 % Usage:
-%           >> [STUDY ALLEEG] = pop_importbids(bidsfolder);
+%           >> [STUDY ALLEEG] = pop_importbids(bidsfolder,options);
 % Inputs:
 %   bidsfolder - a loaded epoched EEG dataset structure.
+%     options are 'bidsevent', 'bidschanloc' of be turned 'on' or 'off' 
+%                 'outputdir' default is bidsfolder/derivatives
 %
 % Authors: Arnaud Delorme, SCCN, INC, UCSD, January, 2019
+%         Cyril Pernet, University of Edinburgh
 %
 % Example:
 % pop_importbids('/data/matlab/bids_matlab/rishikesh_study/BIDS_EEG_meditation_experiment');
@@ -230,12 +233,14 @@ for iSubject = 2:size(bids.participants,1)
                         tsv_eegchannels  = arrayfun(@(x) sum(strcmpi(x.type,keep)),chanlocs,'UniformOutput',true);
                         tmpchanlocs = chanlocs; tmpchanlocs(tsv_eegchannels==0)=[]; % remove non eeg related channels
                     end
-                        
-                        if length(tmpchanlocs) ~= EEG.nbchan
-                            error('channel location file and EEG file have non matching channel types and numbers');
-                        end
-                    end
                     
+                    if length(tmpchanlocs) ~= EEG.nbchan
+                        error('channel location file and EEG file have non matching channel types and numbers');
+                    else
+                        chanlocs = tmpchanlocs; clear tmpchanlocs
+                    end
+                end
+                
                     if isfield(chanlocs, 'X')
                         EEG.chanlocs = convertlocs(chanlocs, 'cart2all');
                     else
