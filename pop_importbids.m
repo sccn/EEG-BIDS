@@ -4,7 +4,7 @@
 %           >> [STUDY ALLEEG] = pop_importbids(bidsfolder,options);
 % Inputs:
 %   bidsfolder - a loaded epoched EEG dataset structure.
-%     options are 'bidsevent', 'bidschanloc' of be turned 'on' or 'off' 
+%     options are 'bidsevent', 'bidschanloc' of be turned 'on' or 'off'
 %                 'outputdir' default is bidsfolder/derivatives
 %
 % Authors: Arnaud Delorme, SCCN, INC, UCSD, January, 2019
@@ -47,7 +47,7 @@ if nargin < 1
         { 'style'  'edit'        'string' '' 'tag' 'folder' } ...
         { 'style'  'pushbutton'  'string' '...' 'callback' cb_select } ...
         };
-    geometry = { [1] [1] [2 1 0.5] };
+    geometry = {1,1,[2 1 0.5]};
     
     [~,~,~,res] = inputgui( 'geometry', geometry, 'uilist', promptstr, 'helpcom', 'pophelp(''pop_importbids'')', 'title', 'Import BIDS data -- pop_importbids()');
     if isempty(res), return; end
@@ -61,8 +61,8 @@ else
 end
 
 opt = finputcheck(options, { 'bidsevent'      'string'    { 'on' 'off' }    'off';
-                             'bidschanloc'    'string'    { 'on' 'off' }    'off';
-                             'outputdir'      'string'    { }               bidsFolder}, 'pop_importbids');
+    'bidschanloc'    'string'    { 'on' 'off' }    'off';
+    'outputdir'      'string'    { }               fullfile(bidsFolder,'derivatives')}, 'pop_importbids');
 if isstr(opt), error(opt); end
 
 % Options:
@@ -72,35 +72,35 @@ if isstr(opt), error(opt); end
 % load change file
 changesFile = fullfile(bidsFolder, 'CHANGES');
 bids.CHANGES = '';
-if exist(changesFile)
+if exist(changesFile,'File')
     bids.CHANGES = importalltxt( changesFile );
 end
 
 % load Readme file
 readmeFile = fullfile(bidsFolder, 'README');
 bids.README = '';
-if exist(readmeFile)
+if exist(readmeFile,'File')
     bids.README = importalltxt( readmeFile );
 end
 
 % load dataset description file
 dataset_descriptionFile = fullfile(bidsFolder, 'dataset_description.json');
 bids.dataset_description = '';
-if exist(dataset_descriptionFile)
+if exist(dataset_descriptionFile,'File')
     bids.dataset_description = jsondecode(importalltxt( dataset_descriptionFile ));
 end
 
 % load participant file
 participantsFile = fullfile(bidsFolder, 'participants.tsv');
 bids.participants = '';
-if exist(participantsFile)
+if exist(participantsFile,'File')
     bids.participants = importtsv( participantsFile );
 end
 
 % load participant file
 participantsJSONFile = fullfile(bidsFolder, 'participants.json');
 bids.participantsJSON = '';
-if exist(participantsJSONFile)
+if exist(participantsJSONFile,'File')
     bids.participantsJSON = jsondecode(importalltxt( participantsJSONFile ));
 end
 
@@ -108,13 +108,13 @@ end
 count = 1;
 commands = {};
 task = [ 'task-' bidsFolder ];
-for iSubject = 2:size(bids.participants,1)
+for iSubject = size(bids.participants,1):-1:2
     
     parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,1});
     outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,1});
     
     % find folder containing eeg
-    if exist(fullfile(parentSubjectFolder, 'eeg'))
+    if exist(fullfile(parentSubjectFolder, 'eeg'),'dir')
         subjectFolder = { fullfile(parentSubjectFolder, 'eeg') };
         subjectFolderOut = { fullfile(outputSubjectFolder, 'eeg') };
     else
@@ -130,8 +130,8 @@ for iSubject = 2:size(bids.participants,1)
     
     % import data
     for iFold = 1:length(subjectFolder)
-        if ~exist(subjectFolder{iFold})
-            error(sprintf('No EEG data found for subject %s', bids.participants{iSubject,1}));
+        if ~exist(subjectFolder{iFold},'dir')
+            error('No EEG data found for subject %s', bids.participants{iSubject,1});
         end
         
         % which raw data - with folder inheritance
@@ -139,7 +139,7 @@ for iSubject = 2:size(bids.participants,1)
         channelFile = searchparent(subjectFolder{iFold}, '*_channels.tsv');
         elecFile    = searchparent(subjectFolder{iFold}, '*_electrodes.tsv');
         eventFile   = dir(fullfile(subjectFolder{iFold}, '*_events.tsv'));
-                
+        
         % raw data
         allFiles = { eegFile.name };
         ind = strmatch( 'json', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) );
@@ -155,7 +155,7 @@ for iSubject = 2:size(bids.participants,1)
         else
             ind = strmatch( '.eeg', allFiles);
             if ~isempty(ind)
-                error(sprintf('No EEG data found for subject %s', bids.participants{iSubject,1}));
+                error('No EEG data found for subject %s', bids.participants{iSubject,1});
             end
             eegFileRawAll  = allFiles(ind);
         end
@@ -175,7 +175,7 @@ for iSubject = 2:size(bids.participants,1)
                 iRun = str2double(eegFileRaw(ind(1)+5:ind(1)+6));
                 if isnan(iRun) || iRun == 0, error('Problem converting run information'); end
             end
-                
+            
             % extract task name
             underScores = find(tmpFileName == '_');
             if ~strcmpi(tmpFileName(underScores(end)+1:end), 'eeg')
@@ -184,19 +184,19 @@ for iSubject = 2:size(bids.participants,1)
             if isempty(findstr('ses', tmpFileName(underScores(end-1)+1:underScores(end)-1)))
                 task = tmpFileName(underScores(end-1)+1:underScores(end)-1);
             end
-
+            
             if ~strcmpi(fileExt, '.set') || strcmpi(opt.bidsevent, 'on') || strcmpi(opt.bidschanloc, 'on') || ~strcmpi(opt.outputdir, bidsFolder)
                 switch lower(fileExt)
-                    case '.set', % do nothing
+                    case '.set' % do nothing
                         EEG = pop_loadset( eegFileRaw );
-                    case {'.bdf','.edf'},
+                    case {'.bdf','.edf'}
                         EEG = pop_biosig( eegFileRaw );
-                    case '.eeg',
+                    case '.eeg'
                         EEG = pop_loadbva( eegFileRaw );
                     otherwise
-                        error(sprintf('No EEG data found for subject %s', bids.participants{iSubject,1}));
+                        error('No EEG data found for subject %s', bids.participants{iSubject,1});
                 end
-
+                
                 % channel location data
                 % ---------------------
                 if strcmpi(opt.bidschanloc, 'on')
@@ -239,15 +239,14 @@ for iSubject = 2:size(bids.participants,1)
                     else
                         chanlocs = tmpchanlocs; clear tmpchanlocs
                     end
-                end
-                
+                    
                     if isfield(chanlocs, 'X')
                         EEG.chanlocs = convertlocs(chanlocs, 'cart2all');
                     else
                         EEG.chanlocs = chanlocs;
                     end
                 end
-
+                
                 % event data
                 % ----------
                 if strcmpi(opt.bidsevent, 'on')
@@ -268,26 +267,26 @@ for iSubject = 2:size(bids.participants,1)
                                 events(end).(eventData{1,iField}) = eventData{iEvent,iField};
                             end
                         end
-%                         if size(eventData,2) > 3 && strcmpi(eventData{1,4}, 'response_time') && ~strcmpi(eventData{iEvent,4}, 'n/a')
-%                             events(end+1).type   = 'response';
-%                             events(end).latency  = (eventData{iEvent,1}+eventData{iEvent,4})*EEG.srate+1; % convert to samples
-%                             events(end).duration = 0;
-%                         end
+                        %                         if size(eventData,2) > 3 && strcmpi(eventData{1,4}, 'response_time') && ~strcmpi(eventData{iEvent,4}, 'n/a')
+                        %                             events(end+1).type   = 'response';
+                        %                             events(end).latency  = (eventData{iEvent,1}+eventData{iEvent,4})*EEG.srate+1; % convert to samples
+                        %                             events(end).duration = 0;
+                        %                         end
                     end
                     EEG.event = events;
                     EEG = eeg_checkset(EEG, 'eventconsistency');
                 end
-
+                
                 % copy information inside dataset
                 EEG.subject = bids.participants{iSubject,1};
                 EEG.session = iFold;
-
-                if exist(subjectFolderOut{iFold}) ~= 7
+                
+                if exist(subjectFolderOut{iFold},'dir') ~= 7
                     mkdir(subjectFolderOut{iFold});
                 end
                 EEG = pop_saveset( EEG, eegFileNameOut);
             end
-
+            
             % building study command
             commands = { commands{:} 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,1} 'session' iFold 'run' iRun };
             
@@ -326,16 +325,16 @@ str(1) = [];
 % search parent folders
 % ---------------------
 function outFile = searchparent(folder, fileName)
-    outFile = dir(fullfile(folder, fileName));
-    if isempty(outFile)
-        outFile = dir(fullfile(fileparts(folder), fileName));
-    end
-    if isempty(outFile)
-        outFile = dir(fullfile(fileparts(fileparts(folder)), fileName));
-    end
-    if isempty(outFile)
-        outFile = dir(fullfile(fileparts(fileparts(fileparts(folder))), fileName));
-    end
+outFile = dir(fullfile(folder, fileName));
+if isempty(outFile)
+    outFile = dir(fullfile(fileparts(folder), fileName));
+end
+if isempty(outFile)
+    outFile = dir(fullfile(fileparts(fileparts(folder)), fileName));
+end
+if isempty(outFile)
+    outFile = dir(fullfile(fileparts(fileparts(fileparts(folder))), fileName));
+end
 
 % Import tsv file
 % ---------------
