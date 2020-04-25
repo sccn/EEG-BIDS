@@ -63,9 +63,8 @@ opt = finputcheck(options, { 'bidsevent'      'string'    { 'on' 'off' }    'off
 if isstr(opt), error(opt); end
 
 % Options:
-if ~exist(bidsFolder, 'dir')
-    error('Folder does not exist');
-end
+% - copy folder
+% - use channel location and event
 
 % load change file
 changesFile = fullfile(bidsFolder, 'CHANGES');
@@ -222,9 +221,21 @@ for iSubject = 2:size(bids.participants,1)
                             chanlocs(iChan-1).Z = elecData{indElec,4};
                         end
                     end
+                    
                     if length(chanlocs) ~= EEG.nbchan
-                        error('Different number of channels in channel location file and EEG file');
+                        warning('Different number of channels in channel location file and EEG file');
+                        % check if the difference is due to non EEG channels
+                        % list here https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/03-electroencephalography.html
+                        keep = {'EEG','EOG','HEOG','VEOG'}; % keep all eeg related channels
+                        tsv_eegchannels  = arrayfun(@(x) sum(strcmpi(x.type,keep)),chanlocs,'UniformOutput',true);
+                        tmpchanlocs = chanlocs; tmpchanlocs(tsv_eegchannels==0)=[]; % remove non eeg related channels
                     end
+                        
+                        if length(tmpchanlocs) ~= EEG.nbchan
+                            error('channel location file and EEG file have non matching channel types and numbers');
+                        end
+                    end
+                    
                     if isfield(chanlocs, 'X')
                         EEG.chanlocs = convertlocs(chanlocs, 'cart2all');
                     else
