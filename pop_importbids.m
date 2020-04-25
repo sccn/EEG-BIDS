@@ -232,12 +232,11 @@ for iSubject = size(bids.participants,1):-1:2
                         keep = {'EEG','EOG','HEOG','VEOG'}; % keep all eeg related channels
                         tsv_eegchannels  = arrayfun(@(x) sum(strcmpi(x.type,keep)),chanlocs,'UniformOutput',true);
                         tmpchanlocs = chanlocs; tmpchanlocs(tsv_eegchannels==0)=[]; % remove non eeg related channels
+                        chanlocs = tmpchanlocs; clear tmpchanlocs
                     end
                     
-                    if length(tmpchanlocs) ~= EEG.nbchan
+                    if length(chanlocs) ~= EEG.nbchan
                         error('channel location file and EEG file have non matching channel types and numbers');
-                    else
-                        chanlocs = tmpchanlocs; clear tmpchanlocs
                     end
                     
                     if isfield(chanlocs, 'X')
