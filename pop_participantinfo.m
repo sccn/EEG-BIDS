@@ -41,6 +41,7 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
     pInfoTbl = uitable(f, 'RowName',[],'ColumnName', ['filepath' pFields], 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'pInfoTable', 'ColumnEditable', true);
     pInfoTbl.Data = cell(numel(ALLEEG), 1+length(pFields));
     pInfoTbl.Position = [0.02 0.86-pInfoTbl.Extent(4) 0.38 pInfoTbl.Extent(4)+0.05];
+    
     % pre-populate pInfo table
     for i=1:length(ALLEEG)
         curEEG = ALLEEG(i);
@@ -74,6 +75,8 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
     units = {' ','ampere','becquerel','candela','coulomb','degree Celsius','farad','gray','henry','hertz','joule','katal','kelvin','kilogram','lumen','lux','metre','mole','newton','ohm','pascal','radian','second','siemens','sievert','steradian','tesla','volt','watt','weber'};
     unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
     tbl.ColumnFormat = {[] [] [] [] units unitPrefixes []};
+    
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Add column', 'Units', 'normalized', 'Position', [0.4-0.1 0.86-pInfoTbl.Extent(4)-0.05 0.1 0.05], 'Callback', {@addColumnCB,pInfoTbl,tbl}, 'Tag', 'addColumnBtn');
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0.02 0.1 0.05], 'Callback', @okCB); 
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0.02 0.1 0.05], 'Callback', @cancelCB); 
     
@@ -136,6 +139,35 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
         close(f);
     end
 
+    %% callback handle for Add Column button
+    function addColumnCB(src, event, pInfoTbl, bidsTbl)
+        answer = inputdlg("Enter new field name, no space allowed:", 'New field name');
+        
+        if ~isempty(answer)
+            % input validation
+            newField = checkFormat(answer{1});
+            
+            pFields = [pFields newField];
+            
+            % add to pInfoBIDS structure
+            pInfoBIDS.(newField).Description = ''; 
+            pInfoBIDS.(newField).Levels = [];
+            pInfoBIDS.(newField).Units = '';
+            
+            % update Tables
+            pInfoTbl.ColumnName = [pInfoTbl.ColumnName;newField];
+            temp = pInfoTbl.Data;
+            pInfoTbl.Data = cell(size(pInfoTbl.Data,1), size(pInfoTbl.Data,2)+1);
+            pInfoTbl.Data(:,1:size(temp,2)) = temp; 
+            
+            bidsTbl.RowName = [bidsTbl.RowName;newField];
+            temp = bidsTbl.Data;
+            bidsTbl.Data = cell(size(bidsTbl.Data,1)+1, size(bidsTbl.Data,2));
+            bidsTbl.Data(1:size(temp,1),:) = temp;
+            bidsTbl.Data{end,find(strcmp(bidsTbl.ColumnName, 'Levels'))} = 'Click to specify';
+        end
+    end
+
     %% callback handle for cell selection in the BIDS table
     function cellSelectedCB(arg1, obj) 
         if size(obj.Indices,1) == 1
@@ -179,15 +211,15 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
             pTable = findobj('Tag', 'pInfoTable');
             colIdx = find(strcmp(pTable.ColumnName, field));
             levelCellText = table.Source.Data{find(strcmp(table.Source.RowName, field)), find(strcmp(table.Source.ColumnName, 'Levels'))}; % text (fieldName-Levels) cell. if 'n/a' then no action, 'Click to..' then conditional action, '<value>,...' then get levels
-            % retrieve all unique values from EEG.event.(field)
-            if isnumeric(pTable.Data{1,colIdx})
-                values = arrayfun(@(x) num2str(x), [pTable.Data{:,colIdx}], 'UniformOutput', false);
-                levels = unique(values)';
-            else
+            % retrieve all unique values
+%             if isnumeric(pTable.Data{1,colIdx}) % values already in string format
+%                 values = arrayfun(@(x) num2str(x), [pTable.Data{:,colIdx}], 'UniformOutput', false);
+%                 levels = unique(values)';
+%             else
                 values = {pTable.Data{:,colIdx}};
                 idx = cellfun(@isempty, values);
                 levels = unique(values(~idx))';
-            end
+%             end
             if isempty(levels)
                 uicontrol(f, 'Style', 'text', 'String', 'No value found. Please specify values in Participant information table.', 'Units', 'normalized', 'Position', [0.42 lvlHeight 0.58 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
             elseif strcmp('Click to specify', levelCellText) && length(levels) > levelThreshold 
