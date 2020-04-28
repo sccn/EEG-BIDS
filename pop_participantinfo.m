@@ -24,7 +24,7 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
     fg = [0 0 0.4];
     levelThreshold = 20;
     fontSize = 12;
-    pFields = { 'Participant_id' 'Gender' 'Age' 'Group' 'HeadCircumference'};
+    pFields = { 'Participant_ID' 'Gender' 'Age' 'Group' 'HeadCircumference'};
     pInfoBIDS = newpInfoBIDS();    
 %     pInfo = {};
     pInfoDesc = [];
@@ -49,7 +49,7 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
         pInfoTbl.Data{i,1} = fullfile(curEEG.filepath, curEEG.filename);
         % if EEG has BIDS.pInfo
         % pInfo is in format
-        % Participant_id  Gender
+        % Participant_ID  Gender
         %     S02           M       % one row only
         if isfield(curEEG, 'BIDS') && isfield(curEEG.BIDS,'pInfo')
             fnames = curEEG.BIDS.pInfo(1,:); % fields of EEG.BIDS.pInfo
@@ -65,7 +65,7 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
         end
     end
     
-    uicontrol(f, 'Style', 'text', 'String', 'BIDS metadata for participants fields', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0.42 0.86 1-0.42 0.1]);
+    uicontrol(f, 'Style', 'text', 'String', 'Add BIDS metadata for participants fields', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0.42 0.86 1-0.42 0.1]);
     tbl = uitable(f, 'RowName', pFields, 'ColumnName', {'Description' 'Levels' 'Units' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'bidsTable');
     bidsWidth = (1-0.42-0.02);
     tbl.Position = [0.42 0.5 bidsWidth 0.41];
@@ -232,7 +232,7 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
         lvlHeight = 0.43;
         if numel(ALLEEG) == 1
             uicontrol(f, 'Style', 'text', 'String', 'Levels specification does not apply to single dataset.', 'Units', 'normalized', 'Position', [0.42 lvlHeight bidsWidth 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
-        elseif strcmp(field, 'Participant_id') || strcmp(field, 'Age')
+        elseif strcmp(field, 'Participant_ID') || strcmp(field, 'Age')
             uicontrol(f, 'Style', 'text', 'String', 'Levels editing does not apply to this field.', 'Units', 'normalized', 'Position', [0.42 lvlHeight bidsWidth 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
         else
             pTable = findobj('Tag', 'pInfoTable');
@@ -349,20 +349,20 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
     function pBIDS = newpInfoBIDS()
         pBIDS = [];
         for idx=1:length(pFields)
-            if strcmp(pFields{idx}, 'Participant_id')
-                pBIDS.Participant_id.Description = 'Unique subject identifiers';
-                pBIDS.Participant_id.Units = '';
-                pBIDS.Participant_id.Levels = 'n/a';
+            if strcmp(pFields{idx}, 'Participant_ID')
+                pBIDS.Participant_ID.Description = 'Unique participant label';
+                pBIDS.Participant_ID.Units = '';
+                pBIDS.Participant_ID.Levels = 'n/a';
             elseif strcmp(pFields{idx}, 'Gender')
-                pBIDS.Gender.Description = 'Sex of the subject';      
+                pBIDS.Gender.Description = 'Participant gender';      
                 pBIDS.Gender.Levels = [];
                 pBIDS.Gender.Units = '';
             elseif strcmp(pFields{idx}, 'Age')
-                pBIDS.Age.Description = 'Age of the subject';
+                pBIDS.Age.Description = 'Participant age (years)';
                 pBIDS.Age.Units = 'years';
                 pBIDS.Age.Levels = 'n/a';
             elseif strcmp(pFields{idx}, 'Group')
-                pBIDS.Group.Description = 'Subject group';
+                pBIDS.Group.Description = 'Participant group label';
                 pBIDS.Group.Units = '';
                 pBIDS.Group.Levels = [];
             elseif strcmp(pFields{idx}, 'HeadCircumference')
