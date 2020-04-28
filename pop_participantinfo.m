@@ -24,7 +24,7 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
     fg = [0 0 0.4];
     levelThreshold = 20;
     fontSize = 12;
-    pFields = { 'Participant_id' 'Gender' 'Age' 'Group' };
+    pFields = { 'Participant_id' 'Gender' 'Age' 'Group' 'HeadCircumference'};
     pInfoBIDS = newpInfoBIDS();    
 %     pInfo = {};
     pInfoDesc = [];
@@ -365,6 +365,10 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
                 pBIDS.Group.Description = 'Subject group';
                 pBIDS.Group.Units = '';
                 pBIDS.Group.Levels = [];
+            elseif strcmp(pFields{idx}, 'HeadCircumference')
+                pBIDS.HeadCircumference.Description = 'Subject Head Circumference';
+                pBIDS.HeadCircumference.Units = 'cm';
+                pBIDS.HeadCircumference.Levels = 'n/a';
 %                 else
 %                     event.(fields{idx}).BIDSField = '';
 %                     event.(fields{idx}).LongName = '';
