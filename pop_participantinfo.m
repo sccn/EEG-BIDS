@@ -42,7 +42,7 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
     pInfoTbl.Data = cell(numel(ALLEEG), 1+length(pFields));
     pInfoTbl.Position = [0.02 0.124 0.38 0.786];
     pInfoTbl.CellSelectionCallback = @pInfoCellSelectedCB;
-    
+    pInfoTbl.CellEditCallback = @pInfoCellEditCB;
     % pre-populate pInfo table
     for i=1:length(ALLEEG)
         curEEG = ALLEEG(i);
@@ -70,7 +70,7 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
     bidsWidth = (1-0.42-0.02);
     tbl.Position = [0.42 0.5 bidsWidth 0.41];
     tbl.CellSelectionCallback = @bidsCellSelectedCB;
-    tbl.CellEditCallback = @cellEditCB;
+    tbl.CellEditCallback = @bidsCellEditCB;
     tbl.ColumnEditable = [true false true];
     tbl.ColumnWidth = {appWidth*bidsWidth*2/5,appWidth*bidsWidth/5,appWidth*bidsWidth/5};
     units = {' ','ampere','becquerel','candela','coulomb','degree Celsius','farad','gray','henry','hertz','joule','katal','kelvin','kilogram','lumen','lux','metre','mole','newton','ohm','pascal','radian','second','siemens','sievert','steradian','tesla','volt','watt','weber'};
@@ -172,7 +172,26 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
     %% callback handle for cell selection in the participant info table
     function pInfoCellSelectedCB(arg1, obj)
         tbl = obj.Source;
-        uicontrol(f, 'Style', 'text', 'String', tbl.Data{obj.Indices(1), 1}, 'Units', 'normalized', 'Position',[0.02 0 0.38 0.08], 'HorizontalAlignment', 'left', 'FontSize',11,'FontAngle','italic','ForegroundColor', fg,'BackgroundColor', bg);
+        if ~isempty(obj.Indices)
+            uicontrol(f, 'Style', 'text', 'String', tbl.Data{obj.Indices(1), 1}, 'Units', 'normalized', 'Position',[0.02 0 0.38 0.08], 'HorizontalAlignment', 'left', 'FontSize',11,'FontAngle','italic','ForegroundColor', fg,'BackgroundColor', bg);
+        end
+    end
+
+    %% callback handle for cell edit in pInfo table
+    function pInfoCellEditCB(arg1, obj)
+        row = obj.Indices(1);
+        col = obj.Indices(2);
+        pTbl = obj.Source;
+        if ~isempty(pTbl.Data{row, 2})
+            entered = obj.EditData;
+            % for each row of the pInfo table
+            for r=1:size(pTbl.Data,1)
+                % if same subject with celected cell then copy value to that row as well
+                if strcmp(pTbl.Data{r,2}, pTbl.Data{row,2})
+                    pTbl.Data{r,col} = entered;
+                end
+            end
+        end
     end
 
     %% callback handle for cell selection in the BIDS table
@@ -193,8 +212,9 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
         end
     end
     
+    
     %% callback handle for cell edit in BIDS table
-    function cellEditCB(arg1, obj)
+    function bidsCellEditCB(arg1, obj)
         field = obj.Source.RowName{obj.Indices(1)};
         column = obj.Source.ColumnName{obj.Indices(2)};
         if ~strcmp(column, 'Levels')
