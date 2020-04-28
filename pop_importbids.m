@@ -35,6 +35,9 @@ if nargin < 1
     bidsFolder = uigetdir('Pick a BIDS folder');
     if isequal(bidsFolder,0), return; end
     
+    studyName = cell2mat(inputdlg('input study name','study - save as ... '));
+    if isempty(studyName), return; end
+    
     cb_select = [ 'tmpfolder = uigetdir;' ...
         'if ~isequal(tmpfolder, 0)' ...
         '   set(findobj(gcbf, ''tag'', ''folder''), ''string'', tmpfolder);' ...
@@ -43,11 +46,13 @@ if nargin < 1
     
     promptstr    = { { 'style'  'checkbox'  'string' 'Overwrite events with BIDS event files' 'tag' 'events' 'value' 0 } ...
         { 'style'  'checkbox'  'string' 'Overwrite channel locations with BIDS channel location files' 'tag' 'chanlocs' 'value' 0 } ...
+        { 'style'  'text'      'string' 'Enter study name (default is BIDS folder name)' } ...
+        { 'style'  'edit'        'string' '' 'tag' 'folder' } ...
         { 'style'  'text'      'string' 'Select study output folder (default is BIDS folder)' } ...
         { 'style'  'edit'        'string' '' 'tag' 'folder' } ...
         { 'style'  'pushbutton'  'string' '...' 'callback' cb_select } ...
         };
-    geometry = {1,1,[2 1 0.5]};
+    geometry = {1,1,[2 1.5],[2 1 0.5]};
     
     [~,~,~,res] = inputgui( 'geometry', geometry, 'uilist', promptstr, 'helpcom', 'pophelp(''pop_importbids'')', 'title', 'Import BIDS data -- pop_importbids()');
     if isempty(res), return; end
@@ -60,9 +65,13 @@ else
     options = varargin;
 end
 
-opt = finputcheck(options, { 'bidsevent'      'string'    { 'on' 'off' }    'off';
-    'bidschanloc'    'string'    { 'on' 'off' }    'off';
-    'outputdir'      'string'    { }               fullfile(bidsFolder,'derivatives')}, 'pop_importbids');
+[~,studyName] = fileparts(bidsFolder);
+opt = finputcheck(options, { ...
+    'bidsevent'      'string'    { 'on' 'off' }    'off';  ...
+    'bidschanloc'    'string'    { 'on' 'off' }    'off'; ...
+    'outputdir'      'string'    { } fullfile(bidsFolder,'derivatives') ...
+    'studyName'      'string'    { } fullfile(bidsFolder,studyName) 
+    }, 'pop_importbids');
 if isstr(opt), error(opt); end
 
 % Options:
@@ -108,7 +117,7 @@ end
 count = 1;
 commands = {};
 task = [ 'task-' bidsFolder ];
-for iSubject = size(bids.participants,1):-1:2
+for iSubject = 1:size(bids.participants,1)
     
     parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,1});
     outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,1});
@@ -301,8 +310,7 @@ end
 
 % study name and study creation
 % -----------------------------
-[~,studyName] = fileparts(bidsFolder);
-studyName = fullfile(opt.outputdir, [ studyName '.study' ]);
+studyName = fullfile(opt.outputdir, [opt.studyName '.study']);
 [STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', task);
 if ~isempty(options)
     commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'', %s);', bidsFolder, vararg2str(options));
