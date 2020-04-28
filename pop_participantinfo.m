@@ -24,7 +24,7 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
     fg = [0 0 0.4];
     levelThreshold = 20;
     fontSize = 12;
-    pFields = { 'Participant_ID' 'Gender' 'Age' 'Group' 'HeadCircumference'};
+    pFields = { 'Participant_ID' 'Gender' 'Age' 'Group' 'HeadCircumference' 'SubjectArtefactDescription'};
     pInfoBIDS = newpInfoBIDS();    
 %     pInfo = {};
     pInfoDesc = [];
@@ -34,7 +34,7 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
     end
     
     %% create UI
-    f = figure('MenuBar', 'None', 'ToolBar', 'None', 'Name', 'Edit BIDS event info - pop_participantinfo', 'Color', bg);
+    f = figure('MenuBar', 'None', 'ToolBar', 'None', 'Name', 'Edit BIDS participant info - pop_participantinfo', 'Color', bg);
     f.Position(3) = appWidth;
     f.Position(4) = appHeight;
     uicontrol(f, 'Style', 'text', 'String', 'Participant information', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0 0.86 0.4 0.1]);
@@ -171,19 +171,28 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
 
     %% callback handle for cell selection in the participant info table
     function pInfoCellSelectedCB(arg1, obj)
+        removeLevelUI();
         tbl = obj.Source;
         if ~isempty(obj.Indices)
             uicontrol(f, 'Style', 'text', 'String', tbl.Data{obj.Indices(1), 1}, 'Units', 'normalized', 'Position',[0.02 0 0.38 0.08], 'HorizontalAlignment', 'left', 'FontSize',11,'FontAngle','italic','ForegroundColor', fg,'BackgroundColor', bg);
+            if strcmp(obj.Source.ColumnName{obj.Indices(2)}, 'SubjectArtefactDescription')
+                uicontrol(f, 'Style', 'text', 'String', 'Input for Subject Artefact Description', 'Units', 'normalized', 'Position',[0.42 0.43 0.68 0.05], 'HorizontalAlignment', 'left','FontAngle','italic','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'cellContentHeader');
+                uicontrol(f, 'Style', 'edit', 'String', obj.Source.Data{obj.Indices(1),obj.Indices(2)}, 'Units', 'normalized', 'Max',2,'Min',0,'Position',[0.42 0.23 0.5 0.2], 'HorizontalAlignment', 'left', 'Callback', {@artefactCB, obj}, 'Tag', 'cellContentMsg');
+            end
         end
     end
 
     %% callback handle for cell edit in pInfo table
-    function pInfoCellEditCB(arg1, obj)
+    function pInfoCellEditCB(arg1, obj, input)
         row = obj.Indices(1);
         col = obj.Indices(2);
         pTbl = obj.Source;
         if ~isempty(pTbl.Data{row, 2})
-            entered = obj.EditData;
+            if exist('input','var') % called from edit box for artefact description
+                entered = input;
+            else
+                entered = obj.EditData;
+            end
             % for each row of the pInfo table
             for r=1:size(pTbl.Data,1)
                 % if same subject with celected cell then copy value to that row as well
@@ -225,6 +234,11 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
     function descriptionCB(src,event,obj,field) 
         obj.Source.Data{obj.Indices(1),obj.Indices(2)} = src.String;
         pInfoBIDS.(field).Description = src.String;
+    end
+
+    function artefactCB(src,event,obj) 
+        obj.Source.Data{obj.Indices(1),obj.Indices(2)} = src.String;
+        pInfoCellEditCB(src, obj, src.String);
     end
 
     function createLevelUI(src,event,table,field)
@@ -369,6 +383,10 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
                 pBIDS.HeadCircumference.Description = 'Subject Head Circumference';
                 pBIDS.HeadCircumference.Units = 'cm';
                 pBIDS.HeadCircumference.Levels = 'n/a';
+            elseif strcmp(pFields{idx}, 'SubjectArtefactDescription')
+                pBIDS.SubjectArtefactDescription.Description = 'Description of artefact pertaining to the subject';
+                pBIDS.SubjectArtefactDescription.Units = '';
+                pBIDS.SubjectArtefactDescription.Levels = 'n/a';
 %                 else
 %                     event.(fields{idx}).BIDSField = '';
 %                     event.(fields{idx}).LongName = '';
