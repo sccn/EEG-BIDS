@@ -19,7 +19,7 @@
 function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
     %% default settings
     appWidth = 1000;
-    appHeight = 500;
+    appHeight = 520;
     bg = [0.65 0.76 1];
     fg = [0 0 0.4];
     levelThreshold = 20;
@@ -40,7 +40,8 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
     uicontrol(f, 'Style', 'text', 'String', 'Participant information', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0 0.86 0.4 0.1]);
     pInfoTbl = uitable(f, 'RowName',[],'ColumnName', ['filepath' pFields], 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'pInfoTable', 'ColumnEditable', true);
     pInfoTbl.Data = cell(numel(ALLEEG), 1+length(pFields));
-    pInfoTbl.Position = [0.02 0.11 0.38 0.8];
+    pInfoTbl.Position = [0.02 0.124 0.38 0.786];
+    pInfoTbl.CellSelectionCallback = @pInfoCellSelectedCB;
     
     % pre-populate pInfo table
     for i=1:length(ALLEEG)
@@ -68,7 +69,7 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
     tbl = uitable(f, 'RowName', pFields, 'ColumnName', {'Description' 'Levels' 'Units' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'bidsTable');
     bidsWidth = (1-0.42-0.02);
     tbl.Position = [0.42 0.5 bidsWidth 0.41];
-    tbl.CellSelectionCallback = @cellSelectedCB;
+    tbl.CellSelectionCallback = @bidsCellSelectedCB;
     tbl.CellEditCallback = @cellEditCB;
     tbl.ColumnEditable = [true false true];
     tbl.ColumnWidth = {appWidth*bidsWidth*2/5,appWidth*bidsWidth/5,appWidth*bidsWidth/5};
@@ -76,7 +77,7 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
     unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
     tbl.ColumnFormat = {[] [] [] [] units unitPrefixes []};
     
-    uicontrol(f, 'Style', 'pushbutton', 'String', 'Add column', 'Units', 'normalized', 'Position', [0.4-0.1 0.06 0.1 0.05], 'Callback', {@addColumnCB,pInfoTbl,tbl}, 'Tag', 'addColumnBtn');
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Add column', 'Units', 'normalized', 'Position', [0.4-0.1 0.074 0.1 0.05], 'Callback', {@addColumnCB,pInfoTbl,tbl}, 'Tag', 'addColumnBtn');
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0.02 0.1 0.05], 'Callback', @okCB); 
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0.02 0.1 0.05], 'Callback', @cancelCB); 
     
@@ -168,8 +169,14 @@ function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
         end
     end
 
+    %% callback handle for cell selection in the participant info table
+    function pInfoCellSelectedCB(arg1, obj)
+        tbl = obj.Source;
+        uicontrol(f, 'Style', 'text', 'String', tbl.Data{obj.Indices(1), 1}, 'Units', 'normalized', 'Position',[0.02 0 0.38 0.08], 'HorizontalAlignment', 'left', 'FontSize',11,'FontAngle','italic','ForegroundColor', fg,'BackgroundColor', bg);
+    end
+
     %% callback handle for cell selection in the BIDS table
-    function cellSelectedCB(arg1, obj) 
+    function bidsCellSelectedCB(arg1, obj) 
         if size(obj.Indices,1) == 1
             removeLevelUI();
             row = obj.Indices(1);
