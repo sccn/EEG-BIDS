@@ -53,7 +53,11 @@ if nargin < 2
     
     [results,~,~,restag] = inputgui( 'geometry', geometry, 'geomvert', geomvert, 'uilist', uilist, 'helpcom', 'pophelp(''pop_taskinfo'');', 'title', 'BIDS task information -- pop_taskinfo()');
     if length(results) == 0, return; end
-
+    
+    fields = fieldnames(restag);
+    for iField = 1:length(fields)
+        STUDY.BIDS.(fields{iField}) = restag.BIDS.(fields{iField});
+    end
 else
     options = varargin;
 end

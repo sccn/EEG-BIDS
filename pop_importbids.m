@@ -1,9 +1,19 @@
 % pop_importbids() - Import BIDS format folder structure into an EEGLAB
 %                    study.
 % Usage:
-%           >> [STUDY ALLEEG] = pop_importbids(bidsfolder);
+%   >> [STUDY ALLEEG] = pop_importbids(bidsfolder);
+%   >> [STUDY ALLEEG] = pop_importbids(bidsfolder, 'key', value);
+%
 % Inputs:
 %   bidsfolder - a loaded epoched EEG dataset structure.
+%
+% Optional inputs:
+%  'bidsevent'   - ['on'|'off'] import events from BIDS .tsv file and
+%                  ignore events in raw binary EEG files.
+%  'bidschanloc' - ['on'|'off'] import channel location from BIDS .tsv file 
+%                  and ignore locations (if any) in raw binary EEG files.  
+%  'outputdir'   - [string] output folder (default is to use the BIDS
+%                  folders).
 %
 % Authors: Arnaud Delorme, SCCN, INC, UCSD, January, 2019
 %
@@ -40,11 +50,11 @@ if nargin < 1
     
     promptstr    = { { 'style'  'checkbox'  'string' 'Overwrite events with BIDS event files' 'tag' 'events' 'value' 0 } ...
         { 'style'  'checkbox'  'string' 'Overwrite channel locations with BIDS channel location files' 'tag' 'chanlocs' 'value' 0 } ...
-        { 'style'  'text'      'string' 'Select study output folder (default is BIDS folder)' } ...
-        { 'style'  'edit'        'string' '' 'tag' 'folder' } ...
+        { 'style'  'text'      'string' 'Study output folder' } ...
+        { 'style'  'edit'      'string' fullfile(bidsFolder, 'derivative') 'tag' 'folder' 'HorizontalAlignment' 'left' } ...
         { 'style'  'pushbutton'  'string' '...' 'callback' cb_select } ...
         };
-    geometry = { [1] [1] [2 1 0.5] };
+    geometry = { [1] [1] [1 2 0.5] };
     
     [~,~,~,res] = inputgui( 'geometry', geometry, 'uilist', promptstr, 'helpcom', 'pophelp(''pop_importbids'')', 'title', 'Import BIDS data -- pop_importbids()');
     if isempty(res), return; end
