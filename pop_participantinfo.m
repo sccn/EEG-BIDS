@@ -16,7 +16,7 @@
 %  'pInfo'     - [cell] BIDS participant information.
 %
 % Author: Dung Truong, Arnaud Delorme
-function [ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG)
+function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
     %% default settings
     appWidth = 1000;
     appHeight = 520;

@@ -21,7 +21,7 @@
 %                (duration in sec), "value" (EEGLAB event type)
 %
 % Author: Dung Truong, Arnaud Delorme
-function [ALLEEG, eInfoDesc, eInfo] = pop_eventinfo(ALLEEG)
+function [ALLEEG, eInfoDesc, eInfo, command] = pop_eventinfo(ALLEEG)
     % perform check to make sure EEG.event is consistent across ALLEEG
     try
        eventFields = fieldnames([ALLEEG.event]);
