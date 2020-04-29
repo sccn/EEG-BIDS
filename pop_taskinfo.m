@@ -80,7 +80,9 @@ com = sprintf('pop_exportbids(STUDY);');
         objs = findall(f);
         for i=1:numel(objs)
             if ~isempty(objs(i).Tag)
-                tInfo.(objs(i).Tag) = objs(i).String;
+                if ~isempty(objs(i).String)
+                    tInfo.(objs(i).Tag) = objs(i).String;
+                end
             end
         end
         % update STUDY BIDS structure
