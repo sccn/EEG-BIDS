@@ -64,7 +64,7 @@ com = sprintf('pop_exportbids(STUDY);');
        web(url);
     end
     function helpCB(src,event)
-        doc pop_taskinfo;
+        pophelp('pop_taskinfo');
     end
     function okCB(src,event)
         bids = [];
