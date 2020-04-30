@@ -99,7 +99,7 @@ function [ALLEEG,com] = pop_eegacqinfo(ALLEEG, varargin)
        end
        h = findobj('tag', 'EEGreference');
        h = h(1);
-       if ~strcmp(selected, 'All')
+       if ~strcmp(selected, 'All') && isempty(h.String)
            h.String = ALLEEG(strcmp(sets,selected)).ref;
            tmpsrc = [];
            tmpsrc.Style = 'edit';
