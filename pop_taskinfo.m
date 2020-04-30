@@ -33,9 +33,9 @@ function [STUDY,com] = pop_taskinfo(STUDY)
     f.Position(3) = 400;
     f.Position(4) = 650;
     uicontrol('Style', 'text', 'string', 'Add BIDS task information', 'fontweight', 'bold', 'fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.9 1 0.05]);
-    uicontrol('Style', 'text', 'string', 'Task description (describe experiment):','fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.85 1 0.05]);
+    uicontrol('Style', 'text', 'string', 'Participant task description (describe experiment):','fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.85 1 0.05]);
     uicontrol('Style', 'edit', 'string', '', 'tag', 'TaskDescription', 'HorizontalAlignment', 'left', 'max', 3,'Units', 'normalized', 'Position', [0.05 0.68 0.9 0.18]);
-    uicontrol('Style', 'text', 'string', 'Participant instructions (exact as possible):','fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.62 1 0.05]);
+    uicontrol('Style', 'text', 'string', 'Participant instructions (as exact as possible):','fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.62 1 0.05]);
     uicontrol('Style', 'edit', 'string', '', 'tag', 'Instructions', 'HorizontalAlignment', 'left', 'max', 3,'Units', 'normalized', 'Position', [0.05 0.45 0.9 0.18]);
     cm = uicontextmenu(f);
     m1 = uimenu(cm,'Text','Lookup CognitiveAtlas TermURL','MenuSelectedFcn',{@btnCB,'http://www.cognitiveatlas.org/tasks/a/'});
@@ -51,7 +51,7 @@ function [STUDY,com] = pop_taskinfo(STUDY)
     uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionName','Units', 'normalized', 'Position', [0.6 0.26 0.35 0.05]);  
     uicontrol('Style', 'text', 'string', 'Department','fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.2 0.55 0.05]);
     uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionalDepartmentName','Units', 'normalized', 'Position', [0.6 0.2 0.35 0.05]);    
-    uicontrol('Style', 'text', 'string', 'Institution address','fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.14 0.55 0.05]);
+    uicontrol('Style', 'text', 'string', 'Institution address/location','fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.14 0.55 0.05]);
     uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionAddress','Units', 'normalized', 'Position', [0.6 0.14 0.35 0.05]);        
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Help', 'FontSize',13, 'Units', 'normalized', 'Position', [0.05 0.02 0.2 0.05], 'Callback', @helpCB); 
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'FontSize',13, 'Units', 'normalized', 'Position', [0.75 0.02 0.2 0.05], 'Callback', @okCB); 

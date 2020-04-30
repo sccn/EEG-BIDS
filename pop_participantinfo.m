@@ -65,7 +65,7 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
         end
     end
     
-    uicontrol(f, 'Style', 'text', 'String', 'Add BIDS metadata for participants fields', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0.42 0.86 1-0.42 0.1]);
+    uicontrol(f, 'Style', 'text', 'String', 'BIDS metadata for participant fields', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0.42 0.86 1-0.42 0.1]);
     tbl = uitable(f, 'RowName', pFields, 'ColumnName', {'Description' 'Levels' 'Units' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'bidsTable');
     bidsWidth = (1-0.42-0.02);
     tbl.Position = [0.42 0.5 bidsWidth 0.41];
@@ -216,7 +216,7 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
             if strcmp(columnName, 'Levels')
                 createLevelUI('','',obj,field);
             elseif strcmp(columnName, 'Description')
-                uicontrol(f, 'Style', 'text', 'String', sprintf('%s (%s):',columnName, 'Full description of the field'), 'Units', 'normalized', 'Position',[0.42 0.43 0.68 0.05], 'HorizontalAlignment', 'left','FontAngle','italic','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'cellContentHeader');
+                uicontrol(f, 'Style', 'text', 'String', sprintf('%s (%s):',columnName, 'full description of the field'), 'Units', 'normalized', 'Position',[0.42 0.43 0.68 0.05], 'HorizontalAlignment', 'left','FontAngle','italic','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'cellContentHeader');
                 uicontrol(f, 'Style', 'edit', 'String', obj.Source.Data{row,col}, 'Units', 'normalized', 'Max',2,'Min',0,'Position',[0.42 0.23 0.5 0.2], 'HorizontalAlignment', 'left', 'Callback', {@descriptionCB, obj,field}, 'Tag', 'cellContentMsg');
             end
         end
@@ -381,11 +381,11 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
                 pBIDS.Group.Units = '';
                 pBIDS.Group.Levels = [];
             elseif strcmp(pFields{idx}, 'HeadCircumference')
-                pBIDS.HeadCircumference.Description = 'Subject Head Circumference';
+                pBIDS.HeadCircumference.Description = ' Participant head circumference';
                 pBIDS.HeadCircumference.Units = 'cm';
                 pBIDS.HeadCircumference.Levels = 'n/a';
             elseif strcmp(pFields{idx}, 'SubjectArtefactDescription')
-                pBIDS.SubjectArtefactDescription.Description = 'Description of artefact pertaining to the subject';
+                pBIDS.SubjectArtefactDescription.Description = 'Notes pertaining to this subject/file (artifacts...)';
                 pBIDS.SubjectArtefactDescription.Units = '';
                 pBIDS.SubjectArtefactDescription.Levels = 'n/a';
 %                 else

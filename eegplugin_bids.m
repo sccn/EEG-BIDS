@@ -28,14 +28,30 @@ function vers = eegplugin_bids(fig, trystrs, catchstrs)
     % ---------------------
     menui1 = findobj(fig, 'tag', 'import data');
     menui2 = findobj(fig, 'tag', 'export');
+    menui3 = findobj(fig, 'label', 'File');
     
     % menu callbacks
     % --------------
     comcnt1 = [ trystrs.no_check '[STUDYTMP, ALLEEGTMP, ~, LASTCOM] = pop_importbids; '  catchstrs.load_study ];
-    comcnt2 = [ trystrs.no_check 'pop_exportbids(STUDY);' catchstrs.add_to_hist ];
+    comcnt2 = [ trystrs.no_check 'pop_exportbids(STUDY, ALLEEG);' catchstrs.add_to_hist ];
                 
     % create menus
     % ------------
     uimenu( menui1, 'label', 'From BIDS folder structure', 'separator', 'on', 'callback', comcnt1);
     uimenu( menui2, 'label', 'To BIDS folder structure', 'separator', 'on', 'callback', comcnt2, 'userdata', 'startup:off;study:on');
     set(menui2, 'userdata', 'startup:off;study:on');
+
+    % create BIDS menus
+    % -----------------
+    comtaskinfo  = '[STUDY,COM] = pop_taskinfo(STUDY);';
+    comeeginfo   = '[ALLEEG,COM] = pop_eegacqinfo(ALLEEG);';
+    comsubjinfo  = '[ALLEEG,COM] = pop_participantinfo(ALLEEG);';
+    comeventinfo = '[ALLEEG,COM] = pop_eventinfo(ALLEEG);';
+    bids = uimenu( menui3, 'label', 'BIDS tools', 'separator', 'on', 'position', 5, 'userdata', 'startup:on;study:on');
+    
+    uimenu( bids, 'label', 'Edit BIDS task info (STUDY required)', 'callback', comtaskinfo, 'userdata', 'study:on');
+    uimenu( bids, 'label', 'Edit BIDS EEG system info', 'callback', comeeginfo, 'userdata', 'study:on');
+    uimenu( bids, 'label', 'Edit BIDS participant info', 'callback', comsubjinfo, 'userdata', 'study:on');
+    uimenu( bids, 'label', 'Edit BIDS event info', 'callback', comeventinfo, 'userdata', 'study:on');
+    uimenu( bids, 'label', 'Import BIDS folder to STUDY', 'separator', 'on', 'callback', comcnt1);
+    uimenu( bids, 'label', 'Export STUDY to BIDS folder', 'callback', comcnt2, 'userdata', 'startup:off;study:on');
