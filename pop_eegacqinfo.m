@@ -53,7 +53,7 @@ function [ALLEEG,com] = pop_eegacqinfo(ALLEEG, varargin)
     uicontrol('Style', 'text', 'string', 'EEG placement scheme (i.e. 10-20)', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.59 0.4 0.05]);
     uicontrol('Style', 'edit', 'string', '','tag', 'EEGEEGPlacementScheme', 'Units', 'normalized', 'Position', [0.78 0.59 0.2 0.05], 'Callback', @editedCB);
     uicontrol('Style', 'text', 'string', 'Amplifier manufacturer', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.53 0.4 0.05]);
-    uicontrol('Style', 'edit', 'string', '','tag', 'Manufacturer', 'Units', 'normalized', 'Position', [0.78 0.53 0.2 0.05]);    
+    uicontrol('Style', 'edit', 'string', '','tag', 'Manufacturer', 'Units', 'normalized', 'Position', [0.78 0.53 0.2 0.05], 'Callback', @editedCB);    
     uicontrol('Style', 'text', 'string', 'Amplifier model', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.47 0.4 0.05], 'Callback', @editedCB);
     uicontrol('Style', 'edit', 'string', '','tag', 'ManufacturersModelName', 'Units', 'normalized', 'Position', [0.78 0.47 0.2 0.05], 'Callback', @editedCB); 
     uicontrol('Style', 'text', 'string', 'Amplifier serial number', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.41 0.4 0.05]);
@@ -99,7 +99,7 @@ function [ALLEEG,com] = pop_eegacqinfo(ALLEEG, varargin)
        end
        h = findobj('tag', 'EEGreference');
        h = h(1);
-       if ~strcmp(selected, 'All') && isempty(h.String)
+       if ~strcmp(selected, 'All') && isempty(eegBIDS(strcmp({eegBIDS.filename}, selected)).tInfo.EEGreference)
            h.String = ALLEEG(strcmp(sets,selected)).ref;
            tmpsrc = [];
            tmpsrc.Style = 'edit';
