@@ -246,7 +246,7 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
         removeLevelUI();
         lvlHeight = 0.43;
         if numel(ALLEEG) == 1
-            uicontrol(f, 'Style', 'text', 'String', 'Levels specification does not apply to single dataset.', 'Units', 'normalized', 'Position', [0.42 lvlHeight bidsWidth 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
+            uicontrol(f, 'Style', 'text', 'String', 'Documentation of levels does not apply to single dataset - edit at the study level.', 'Units', 'normalized', 'Position', [0.42 lvlHeight bidsWidth 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
         elseif strcmp(field, 'Participant_ID') || strcmp(field, 'Age')
             uicontrol(f, 'Style', 'text', 'String', 'Levels editing does not apply to this field.', 'Units', 'normalized', 'Position', [0.42 lvlHeight bidsWidth 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
         else
