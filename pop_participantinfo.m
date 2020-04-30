@@ -142,7 +142,8 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
 
     %% callback handle for Add Column button
     function addColumnCB(src, event, pInfoTbl, bidsTbl)
-        answer = inputdlg("Enter new field name, no space allowed:", 'New field name');
+        opts.Interpreter = 'tex';
+        answer = inputdlg("\fontsize{13} Enter new column name, no space allowed:", 'New column name',1,{''}, opts);
         
         if ~isempty(answer)
             % input validation
