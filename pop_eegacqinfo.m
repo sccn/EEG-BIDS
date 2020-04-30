@@ -39,33 +39,46 @@ function [ALLEEG,com] = pop_eegacqinfo(ALLEEG, varargin)
     else
         listboxString = ['All' sets];
     end
-    uicontrol('Style', 'text', 'string', 'Select set', 'Units', 'normalized','FontSize',13,'FontWeight','bold','BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.03 0.9 0.4 0.05]);
+    uicontrol('Style', 'text', 'string', 'Which file is the info for?', 'Units', 'normalized','FontSize',13,'FontWeight','bold','BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.03 0.9 0.4 0.05]);
     fileList = uicontrol(f, 'Style', 'listbox', 'String', listboxString, 'Units', 'normalized', 'Position', [0.03 0.1 0.3 0.8], 'Callback', @listSelectCB);
     uicontrol('Style', 'text', 'string', 'Add BIDS EEG acquisition information', 'Units', 'normalized','FontSize',13,'FontWeight','bold','BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.9 0.4 0.05]);
-    uicontrol('Style', 'text', 'string', 'Cap manufacturer', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.83 0.4 0.05]);
-    uicontrol('Style', 'edit', 'string', '','tag', 'CapManufacturer', 'Units', 'normalized', 'Position', [0.78 0.83 0.2 0.05], 'Callback', @editedCB);
-    uicontrol('Style', 'text', 'string', 'Cap model name', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.77 0.4 0.05]);
-    uicontrol('Style', 'edit', 'string', '','tag', 'CapManufacturersModelName', 'Units', 'normalized', 'Position', [0.78 0.77 0.2 0.05], 'Callback', @editedCB);
-    uicontrol('Style', 'text', 'string', 'EEG reference', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.71 0.4 0.05]);
-    uicontrol('Style', 'edit', 'string', '','tag', 'EEGreference', 'Units', 'normalized', 'Position', [0.78 0.71 0.2 0.05], 'Callback', @editedCB);
-    uicontrol('Style', 'text', 'string', 'EEG ground', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.65 0.4 0.05]);
-    uicontrol('Style', 'edit', 'string', '','tag', 'EEGGround', 'Units', 'normalized', 'Position', [0.78 0.65 0.2 0.05], 'Callback', @editedCB);
-    uicontrol('Style', 'text', 'string', 'EEG placement scheme (i.e. 10-20)', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.59 0.4 0.05]);
-    uicontrol('Style', 'edit', 'string', '','tag', 'EEGEEGPlacementScheme', 'Units', 'normalized', 'Position', [0.78 0.59 0.2 0.05], 'Callback', @editedCB);
-    uicontrol('Style', 'text', 'string', 'Amplifier manufacturer', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.53 0.4 0.05]);
-    uicontrol('Style', 'edit', 'string', '','tag', 'Manufacturer', 'Units', 'normalized', 'Position', [0.78 0.53 0.2 0.05], 'Callback', @editedCB);    
-    uicontrol('Style', 'text', 'string', 'Amplifier model', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.47 0.4 0.05], 'Callback', @editedCB);
-    uicontrol('Style', 'edit', 'string', '','tag', 'ManufacturersModelName', 'Units', 'normalized', 'Position', [0.78 0.47 0.2 0.05], 'Callback', @editedCB); 
-    uicontrol('Style', 'text', 'string', 'Amplifier serial number', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.41 0.4 0.05]);
-    uicontrol('Style', 'edit', 'string', '','tag', 'DeviceSerialNumber', 'Units', 'normalized', 'Position', [0.78 0.41 0.2 0.05], 'Callback', @editedCB);    
-    uicontrol('Style', 'text', 'string', 'Acquisition software version', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.35 0.4 0.05]);
-    uicontrol('Style', 'edit', 'string', '','tag', 'SoftwareVersions', 'Units', 'normalized', 'Position', [0.78 0.35 0.2 0.05], 'Callback', @editedCB);    
-    uicontrol('Style', 'text', 'string', 'Hardware filters', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.29 0.4 0.05]);
-    uicontrol('Style', 'edit', 'string', '','tag', 'HardwareFilters', 'Units', 'normalized', 'Position', [0.78 0.29 0.2 0.05], 'Callback', @editedCB);   
-    uicontrol('Style', 'text', 'string', 'Software filters (freeform explanation)', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.23 0.4 0.05]);
-    uicontrol('Style', 'edit', 'string', '','tag', 'SoftwareFilters', 'Units', 'normalized', 'Position', [0.78 0.23 0.2 0.05], 'Callback', @editedCB); 
-    uicontrol('Style', 'text', 'string', 'Country power line frequency', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.17 0.4 0.05]);
-    uicontrol('Style', 'popupmenu', 'string', {'Select','50','60'},'tag', 'PowerLineFrequency', 'Units', 'normalized', 'Position', [0.78 0.17 0.2 0.05], 'Callback', @editedCB); 
+    top = 0.83-0.06;
+    uicontrol('Style', 'text', 'string', 'Cap manufacturer', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'CapManufacturer', 'FontSize',13, 'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB);
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'Cap model', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'CapManufacturersModelName', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB);
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'EEG reference location', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'EEGreference', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB);
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'EEG ground', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'EEGGround', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB);
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'Electrode placements (10-20, 10-10, custom)', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top-0.04 0.4 0.1]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'EEGEEGPlacementScheme', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB);
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'EEG amplifier maker', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'Manufacturer', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB); 
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'EEG amplifier model', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05], 'Callback', @editedCB);
+    uicontrol('Style', 'edit', 'string', '','tag', 'ManufacturersModelName', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB); 
+    top = top-0.06;    
+    uicontrol('Style', 'text', 'string', 'EEG amplifier serial #', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'DeviceSerialNumber', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB);    
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'EEG acquisition software version', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'SoftwareVersions', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB);    
+    top = top-0.06;
+    tooltip = 'Format: "Filter name", "key", val, ...';
+    uicontrol('Style', 'text', 'string', 'Hardware filters', 'Tooltip', tooltip, 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'HardwareFilters','FontSize',13, 'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB);   
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'Software filters (freeform explanation)', 'Tooltip', tooltip, 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'SoftwareFilters', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB); 
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'Line frequency (Hz)', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
+    uicontrol('Style', 'popupmenu', 'string', {'Select','50','60'},'tag', 'PowerLineFrequency', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB); 
     
     % buttons
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Help', 'FontSize',13, 'Units', 'normalized', 'Position', [0.38 0.02 0.12 0.05], 'Callback', @helpCB); 
@@ -73,12 +86,17 @@ function [ALLEEG,com] = pop_eegacqinfo(ALLEEG, varargin)
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'FontSize',13, 'Units', 'normalized', 'Position', [0.7 0.02 0.12 0.05], 'Callback', @cancelCB); 
     
     eegBIDS = newEEGBIDS();
-
+    listSelectCB(fileList,'');
     % wait
     waitfor(f);
     
     function listSelectCB(src,event) 
        selected = src.String{src.Value};
+       if strcmp(selected, 'All')
+           uicontrol(f, 'Style', 'text', 'String', 'These information will be applied to all files unless overwritten by file-specific input', 'Units', 'normalized', 'Position',[0.38 0.83 0.6 0.08], 'HorizontalAlignment', 'left', 'FontSize',13,'FontAngle','italic','ForegroundColor', fg,'BackgroundColor', bg);
+       else
+           uicontrol(f, 'Style', 'text', 'String', 'Overwritting common info with file-specific input', 'Units', 'normalized', 'Position',[0.38 0.83 0.6 0.08], 'HorizontalAlignment', 'left', 'FontSize',13,'FontAngle','italic','ForegroundColor', fg,'BackgroundColor', bg);
+       end
        % update GUI data
        objs = findall(f);
        for o=1:numel(objs)
