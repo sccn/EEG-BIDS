@@ -71,10 +71,10 @@ function [ALLEEG,com] = pop_eegacqinfo(ALLEEG, varargin)
     uicontrol('Style', 'edit', 'string', '','tag', 'SoftwareVersions', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB);    
     top = top-0.06;
     tooltip = 'Format: "Filter name", "key", val, ...';
-    uicontrol('Style', 'text', 'string', 'Hardware filters', 'Tooltip', tooltip, 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
+    uicontrol('Style', 'text', 'string', 'Hardware filters (see tooltip for format)', 'Tooltip', tooltip, 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
     uicontrol('Style', 'edit', 'string', '','tag', 'HardwareFilters','FontSize',13, 'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB);   
     top = top-0.06;
-    uicontrol('Style', 'text', 'string', 'Software filters (freeform explanation)', 'Tooltip', tooltip, 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
+    uicontrol('Style', 'text', 'string', 'Software filters (see tooltip for format)', 'Tooltip', tooltip, 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
     uicontrol('Style', 'edit', 'string', '','tag', 'SoftwareFilters', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB); 
     top = top-0.06;
     uicontrol('Style', 'text', 'string', 'Line frequency (Hz)', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
