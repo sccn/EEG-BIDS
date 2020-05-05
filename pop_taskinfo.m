@@ -26,40 +26,121 @@
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 function [STUDY,com] = pop_taskinfo(STUDY)
-
+    %% Default settings
     bg = [0.65 0.76 1];
     fg = [0 0 0.4];
+    fontSize = 12;
+    tfHeight = 0.04;
+    
     f = figure('MenuBar', 'None', 'ToolBar', 'None', 'Name', 'BIDS task information -- pop_taskinfo()', 'Color', bg, 'IntegerHandle','off');
-    f.Position(3) = 400;
-    f.Position(4) = 650;
-    uicontrol('Style', 'text', 'string', 'Add BIDS task information', 'fontweight', 'bold', 'fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.9 1 0.05]);
-    uicontrol('Style', 'text', 'string', 'Task description (describe experiment):','fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.85 1 0.05]);
-    uicontrol('Style', 'edit', 'string', '', 'tag', 'TaskDescription', 'HorizontalAlignment', 'left', 'max', 3,'Units', 'normalized', 'Position', [0.05 0.68 0.9 0.18]);
-    uicontrol('Style', 'text', 'string', 'Participant instructions (exact as possible):','fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.62 1 0.05]);
-    uicontrol('Style', 'edit', 'string', '', 'tag', 'Instructions', 'HorizontalAlignment', 'left', 'max', 3,'Units', 'normalized', 'Position', [0.05 0.45 0.9 0.18]);
+    f.Position(3) = 1000;
+    f.Position(4) = 700;
+    halfWidth = 0.5;
+
+    %% Generic task info
+    leftMargin = 0.02;
+    fullWidth = halfWidth - leftMargin - 0.04;
+    tfWidth = 0.35*fullWidth;
+    efWidth = 0.63*fullWidth;
+    efLeftMargin = leftMargin + tfWidth + 0.01;
+    top = 0.92;
+    uicontrol('Style', 'text', 'string', 'Add BIDS task information', 'fontweight', 'bold', 'fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top halfWidth 0.05]);
+    top = top - 0.03;
+    uicontrol('Style', 'text', 'string', 'Experiment name','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'Name','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
+    top = top - tfHeight - 0.01;
+    uicontrol('Style', 'text', 'string', 'README (short introduction to the experiment):','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight]);
+    top = top - tfHeight*2.2;
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'README','fontsize',fontSize, 'HorizontalAlignment', 'left', 'max', 3,'Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight*2.5]);
+    top = top - tfHeight - 0.01;
+    uicontrol('Style', 'text', 'string', 'Participant task information (description of the experiment):','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight]);
+    top = top - tfHeight*2.7;
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'TaskDescription','fontsize',fontSize, 'HorizontalAlignment', 'left', 'max', 3,'Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight*3]);
+    top = top - tfHeight - 0.01;
+    uicontrol('Style', 'text', 'string', 'Participant instructions (exact as possible):','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight]);
+    top = top - tfHeight*2.7;
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'Instructions', 'HorizontalAlignment', 'left', 'max', 3,'Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight*3]);
+    top = top - tfHeight - 0.02;
+    uicontrol('Style', 'text', 'string', 'Authors','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'Authors','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
+    top = top - tfHeight - 0.005;
+    uicontrol('Style', 'text', 'string', 'References and links','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'ReferencesAndLinks','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
+    top = top - tfHeight - 0.005;
     cm = uicontextmenu(f);
     m1 = uimenu(cm,'Text','Lookup CognitiveAtlas TermURL','MenuSelectedFcn',{@btnCB,'http://www.cognitiveatlas.org/tasks/a/'});
     tooltip = sprintf('URL of the corresponding Cognitive Atlas term that describes the task.\nRight click to lookup.');
-    uicontrol('Style', 'text', 'string', 'Task-relevant Cognitive Atlas term', 'Tooltip',tooltip,'UIContextMenu', cm,'fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.38 0.55 0.05]);
-    uicontrol('Style', 'edit', 'string', '', 'tag', 'CogAtlasID','Units', 'normalized', 'Position', [0.6 0.38 0.35 0.05]);
+    uicontrol('Style', 'text', 'string', 'Task-relevant Cognitive Atlas term', 'Tooltip',tooltip,'UIContextMenu', cm,'fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top-0.005 tfWidth tfHeight+0.01]);
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'CogAtlasID','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]);
+    top = top - tfHeight - 0.005;
     cm = uicontextmenu(f);
     m1 = uimenu(cm,'Text','Lookup CogPO TermURL','MenuSelectedFcn',{@btnCB,'http://wiki.cogpo.org/index.php?title=Main_Page'});
     tooltip = sprintf('URL of the corresponding CogPO term that describes the task.\nRight click to lookup.');
-    uicontrol('Style', 'text', 'string', 'Task-relevant CogPO term', 'Tooltip',tooltip,'UIContextMenu', cm,'fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.32 0.55 0.05]);
-    uicontrol('Style', 'edit', 'string', '', 'tag', 'CogPOID','Units', 'normalized', 'Position', [0.6 0.32 0.35 0.05]);
-    uicontrol('Style', 'text', 'string', 'Institution','fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.26 0.55 0.05]);
-    uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionName','Units', 'normalized', 'Position', [0.6 0.26 0.35 0.05]);  
-    uicontrol('Style', 'text', 'string', 'Department','fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.2 0.55 0.05]);
-    uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionalDepartmentName','Units', 'normalized', 'Position', [0.6 0.2 0.35 0.05]);    
-    uicontrol('Style', 'text', 'string', 'Institution address','fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [0.05 0.14 0.55 0.05]);
-    uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionAddress','Units', 'normalized', 'Position', [0.6 0.14 0.35 0.05]);        
-    uicontrol(f, 'Style', 'pushbutton', 'String', 'Help', 'FontSize',13, 'Units', 'normalized', 'Position', [0.05 0.02 0.2 0.05], 'Callback', @helpCB); 
-    uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'FontSize',13, 'Units', 'normalized', 'Position', [0.75 0.02 0.2 0.05], 'Callback', @okCB); 
-    uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'FontSize',13, 'Units', 'normalized', 'Position', [0.5 0.02 0.2 0.05], 'Callback', @cancelCB); 
+    uicontrol('Style', 'text', 'string', 'Task-relevant CogPO term', 'Tooltip',tooltip,'UIContextMenu', cm,'fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top 0.35*fullWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'CogPOID','Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]);
+    top = top - tfHeight - 0.005;
+    uicontrol('Style', 'text', 'string', 'Institution','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionName','Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
+    top = top - tfHeight - 0.005;
+    uicontrol('Style', 'text', 'string', 'Department','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionalDepartmentName','Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]);    
+    top = top - tfHeight - 0.005;    
+    uicontrol('Style', 'text', 'string', 'Institution address','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionAddress','Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]);        
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Help', 'FontSize',fontSize, 'Units', 'normalized', 'Position', [0.05 0.02 0.15 0.04], 'Callback', @helpCB); 
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'FontSize',fontSize, 'Units', 'normalized', 'Position', [0.80 0.02 0.15 0.04], 'Callback', @okCB); 
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'FontSize',fontSize, 'Units', 'normalized', 'Position', [0.64 0.02 0.15 0.04], 'Callback', @cancelCB); 
 
-% history
-com = sprintf('pop_exportbids(STUDY);');
+    %% EEG specific info
+    leftMargin = halfWidth;
+    fullWidth = halfWidth - 0.03;
+    tfWidth = 0.4*fullWidth;
+    efWidth = 0.6*fullWidth;
+    efLeftMargin = leftMargin + tfWidth + 0.01;
+    top = 0.92;
+    uicontrol('Style', 'text', 'string', 'Add BIDS EEG acquisition information', 'Units', 'normalized','FontSize',13,'FontWeight','bold','BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top 0.4 0.05]);
+    top = top-0.03;
+    uicontrol('Style', 'text', 'string', 'Cap manufacturer', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'CapManufacturer', 'FontSize',fontSize, 'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'Cap model', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'CapManufacturersModelName', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'EEG reference location', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'EEGreference', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'EEG ground', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'EEGGround', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'Electrode placements (10-20, 10-10, custom)', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight+0.01]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'EEGEEGPlacementScheme', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'EEG amplifier maker', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'Manufacturer', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB); 
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'EEG amplifier model', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight], 'Callback', @editedCB);
+    uicontrol('Style', 'edit', 'string', '','tag', 'ManufacturersModelName', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB); 
+    top = top-0.06;    
+    uicontrol('Style', 'text', 'string', 'EEG amplifier serial #', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'DeviceSerialNumber', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);    
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'EEG acquisition software version', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'SoftwareVersions', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);    
+    top = top-0.06;
+    tooltip = 'Format: "Filter name", "key", val, ...';
+    uicontrol('Style', 'text', 'string', 'Hardware filters (see tooltip for format)', 'Tooltip', tooltip, 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight+0.002]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'HardwareFilters','FontSize',fontSize, 'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);   
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'Software filters (see tooltip for format)', 'Tooltip', tooltip, 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight+0.002]);
+    uicontrol('Style', 'edit', 'string', '','tag', 'SoftwareFilters', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB); 
+    top = top-0.06;
+    uicontrol('Style', 'text', 'string', 'Line frequency (Hz)', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth 0.05]);
+    uicontrol('Style', 'popupmenu', 'string', {'Select','50','60'},'tag', 'PowerLineFrequency', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth 0.05], 'Callback', @editedCB);
+    
+%% history
+com = sprintf('pop_taskinfo(ALLEG);');
 
+%% Helper functions
     function btnCB(src,event, url)
        web(url);
     end
