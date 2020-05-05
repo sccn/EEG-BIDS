@@ -18,8 +18,8 @@
 % Author: Dung Truong, Arnaud Delorme
 function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
     %% default settings
-    appWidth = 1000;
-    appHeight = 520;
+    appWidth = 1300;
+    appHeight = 600;
     bg = [0.65 0.76 1];
     fg = [0 0 0.4];
     levelThreshold = 20;
@@ -72,11 +72,11 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
     tbl.CellSelectionCallback = @bidsCellSelectedCB;
     tbl.CellEditCallback = @bidsCellEditCB;
     tbl.ColumnEditable = [true false true];
-    tbl.ColumnWidth = {appWidth*bidsWidth*2/5,appWidth*bidsWidth/5,appWidth*bidsWidth/5};
+    tbl.ColumnWidth = {appWidth*bidsWidth*2/6,appWidth*bidsWidth/6,appWidth*bidsWidth/6};
     units = {' ','ampere','becquerel','candela','coulomb','degree Celsius','farad','gray','henry','hertz','joule','katal','kelvin','kilogram','lumen','lux','metre','mole','newton','ohm','pascal','radian','second','siemens','sievert','steradian','tesla','volt','watt','weber'};
     unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
     tbl.ColumnFormat = {[] [] [] [] units unitPrefixes []};
-    
+
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Add column', 'Units', 'normalized', 'Position', [0.4-0.1 0.074 0.1 0.05], 'Callback', {@addColumnCB,pInfoTbl,tbl}, 'Tag', 'addColumnBtn');
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0.02 0.1 0.05], 'Callback', @okCB); 
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0.02 0.1 0.05], 'Callback', @cancelCB); 
@@ -251,6 +251,9 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
             uicontrol(f, 'Style', 'text', 'String', 'Levels editing does not apply to this field.', 'Units', 'normalized', 'Position', [0.42 lvlHeight bidsWidth 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
         else
             pTable = findobj('Tag', 'pInfoTable');
+            if numel(pTable) > 1
+                pTable = pTable(1);
+            end
             colIdx = find(strcmp(pTable.ColumnName, field));
             levelCellText = table.Source.Data{find(strcmp(table.Source.RowName, field)), find(strcmp(table.Source.ColumnName, 'Levels'))}; % text (fieldName-Levels) cell. if 'n/a' then no action, 'Click to..' then conditional action, '<value>,...' then get levels
             % retrieve all unique values
@@ -262,7 +265,9 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
                 idx = cellfun(@isempty, values);
                 levels = unique(values(~idx))';
 %             end
-            if isempty(levels)
+            if strcmp(levelCellText,'n/a')
+                uicontrol(f, 'Style', 'text', 'String', 'Levels editing does not apply to this field.', 'Units', 'normalized', 'Position', [0.42 lvlHeight bidsWidth 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
+            elseif isempty(levels)
                 uicontrol(f, 'Style', 'text', 'String', 'No value found. Please specify values in Participant information table.', 'Units', 'normalized', 'Position', [0.42 lvlHeight 0.58 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
             elseif strcmp('Click to specify', levelCellText) && length(levels) > levelThreshold 
                 msg = sprintf('\tThere are more than %d unique levels for field %s.\nAre you sure you want to specify levels for it?', levelThreshold, field);
@@ -385,7 +390,7 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
                 pBIDS.HeadCircumference.Units = 'cm';
                 pBIDS.HeadCircumference.Levels = 'n/a';
             elseif strcmp(pFields{idx}, 'SubjectArtefactDescription')
-                pBIDS.SubjectArtefactDescription.Description = 'Notes pertaining to this subject/file (artifacts...)';
+                pBIDS.SubjectArtefactDescription.Description = 'Free-form description of the observed subject artifact and its possible cause (e.g., "Vagus Nerve Stimulator", "non-removable implant").';
                 pBIDS.SubjectArtefactDescription.Units = '';
                 pBIDS.SubjectArtefactDescription.Levels = 'n/a';
 %                 else
