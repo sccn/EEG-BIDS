@@ -158,11 +158,15 @@ function [ALLEEG,com] = pop_taskinfo(ALLEEG)
         for a=1:numel(ALLEEG)
             bids = [];
             tInfo = [];
+            gInfo = [];
             % preserve current BIDS info if have
             if isfield(ALLEEG(a), 'BIDS')
                 bids = ALLEEG(a).BIDS;
                 if isfield(bids, 'tInfo')
                     tInfo = bids.tInfo;
+                end
+                if isfield(bids, 'gInfo')
+                    gInfo = bids.gInfo;
                 end
             end
             % update tInfo from input fields
@@ -170,16 +174,21 @@ function [ALLEEG,com] = pop_taskinfo(ALLEEG)
             for i=1:numel(objs)
                 if ~isempty(objs(i).Tag)
                     if ~isempty(objs(i).String)
-                        if strcmp(objs(i).Style, 'popupmenu') && objs(i).Value > 1 % dropdown
-                            tInfo.(objs(i).Tag) = objs(i).String{objs(i).Value};
+                        if strcmp(objs(i).Tag, 'README') || strcmp(objs(i).Tag, 'Name') || strcmp(objs(i).Tag, 'ReferencesAndLinks') || strcmp(objs(i).Tag, 'Authors')
+                            gInfo.(objs(i).Tag) = objs(i).String;
                         else
-                            tInfo.(objs(i).Tag) = objs(i).String;
+                            if strcmp(objs(i).Style, 'popupmenu') && objs(i).Value > 1 % dropdown
+                                tInfo.(objs(i).Tag) = objs(i).String{objs(i).Value};
+                            else
+                                tInfo.(objs(i).Tag) = objs(i).String;
+                            end
                         end
                     end
                 end
             end
             % update BIDS structure
             bids.tInfo = tInfo;
+            bids.gInfo = gInfo;
             ALLEEG(a).BIDS = bids;
         end
         close(f);
