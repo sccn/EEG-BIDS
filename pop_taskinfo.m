@@ -1,10 +1,10 @@
 % pop_taskinfo() - BIDS task information
 %
 % Usage:
-%     STUDY = pop_taskinfo(STUDY);
+%     EEG = pop_taskinfo(EEG);
 %
 % Inputs:
-%   STUDY - EEGLAB study
+%     EEG - EEGLAB dataset or group of dataset
 %
 %
 % Authors: Arnaud Delorme, Dung Truong SCCN, INC, UCSD, 2020
@@ -25,7 +25,7 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-function [STUDY,com] = pop_taskinfo(STUDY)
+function [ALLEEG,com] = pop_taskinfo(ALLEEG)
     %% Default settings
     bg = [0.65 0.76 1];
     fg = [0 0 0.4];
@@ -44,7 +44,7 @@ function [STUDY,com] = pop_taskinfo(STUDY)
     efWidth = 0.63*fullWidth;
     efLeftMargin = leftMargin + tfWidth + 0.01;
     top = 0.92;
-    uicontrol('Style', 'text', 'string', 'Add BIDS task information', 'fontweight', 'bold', 'fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top halfWidth 0.05]);
+    uicontrol('Style', 'text', 'string', 'BIDS task information', 'fontweight', 'bold', 'fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top halfWidth 0.05]);
     top = top - 0.03;
     uicontrol('Style', 'text', 'string', 'Experiment name','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '', 'tag', 'Name','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
@@ -53,11 +53,11 @@ function [STUDY,com] = pop_taskinfo(STUDY)
     top = top - tfHeight*2.2;
     uicontrol('Style', 'edit', 'string', '', 'tag', 'README','fontsize',fontSize, 'HorizontalAlignment', 'left', 'max', 3,'Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight*2.5]);
     top = top - tfHeight - 0.01;
-    uicontrol('Style', 'text', 'string', 'Participant task information (description of the experiment):','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight]);
+    uicontrol('Style', 'text', 'string', 'Participant task description (description of the experiment):','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight]);
     top = top - tfHeight*2.7;
     uicontrol('Style', 'edit', 'string', '', 'tag', 'TaskDescription','fontsize',fontSize, 'HorizontalAlignment', 'left', 'max', 3,'Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight*3]);
     top = top - tfHeight - 0.01;
-    uicontrol('Style', 'text', 'string', 'Participant instructions (exact as possible):','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight]);
+    uicontrol('Style', 'text', 'string', 'Participant instructions (as exact as possible):','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight]);
     top = top - tfHeight*2.7;
     uicontrol('Style', 'edit', 'string', '', 'tag', 'Instructions', 'HorizontalAlignment', 'left', 'max', 3,'Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight*3]);
     top = top - tfHeight - 0.02;
@@ -77,16 +77,16 @@ function [STUDY,com] = pop_taskinfo(STUDY)
     m1 = uimenu(cm,'Text','Lookup CogPO TermURL','MenuSelectedFcn',{@btnCB,'http://wiki.cogpo.org/index.php?title=Main_Page'});
     tooltip = sprintf('URL of the corresponding CogPO term that describes the task.\nRight click to lookup.');
     uicontrol('Style', 'text', 'string', 'Task-relevant CogPO term', 'Tooltip',tooltip,'UIContextMenu', cm,'fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top 0.35*fullWidth tfHeight]);
-    uicontrol('Style', 'edit', 'string', '', 'tag', 'CogPOID','Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'CogPOID','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]);
     top = top - tfHeight - 0.005;
     uicontrol('Style', 'text', 'string', 'Institution','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
-    uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionName','Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionName','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
     top = top - tfHeight - 0.005;
     uicontrol('Style', 'text', 'string', 'Department','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
-    uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionalDepartmentName','Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]);    
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionalDepartmentName','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]);    
     top = top - tfHeight - 0.005;    
-    uicontrol('Style', 'text', 'string', 'Institution address','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
-    uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionAddress','Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]);        
+    uicontrol('Style', 'text', 'string', 'Institution location','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionAddress','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]);        
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Help', 'FontSize',fontSize, 'Units', 'normalized', 'Position', [0.05 0.02 0.15 0.04], 'Callback', @helpCB); 
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'FontSize',fontSize, 'Units', 'normalized', 'Position', [0.80 0.02 0.15 0.04], 'Callback', @okCB); 
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'FontSize',fontSize, 'Units', 'normalized', 'Position', [0.64 0.02 0.15 0.04], 'Callback', @cancelCB); 
@@ -98,7 +98,7 @@ function [STUDY,com] = pop_taskinfo(STUDY)
     efWidth = 0.6*fullWidth;
     efLeftMargin = leftMargin + tfWidth + 0.01;
     top = 0.92;
-    uicontrol('Style', 'text', 'string', 'Add BIDS EEG acquisition information', 'Units', 'normalized','FontSize',13,'FontWeight','bold','BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top 0.4 0.05]);
+    uicontrol('Style', 'text', 'string', 'BIDS EEG acquisition information', 'Units', 'normalized','FontSize',13,'FontWeight','bold','BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top 0.4 0.05]);
     top = top-0.03;
     uicontrol('Style', 'text', 'string', 'Cap manufacturer', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '','tag', 'CapManufacturer', 'FontSize',fontSize, 'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
@@ -109,10 +109,10 @@ function [STUDY,com] = pop_taskinfo(STUDY)
     uicontrol('Style', 'text', 'string', 'EEG reference location', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '','tag', 'EEGreference', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
     top = top-0.06;
-    uicontrol('Style', 'text', 'string', 'EEG ground', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'text', 'string', 'EEG ground electrode location', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '','tag', 'EEGGround', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
     top = top-0.06;
-    uicontrol('Style', 'text', 'string', 'Electrode placements (10-20, 10-10, custom)', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight+0.01]);
+    uicontrol('Style', 'text', 'string', 'EEG montage system (10-20, 10-10, custom)', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight+0.01]);
     uicontrol('Style', 'edit', 'string', '','tag', 'EEGEEGPlacementScheme', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
     top = top-0.06;
     uicontrol('Style', 'text', 'string', 'EEG amplifier maker', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
@@ -127,7 +127,7 @@ function [STUDY,com] = pop_taskinfo(STUDY)
     uicontrol('Style', 'text', 'string', 'EEG acquisition software version', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '','tag', 'SoftwareVersions', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);    
     top = top-0.06;
-    tooltip = 'Format: "Filter name", "key", val, ...';
+    tooltip = '"Filter name", "key", val, ...';
     uicontrol('Style', 'text', 'string', 'Hardware filters (see tooltip for format)', 'Tooltip', tooltip, 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight+0.002]);
     uicontrol('Style', 'edit', 'string', '','tag', 'HardwareFilters','FontSize',fontSize, 'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);   
     top = top-0.06;
@@ -137,8 +137,15 @@ function [STUDY,com] = pop_taskinfo(STUDY)
     uicontrol('Style', 'text', 'string', 'Line frequency (Hz)', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth 0.05]);
     uicontrol('Style', 'popupmenu', 'string', {'Select','50','60'},'tag', 'PowerLineFrequency', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth 0.05], 'Callback', @editedCB);
     
-%% history
-com = sprintf('pop_taskinfo(ALLEG);');
+    % prefill data
+    preFill()
+    
+    % wait
+    waitfor(f);
+    
+    %% history
+    com = sprintf('pop_taskinfo(ALLEG);');
+
 
 %% Helper functions
     function btnCB(src,event, url)
@@ -148,30 +155,84 @@ com = sprintf('pop_taskinfo(ALLEG);');
         pophelp('pop_taskinfo');
     end
     function okCB(src,event)
-        bids = [];
-        tInfo = [];
-        % preserve current BIDS info if have
-        if isfield(STUDY, 'BIDS')
-            bids = STUDY.BIDS;
-            if isfield(bids, 'tInfo')
-                tInfo = bids.tInfo;
-            end
-        end
-        % update tInfo from input fields
-        objs = findall(f);
-        for i=1:numel(objs)
-            if ~isempty(objs(i).Tag)
-                if ~isempty(objs(i).String)
-                    tInfo.(objs(i).Tag) = objs(i).String;
+        for a=1:numel(ALLEEG)
+            bids = [];
+            tInfo = [];
+            % preserve current BIDS info if have
+            if isfield(ALLEEG(a), 'BIDS')
+                bids = ALLEEG(a).BIDS;
+                if isfield(bids, 'tInfo')
+                    tInfo = bids.tInfo;
                 end
             end
+            % update tInfo from input fields
+            objs = findall(f);
+            for i=1:numel(objs)
+                if ~isempty(objs(i).Tag)
+                    if ~isempty(objs(i).String)
+                        if strcmp(objs(i).Style, 'popupmenu') && objs(i).Value > 1 % dropdown
+                            tInfo.(objs(i).Tag) = objs(i).String{objs(i).Value};
+                        else
+                            tInfo.(objs(i).Tag) = objs(i).String;
+                        end
+                    end
+                end
+            end
+            % update BIDS structure
+            bids.tInfo = tInfo;
+            ALLEEG(a).BIDS = bids;
         end
-        % update STUDY BIDS structure
-        bids.tInfo = tInfo;
-        STUDY.BIDS = bids;
         close(f);
     end
     function cancelCB(src, event)
         close(f);
+    end
+    function preFill()
+        prevtInfo = gettInfo(ALLEEG);
+        if ~isempty(prevtInfo)
+            objs = findall(f);
+            for i=1:numel(objs)
+                if ~isempty(objs(i).Tag) && isfield(prevtInfo, objs(i).Tag)
+                    if strcmp(objs(i).Style, 'popupmenu') % dropdown
+                        objs(i).Value = find(strcmp(objs(i).String, prevtInfo.(objs(i).Tag))); % set position of dropdown menu to the appropriate string
+                    else
+                        objs(i).String = prevtInfo.(objs(i).Tag);
+                    end
+                end
+            end
+        end
+    end
+
+    function tInfo = gettInfo(ALLEEG)
+        hasBIDS = arrayfun(@(x) isfield(x,'BIDS') && ~isempty(x.BIDS),ALLEEG);
+        if sum(hasBIDS) == 0 %if no BIDS found for any ALLEEG
+            tInfo = [];
+        else % at least one EEG has BIDS
+            if sum(hasBIDS) < numel(ALLEEG) % not all have BIDS
+                warning('Not all EEG contains BIDS information.');
+            end
+            hastInfo = arrayfun(@(x) isfield(x,'BIDS') && isfield(x.BIDS,'tInfo') && ~isempty(x.BIDS.tInfo),ALLEEG);
+            if sum(hasBIDS) == 0
+                tInfo = [];
+            else % at least one EEG has BIDS.tInfo
+                try
+                    bids = [ALLEEG(hastInfo).BIDS];
+                    alltInfo = [bids.tInfo];
+                    if numel(alltInfo) < numel(ALLEEG)
+                        tInfo = ALLEEG(find(hastInfo,1)).BIDS.tInfo;
+                        warning('Not all EEG contains tInfo structure. Using tInfo of ALLEEG(%d)...',find(hastInfo,1));
+                    else
+                        tInfo = alltInfo(1);
+                        fprintf('Using tInfo of ALLEEG(1)...\n');
+                    end
+                catch % field inconsistent
+                    tInfo = ALLEEG(find(hastInfo,1)).BIDS.tInfo;
+                    warning('Inconsistence found in tInfo structures. Using tInfo of ALLEEG(%d)...',find(hastInfo,1));
+                end
+            end
+        end
+    end
+
+    function editedCB(src,event)
     end
 end
