@@ -24,7 +24,7 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
     fg = [0 0 0.4];
     levelThreshold = 20;
     fontSize = 12;
-    pFields = { 'Participant_ID' 'Gender' 'Age' 'Group' 'HeadCircumference' 'SubjectArtefactDescription'};
+    pFields = { 'Participant_ID' 'Gender' 'Age' 'Group'};
     pInfoBIDS = newpInfoBIDS();    
 %     pInfo = {};
     pInfoDesc = [];
@@ -38,8 +38,8 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
     f.Position(3) = appWidth;
     f.Position(4) = appHeight;
     uicontrol(f, 'Style', 'text', 'String', 'Participant information', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0 0.86 0.4 0.1]);
-    pInfoTbl = uitable(f, 'RowName',[],'ColumnName', ['filepath' pFields], 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'pInfoTable', 'ColumnEditable', true);
-    pInfoTbl.Data = cell(numel(ALLEEG), 1+length(pFields));
+    pInfoTbl = uitable(f, 'RowName',[],'ColumnName', ['filepath' pFields  'HeadCircumference' 'SubjectArtefactDescription'], 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'pInfoTable', 'ColumnEditable', true);
+    pInfoTbl.Data = cell(numel(ALLEEG), 3+length(pFields));
     pInfoTbl.Position = [0.02 0.124 0.38 0.786];
     pInfoTbl.CellSelectionCallback = @pInfoCellSelectedCB;
     pInfoTbl.CellEditCallback = @pInfoCellEditCB;
@@ -72,7 +72,7 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
     tbl.CellSelectionCallback = @bidsCellSelectedCB;
     tbl.CellEditCallback = @bidsCellEditCB;
     tbl.ColumnEditable = [true false true];
-    tbl.ColumnWidth = {appWidth*bidsWidth*2/6,appWidth*bidsWidth/6,appWidth*bidsWidth/6};
+    tbl.ColumnWidth = {appWidth*bidsWidth*2/5,appWidth*bidsWidth/5,appWidth*bidsWidth/5};
     units = {' ','ampere','becquerel','candela','coulomb','degree Celsius','farad','gray','henry','hertz','joule','katal','kelvin','kilogram','lumen','lux','metre','mole','newton','ohm','pascal','radian','second','siemens','sievert','steradian','tesla','volt','watt','weber'};
     unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
     tbl.ColumnFormat = {[] [] [] [] units unitPrefixes []};
@@ -131,8 +131,18 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
             command = '[ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG);';
         end
         for e=1:numel(ALLEEG)
+            if ~isfield(ALLEEG(e),'BIDS')
+                ALLEEG(e).BIDS = [];
+            end
+            tInfo = [];
+            if isfield(ALLEEG(e).BIDS,'tInfo')
+                tInfo = ALLEEG(e).BIDS.tInfo;
+            end
+            tInfo.HeadCircumference = pTable.Data{e,end-1};
+            tInfo.SubjectArtefactDescription = pTable.Data{e,end};
+            ALLEEG(e).BIDS.tInfo = tInfo;
             ALLEEG(e).BIDS.pInfoDesc = pInfoDesc;
-            ALLEEG(e).BIDS.pInfo = [pFields; pTable.Data(e,2:end)];
+            ALLEEG(e).BIDS.pInfo = [pFields; pTable.Data(e,2:end-2)];
             ALLEEG(e).history = [ALLEEG(e).history command];
         end       
         
@@ -385,14 +395,14 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
                 pBIDS.Group.Description = 'Participant group label';
                 pBIDS.Group.Units = '';
                 pBIDS.Group.Levels = [];
-            elseif strcmp(pFields{idx}, 'HeadCircumference')
-                pBIDS.HeadCircumference.Description = ' Participant head circumference';
-                pBIDS.HeadCircumference.Units = 'cm';
-                pBIDS.HeadCircumference.Levels = 'n/a';
-            elseif strcmp(pFields{idx}, 'SubjectArtefactDescription')
-                pBIDS.SubjectArtefactDescription.Description = 'Free-form description of the observed subject artifact and its possible cause (e.g., "Vagus Nerve Stimulator", "non-removable implant").';
-                pBIDS.SubjectArtefactDescription.Units = '';
-                pBIDS.SubjectArtefactDescription.Levels = 'n/a';
+%             elseif strcmp(pFields{idx}, 'HeadCircumference')
+%                 pBIDS.HeadCircumference.Description = ' Participant head circumference';
+%                 pBIDS.HeadCircumference.Units = 'cm';
+%                 pBIDS.HeadCircumference.Levels = 'n/a';
+%             elseif strcmp(pFields{idx}, 'SubjectArtefactDescription')
+%                 pBIDS.SubjectArtefactDescription.Description = 'Free-form description of the observed subject artifact and its possible cause (e.g., "Vagus Nerve Stimulator", "non-removable implant").';
+%                 pBIDS.SubjectArtefactDescription.Units = '';
+%                 pBIDS.SubjectArtefactDescription.Levels = 'n/a';
 %                 else
 %                     event.(fields{idx}).BIDSField = '';
 %                     event.(fields{idx}).LongName = '';
