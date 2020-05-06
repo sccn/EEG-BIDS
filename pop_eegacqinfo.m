@@ -41,7 +41,7 @@ function [ALLEEG,com] = pop_eegacqinfo(ALLEEG, varargin)
     end
     uicontrol('Style', 'text', 'string', 'Which file is the info for?', 'Units', 'normalized','FontSize',13,'FontWeight','bold','BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.03 0.9 0.4 0.05]);
     fileList = uicontrol(f, 'Style', 'listbox', 'String', listboxString, 'Units', 'normalized', 'Position', [0.03 0.1 0.3 0.8], 'Callback', @listSelectCB);
-    uicontrol('Style', 'text', 'string', 'Add BIDS EEG acquisition information', 'Units', 'normalized','FontSize',13,'FontWeight','bold','BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.9 0.4 0.05]);
+    uicontrol('Style', 'text', 'string', 'BIDS EEG acquisition information', 'Units', 'normalized','FontSize',13,'FontWeight','bold','BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 0.9 0.4 0.05]);
     top = 0.83-0.06;
     uicontrol('Style', 'text', 'string', 'Cap manufacturer', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
     uicontrol('Style', 'edit', 'string', '','tag', 'CapManufacturer', 'FontSize',13, 'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB);
@@ -49,13 +49,13 @@ function [ALLEEG,com] = pop_eegacqinfo(ALLEEG, varargin)
     uicontrol('Style', 'text', 'string', 'Cap model', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
     uicontrol('Style', 'edit', 'string', '','tag', 'CapManufacturersModelName', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB);
     top = top-0.06;
-    uicontrol('Style', 'text', 'string', 'EEG reference location', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
+    uicontrol('Style', 'text', 'string', 'Reference electrode location', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
     uicontrol('Style', 'edit', 'string', '','tag', 'EEGreference', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB);
     top = top-0.06;
-    uicontrol('Style', 'text', 'string', 'EEG ground', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
+    uicontrol('Style', 'text', 'string', 'EEG ground electrode location', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
     uicontrol('Style', 'edit', 'string', '','tag', 'EEGGround', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB);
     top = top-0.06;
-    uicontrol('Style', 'text', 'string', 'Electrode placements (10-20, 10-10, custom)', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top-0.04 0.4 0.1]);
+    uicontrol('Style', 'text', 'string', 'EEG montage (10-20, 10-10, custom)', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top-0.04 0.4 0.1]);
     uicontrol('Style', 'edit', 'string', '','tag', 'EEGEEGPlacementScheme', 'FontSize',13,'Units', 'normalized', 'Position', [0.78 top 0.2 0.05], 'Callback', @editedCB);
     top = top-0.06;
     uicontrol('Style', 'text', 'string', 'EEG amplifier maker', 'Units', 'normalized','FontSize',13,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [0.38 top 0.4 0.05]);
@@ -93,7 +93,7 @@ function [ALLEEG,com] = pop_eegacqinfo(ALLEEG, varargin)
     function listSelectCB(src,event) 
        selected = src.String{src.Value};
        if strcmp(selected, 'All')
-           uicontrol(f, 'Style', 'text', 'String', 'These information will be applied to all files unless overwritten by file-specific input', 'Units', 'normalized', 'Position',[0.38 0.83 0.6 0.08], 'HorizontalAlignment', 'left', 'FontSize',13,'FontAngle','italic','ForegroundColor', fg,'BackgroundColor', bg);
+           uicontrol(f, 'Style', 'text', 'String', 'This information will be applied to all files unless overwritten by file-specific input', 'Units', 'normalized', 'Position',[0.38 0.83 0.6 0.08], 'HorizontalAlignment', 'left', 'FontSize',13,'FontAngle','italic','ForegroundColor', fg,'BackgroundColor', bg);
        else
            uicontrol(f, 'Style', 'text', 'String', 'Overwritting common info with file-specific input', 'Units', 'normalized', 'Position',[0.38 0.83 0.6 0.08], 'HorizontalAlignment', 'left', 'FontSize',13,'FontAngle','italic','ForegroundColor', fg,'BackgroundColor', bg);
        end
