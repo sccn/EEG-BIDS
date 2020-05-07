@@ -446,7 +446,7 @@ function [EEG, pInfoDesc, command] = pop_participantinfo(EEG)
                 warning('Not all EEG contains BIDS information.');
             end
             haspInfoDesc = arrayfun(@(x) isfield(x,'BIDS') && isfield(x.BIDS,'pInfoDesc') && ~isempty(x.BIDS.pInfoDesc),EEG);
-            if sum(hasBIDS) == 0
+            if sum(haspInfoDesc) == 0
                 info = [];
             else % at least one EEG has BIDS.pInfoDesc
                 try
@@ -461,7 +461,7 @@ function [EEG, pInfoDesc, command] = pop_participantinfo(EEG)
                     end
                 catch % field inconsistent
                     info = EEG(find(haspInfoDesc,1)).BIDS.pInfoDesc;
-                    warning('Inconsistence found in tInfo structures. Using tInfo of EEG(%d)...',find(haspInfoDesc,1));
+                    warning('Inconsistence found in tInfo structures. Using pInfoDesc of EEG(%d)...',find(haspInfoDesc,1));
                 end
             end
         end

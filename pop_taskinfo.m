@@ -237,7 +237,7 @@ function [EEG,com] = pop_taskinfo(EEG)
                 warning('Not all EEG contains BIDS information.');
             end
             hastInfo = arrayfun(@(x) isfield(x,'BIDS') && isfield(x.BIDS,'tInfo') && ~isempty(x.BIDS.tInfo),EEG);
-            if sum(hasBIDS) == 0
+            if sum(hastInfo) == 0
                 tInfo = [];
             else % at least one EEG has BIDS.tInfo
                 try
@@ -266,9 +266,9 @@ function [EEG,com] = pop_taskinfo(EEG)
                 warning('Not all EEG contains BIDS information.');
             end
             hasgInfo = arrayfun(@(x) isfield(x,'BIDS') && isfield(x.BIDS,'gInfo') && ~isempty(x.BIDS.gInfo),EEG);
-            if sum(hasBIDS) == 0
+            if sum(hasgInfo) == 0
                 gInfo = [];
-            else % at least one EEG has BIDS.tInfo
+            else % at least one EEG has BIDS.gInfo
                 try
                     bids = [EEG(hasgInfo).BIDS];
                     allgInfo = [bids.gInfo];
