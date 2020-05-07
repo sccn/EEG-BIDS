@@ -17,14 +17,19 @@
 %
 % Author: Dung Truong, Arnaud Delorme
 function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
+    %% check if there's already an opened window
+    if ~isempty(findobj('Tag','pInfoTable'))
+        error('A window is already openened for pop_participantinfo');
+        return;
+    end
     %% default settings
-    appWidth = 1000;
-    appHeight = 520;
+    appWidth = 1300;
+    appHeight = 600;
     bg = [0.65 0.76 1];
     fg = [0 0 0.4];
     levelThreshold = 20;
     fontSize = 12;
-    pFields = { 'Participant_ID' 'Gender' 'Age' 'Group' 'HeadCircumference' 'SubjectArtefactDescription'};
+    pFields = { 'Participant_ID' 'Gender' 'Age' 'Group'};
     pInfoBIDS = newpInfoBIDS();    
 %     pInfo = {};
     pInfoDesc = [];
@@ -38,8 +43,8 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
     f.Position(3) = appWidth;
     f.Position(4) = appHeight;
     uicontrol(f, 'Style', 'text', 'String', 'Participant information', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0 0.86 0.4 0.1]);
-    pInfoTbl = uitable(f, 'RowName',[],'ColumnName', ['filepath' pFields], 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'pInfoTable', 'ColumnEditable', true);
-    pInfoTbl.Data = cell(numel(ALLEEG), 1+length(pFields));
+    pInfoTbl = uitable(f, 'RowName',[],'ColumnName', ['filepath' pFields  'HeadCircumference' 'SubjectArtefactDescription'], 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'pInfoTable', 'ColumnEditable', true);
+    pInfoTbl.Data = cell(numel(ALLEEG), 3+length(pFields));
     pInfoTbl.Position = [0.02 0.124 0.38 0.786];
     pInfoTbl.CellSelectionCallback = @pInfoCellSelectedCB;
     pInfoTbl.CellEditCallback = @pInfoCellEditCB;
@@ -63,6 +68,16 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
         elseif isfield(curEEG,'subject')
             pInfoTbl.Data{i,2} = curEEG.subject;
         end
+        
+        % update HeadCircumference and SubjectArtefactDescription from tInfo
+        if isfield(curEEG, 'BIDS') && isfield(curEEG.BIDS,'tInfo')
+            if isfield(curEEG.BIDS.tInfo,'HeadCircumference')
+                pInfoTbl.Data{i,strcmp(pInfoTbl.ColumnName,'HeadCircumference')} = curEEG.BIDS.tInfo.HeadCircumference;
+            end
+            if isfield(curEEG.BIDS.tInfo,'SubjectArtefactDescription')
+                pInfoTbl.Data{i,strcmp(pInfoTbl.ColumnName,'SubjectArtefactDescription')} = curEEG.BIDS.tInfo.SubjectArtefactDescription;
+            end
+        end
     end
     
     uicontrol(f, 'Style', 'text', 'String', 'BIDS metadata for participant fields', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0.42 0.86 1-0.42 0.1]);
@@ -76,7 +91,7 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
     units = {' ','ampere','becquerel','candela','coulomb','degree Celsius','farad','gray','henry','hertz','joule','katal','kelvin','kilogram','lumen','lux','metre','mole','newton','ohm','pascal','radian','second','siemens','sievert','steradian','tesla','volt','watt','weber'};
     unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
     tbl.ColumnFormat = {[] [] [] [] units unitPrefixes []};
-    
+
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Add column', 'Units', 'normalized', 'Position', [0.4-0.1 0.074 0.1 0.05], 'Callback', {@addColumnCB,pInfoTbl,tbl}, 'Tag', 'addColumnBtn');
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0.02 0.1 0.05], 'Callback', @okCB); 
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0.02 0.1 0.05], 'Callback', @cancelCB); 
@@ -86,15 +101,23 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
     for i=1:length(pFields)
         % pre-populate description
         field = pFields{i};
-        if numel(ALLEEG) == 1
+        if numel(ALLEEG) == 1 || ~isfield(pInfoBIDS.(field),'Levels') % if previous specification of this field didn't include Levels
             data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'n/a';
         elseif isempty(pInfoBIDS.(field).Levels)
             data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'Click to specify';
         else
-            data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = pInfoBIDS.(field).Levels;
+            levelTxt = pInfoBIDS.(field).Levels;
+            if isstruct(levelTxt)
+                levelTxt = strjoin(fieldnames(pInfoBIDS.(field).Levels),',');
+            end
+            data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = levelTxt;
         end
-        data{i,find(strcmp(tbl.ColumnName, 'Description'))} = pInfoBIDS.(field).Description;
-        data{i,find(strcmp(tbl.ColumnName, 'Units'))} = pInfoBIDS.(field).Units;
+        if isfield(pInfoBIDS.(field),'Description')
+            data{i,find(strcmp(tbl.ColumnName, 'Description'))} = pInfoBIDS.(field).Description;
+        end
+        if isfield(pInfoBIDS.(field),'Units')
+            data{i,find(strcmp(tbl.ColumnName, 'Units'))} = pInfoBIDS.(field).Units;
+        end
         clear('field');
     end
     tbl.Data = data;
@@ -115,15 +138,13 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
         fields = fieldnames(pInfoBIDS);
         for idx=1:length(fields)
             field = fields{idx};
-            if ~isempty(pInfoBIDS.(field).Description)
-                pInfoDesc.(field).Description = pInfoBIDS.(field).Description;
-            end
-            if ~isempty(pInfoBIDS.(field).Units)
+            pInfoDesc.(field).Description = pInfoBIDS.(field).Description;
+            if isempty(pInfoBIDS.(field).Units)
+                pInfoDesc.(field).Units = 'n/a';
+            else
                 pInfoDesc.(field).Units = pInfoBIDS.(field).Units;
             end
-            if ~isempty(pInfoBIDS.(field).Levels)
-                pInfoDesc.(field).Levels = pInfoBIDS.(field).Levels;
-            end
+            pInfoDesc.(field).Levels = pInfoBIDS.(field).Levels;
         end
         if numel(ALLEEG) == 1
             command = '[EEG, pInfoDesc] = pop_participantinfo(EEG);';
@@ -131,8 +152,18 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
             command = '[ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG);';
         end
         for e=1:numel(ALLEEG)
+            if ~isfield(ALLEEG(e),'BIDS')
+                ALLEEG(e).BIDS = [];
+            end
+            tInfo = [];
+            if isfield(ALLEEG(e).BIDS,'tInfo')
+                tInfo = ALLEEG(e).BIDS.tInfo;
+            end
+            tInfo.HeadCircumference = pTable.Data{e,end-1};
+            tInfo.SubjectArtefactDescription = pTable.Data{e,end};
+            ALLEEG(e).BIDS.tInfo = tInfo;
             ALLEEG(e).BIDS.pInfoDesc = pInfoDesc;
-            ALLEEG(e).BIDS.pInfo = [pFields; pTable.Data(e,2:end)];
+            ALLEEG(e).BIDS.pInfo = [pFields; pTable.Data(e,2:end-2)];
             ALLEEG(e).history = [ALLEEG(e).history command];
         end       
         
@@ -251,6 +282,9 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
             uicontrol(f, 'Style', 'text', 'String', 'Levels editing does not apply to this field.', 'Units', 'normalized', 'Position', [0.42 lvlHeight bidsWidth 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
         else
             pTable = findobj('Tag', 'pInfoTable');
+            if numel(pTable) > 1
+                pTable = pTable(1);
+            end
             colIdx = find(strcmp(pTable.ColumnName, field));
             levelCellText = table.Source.Data{find(strcmp(table.Source.RowName, field)), find(strcmp(table.Source.ColumnName, 'Levels'))}; % text (fieldName-Levels) cell. if 'n/a' then no action, 'Click to..' then conditional action, '<value>,...' then get levels
             % retrieve all unique values
@@ -262,7 +296,9 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
                 idx = cellfun(@isempty, values);
                 levels = unique(values(~idx))';
 %             end
-            if isempty(levels)
+            if strcmp(levelCellText,'n/a')
+                uicontrol(f, 'Style', 'text', 'String', 'Levels editing does not apply to this field.', 'Units', 'normalized', 'Position', [0.42 lvlHeight bidsWidth 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
+            elseif isempty(levels)
                 uicontrol(f, 'Style', 'text', 'String', 'No value found. Please specify values in Participant information table.', 'Units', 'normalized', 'Position', [0.42 lvlHeight 0.58 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
             elseif strcmp('Click to specify', levelCellText) && length(levels) > levelThreshold 
                 msg = sprintf('\tThere are more than %d unique levels for field %s.\nAre you sure you want to specify levels for it?', levelThreshold, field);
@@ -362,39 +398,70 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
         end
     end
     function pBIDS = newpInfoBIDS()
-        pBIDS = [];
-        for idx=1:length(pFields)
-            if strcmp(pFields{idx}, 'Participant_ID')
-                pBIDS.Participant_ID.Description = 'Unique participant label';
-                pBIDS.Participant_ID.Units = '';
-                pBIDS.Participant_ID.Levels = 'n/a';
-            elseif strcmp(pFields{idx}, 'Gender')
-                pBIDS.Gender.Description = 'Participant gender';      
-                pBIDS.Gender.Levels = [];
-                pBIDS.Gender.Units = '';
-            elseif strcmp(pFields{idx}, 'Age')
-                pBIDS.Age.Description = 'Participant age (years)';
-                pBIDS.Age.Units = 'years';
-                pBIDS.Age.Levels = 'n/a';
-            elseif strcmp(pFields{idx}, 'Group')
-                pBIDS.Group.Description = 'Participant group label';
-                pBIDS.Group.Units = '';
-                pBIDS.Group.Levels = [];
-            elseif strcmp(pFields{idx}, 'HeadCircumference')
-                pBIDS.HeadCircumference.Description = ' Participant head circumference';
-                pBIDS.HeadCircumference.Units = 'cm';
-                pBIDS.HeadCircumference.Levels = 'n/a';
-            elseif strcmp(pFields{idx}, 'SubjectArtefactDescription')
-                pBIDS.SubjectArtefactDescription.Description = 'Notes pertaining to this subject/file (artifacts...)';
-                pBIDS.SubjectArtefactDescription.Units = '';
-                pBIDS.SubjectArtefactDescription.Levels = 'n/a';
-%                 else
-%                     event.(fields{idx}).BIDSField = '';
-%                     event.(fields{idx}).LongName = '';
-%                     event.(fields{idx}).Description = '';
-%                     event.(fields{idx}).Units = '';
-%                     event.(fields{idx}).Levels = [];
-%                     event.(fields{idx}).TermURL = '';
+        pBIDS = getpInfoDesc();
+        if isempty(pBIDS)
+            for idx=1:length(pFields)
+                if strcmp(pFields{idx}, 'Participant_ID')
+                    pBIDS.Participant_ID.Description = 'Unique participant label';
+                    pBIDS.Participant_ID.Units = '';
+                    pBIDS.Participant_ID.Levels = 'n/a';
+                elseif strcmp(pFields{idx}, 'Gender')
+                    pBIDS.Gender.Description = 'Participant gender';      
+                    pBIDS.Gender.Levels = [];
+                    pBIDS.Gender.Units = '';
+                elseif strcmp(pFields{idx}, 'Age')
+                    pBIDS.Age.Description = 'Participant age (years)';
+                    pBIDS.Age.Units = 'years';
+                    pBIDS.Age.Levels = 'n/a';
+                elseif strcmp(pFields{idx}, 'Group')
+                    pBIDS.Group.Description = 'Participant group label';
+                    pBIDS.Group.Units = '';
+                    pBIDS.Group.Levels = [];
+    %             elseif strcmp(pFields{idx}, 'HeadCircumference')
+    %                 pBIDS.HeadCircumference.Description = ' Participant head circumference';
+    %                 pBIDS.HeadCircumference.Units = 'cm';
+    %                 pBIDS.HeadCircumference.Levels = 'n/a';
+    %             elseif strcmp(pFields{idx}, 'SubjectArtefactDescription')
+    %                 pBIDS.SubjectArtefactDescription.Description = 'Free-form description of the observed subject artifact and its possible cause (e.g., "Vagus Nerve Stimulator", "non-removable implant").';
+    %                 pBIDS.SubjectArtefactDescription.Units = '';
+    %                 pBIDS.SubjectArtefactDescription.Levels = 'n/a';
+    %                 else
+    %                     event.(fields{idx}).BIDSField = '';
+    %                     event.(fields{idx}).LongName = '';
+    %                     event.(fields{idx}).Description = '';
+    %                     event.(fields{idx}).Units = '';
+    %                     event.(fields{idx}).Levels = [];
+    %                     event.(fields{idx}).TermURL = '';
+                end
+            end
+        end 
+    end
+    function info = getpInfoDesc()
+        hasBIDS = arrayfun(@(x) isfield(x,'BIDS') && ~isempty(x.BIDS),ALLEEG);
+        if sum(hasBIDS) == 0 %if no BIDS found for any ALLEEG
+            info = [];
+        else % at least one EEG has BIDS
+            if sum(hasBIDS) < numel(ALLEEG) % not all have BIDS
+                warning('Not all EEG contains BIDS information.');
+            end
+            haspInfoDesc = arrayfun(@(x) isfield(x,'BIDS') && isfield(x.BIDS,'pInfoDesc') && ~isempty(x.BIDS.pInfoDesc),ALLEEG);
+            if sum(hasBIDS) == 0
+                info = [];
+            else % at least one EEG has BIDS.pInfoDesc
+                try
+                    bids = [ALLEEG(haspInfoDesc).BIDS];
+                    allpInfoDesc = [bids.pInfoDesc];
+                    if numel(allpInfoDesc) < numel(ALLEEG)
+                        info = ALLEEG(find(haspInfoDesc,1)).BIDS.pInfoDesc;
+                        warning('Not all EEG contains pInfoDesc structure. Using pInfoDesc of ALLEEG(%d)...',find(haspInfoDesc,1));
+                    else
+                        info = allpInfoDesc(1);
+                        fprintf('Using pInfoDesc of ALLEEG(1)...\n');
+                    end
+                catch % field inconsistent
+                    info = ALLEEG(find(haspInfoDesc,1)).BIDS.pInfoDesc;
+                    warning('Inconsistence found in tInfo structures. Using tInfo of ALLEEG(%d)...',find(haspInfoDesc,1));
+                end
             end
         end
     end

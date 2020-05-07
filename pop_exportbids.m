@@ -90,7 +90,7 @@ elseif ischar(STUDY)
         case 'edit_events'
             userdata.ALLEEG = pop_eventinfo(userdata.ALLEEG);
         case 'edit_task'
-            userdata.STUDY  = pop_taskinfo(userdata.STUDY);
+            userdata.STUDY  = pop_taskinfo(userdata.ALLEEG);
         case 'edit_eeg'
             userdata.ALLEEG = pop_eegacqinfo(userdata.ALLEEG);
     end
