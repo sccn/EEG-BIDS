@@ -176,8 +176,10 @@ function [ALLEEG,com] = pop_taskinfo(ALLEEG)
                         if strcmp(objs(i).Tag, 'README') || strcmp(objs(i).Tag, 'Name') || strcmp(objs(i).Tag, 'ReferencesAndLinks') || strcmp(objs(i).Tag, 'Authors')
                             gInfo.(objs(i).Tag) = objs(i).String;
                         else
-                            if strcmp(objs(i).Style, 'popupmenu') && objs(i).Value > 1 % dropdown
-                                tInfo.(objs(i).Tag) = objs(i).String{objs(i).Value};
+                            if strcmp(objs(i).Style, 'popupmenu')
+                                if objs(i).Value > 1 % dropdown
+                                    tInfo.(objs(i).Tag) = objs(i).String{objs(i).Value};
+                                end
                             else
                                 tInfo.(objs(i).Tag) = objs(i).String;
                             end
@@ -209,6 +211,20 @@ function [ALLEEG,com] = pop_taskinfo(ALLEEG)
                 end
             end
         end
+        
+        prevgInfo = getgInfo(ALLEEG);
+        if ~isempty(prevgInfo)
+            objs = findall(f);
+            for i=1:numel(objs)
+                if ~isempty(objs(i).Tag) && isfield(prevgInfo, objs(i).Tag)
+                    if strcmp(objs(i).Style, 'popupmenu') % dropdown
+                        objs(i).Value = find(strcmp(objs(i).String, prevgInfo.(objs(i).Tag))); % set position of dropdown menu to the appropriate string
+                    else
+                        objs(i).String = prevgInfo.(objs(i).Tag);
+                    end
+                end
+            end
+        end
     end
 
     function tInfo = gettInfo(ALLEEG)
@@ -236,6 +252,35 @@ function [ALLEEG,com] = pop_taskinfo(ALLEEG)
                 catch % field inconsistent
                     tInfo = ALLEEG(find(hastInfo,1)).BIDS.tInfo;
                     warning('Inconsistence found in tInfo structures. Using tInfo of ALLEEG(%d)...',find(hastInfo,1));
+                end
+            end
+        end
+    end
+    function gInfo = getgInfo(ALLEEG)
+        hasBIDS = arrayfun(@(x) isfield(x,'BIDS') && ~isempty(x.BIDS),ALLEEG);
+        if sum(hasBIDS) == 0 %if no BIDS found for any ALLEEG
+            gInfo = [];
+        else % at least one EEG has BIDS
+            if sum(hasBIDS) < numel(ALLEEG) % not all have BIDS
+                warning('Not all EEG contains BIDS information.');
+            end
+            hasgInfo = arrayfun(@(x) isfield(x,'BIDS') && isfield(x.BIDS,'gInfo') && ~isempty(x.BIDS.gInfo),ALLEEG);
+            if sum(hasBIDS) == 0
+                gInfo = [];
+            else % at least one EEG has BIDS.tInfo
+                try
+                    bids = [ALLEEG(hasgInfo).BIDS];
+                    allgInfo = [bids.gInfo];
+                    if numel(allgInfo) < numel(ALLEEG)
+                        gInfo = ALLEEG(find(hasgInfo,1)).BIDS.gInfo;
+                        warning('Not all EEG contains gInfo structure. Using gInfo of ALLEEG(%d)...',find(hasgInfo,1));
+                    else
+                        gInfo = allgInfo(1);
+                        fprintf('Using tInfo of ALLEEG(1)...\n');
+                    end
+                catch % field inconsistent
+                    gInfo = ALLEEG(find(hasgInfo,1)).BIDS.gInfo;
+                    warning('Inconsistence found in gInfo structures. Using gInfo of ALLEEG(%d)...',find(hasgInfo,1));
                 end
             end
         end
