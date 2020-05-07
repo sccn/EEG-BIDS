@@ -25,7 +25,7 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-function [ALLEEG,com] = pop_taskinfo(ALLEEG)
+function [EEG,com] = pop_taskinfo(EEG)
     %% Default settings
     bg = [0.65 0.76 1];
     fg = [0 0 0.4];
@@ -154,13 +154,13 @@ function [ALLEEG,com] = pop_taskinfo(ALLEEG)
         pophelp('pop_taskinfo');
     end
     function okCB(src,event)
-        for a=1:numel(ALLEEG)
+        for a=1:numel(EEG)
             bids = [];
             tInfo = [];
             gInfo = [];
             % preserve current BIDS info if have
-            if isfield(ALLEEG(a), 'BIDS')
-                bids = ALLEEG(a).BIDS;
+            if isfield(EEG(a), 'BIDS')
+                bids = EEG(a).BIDS;
                 if isfield(bids, 'tInfo')
                     tInfo = bids.tInfo;
                 end
@@ -168,7 +168,7 @@ function [ALLEEG,com] = pop_taskinfo(ALLEEG)
                     gInfo = bids.gInfo;
                 end
             end
-            % update tInfo from input fields
+            % update tInfo and gInfo from input fields
             objs = findall(f);
             for i=1:numel(objs)
                 if ~isempty(objs(i).Tag)
@@ -190,7 +190,8 @@ function [ALLEEG,com] = pop_taskinfo(ALLEEG)
             % update BIDS structure
             bids.tInfo = tInfo;
             bids.gInfo = gInfo;
-            ALLEEG(a).BIDS = bids;
+            EEG(a).BIDS = bids;
+            EEG(a).saved = 'no';
         end
         close(f);
     end
@@ -198,7 +199,7 @@ function [ALLEEG,com] = pop_taskinfo(ALLEEG)
         close(f);
     end
     function preFill()
-        prevtInfo = gettInfo(ALLEEG);
+        prevtInfo = gettInfo(EEG);
         if ~isempty(prevtInfo)
             objs = findall(f);
             for i=1:numel(objs)
@@ -212,7 +213,7 @@ function [ALLEEG,com] = pop_taskinfo(ALLEEG)
             end
         end
         
-        prevgInfo = getgInfo(ALLEEG);
+        prevgInfo = getgInfo(EEG);
         if ~isempty(prevgInfo)
             objs = findall(f);
             for i=1:numel(objs)
@@ -227,60 +228,60 @@ function [ALLEEG,com] = pop_taskinfo(ALLEEG)
         end
     end
 
-    function tInfo = gettInfo(ALLEEG)
-        hasBIDS = arrayfun(@(x) isfield(x,'BIDS') && ~isempty(x.BIDS),ALLEEG);
-        if sum(hasBIDS) == 0 %if no BIDS found for any ALLEEG
+    function tInfo = gettInfo(EEG)
+        hasBIDS = arrayfun(@(x) isfield(x,'BIDS') && ~isempty(x.BIDS),EEG);
+        if sum(hasBIDS) == 0 %if no BIDS found for any EEG
             tInfo = [];
         else % at least one EEG has BIDS
-            if sum(hasBIDS) < numel(ALLEEG) % not all have BIDS
+            if sum(hasBIDS) < numel(EEG) % not all have BIDS
                 warning('Not all EEG contains BIDS information.');
             end
-            hastInfo = arrayfun(@(x) isfield(x,'BIDS') && isfield(x.BIDS,'tInfo') && ~isempty(x.BIDS.tInfo),ALLEEG);
+            hastInfo = arrayfun(@(x) isfield(x,'BIDS') && isfield(x.BIDS,'tInfo') && ~isempty(x.BIDS.tInfo),EEG);
             if sum(hasBIDS) == 0
                 tInfo = [];
             else % at least one EEG has BIDS.tInfo
                 try
-                    bids = [ALLEEG(hastInfo).BIDS];
+                    bids = [EEG(hastInfo).BIDS];
                     alltInfo = [bids.tInfo];
-                    if numel(alltInfo) < numel(ALLEEG)
-                        tInfo = ALLEEG(find(hastInfo,1)).BIDS.tInfo;
-                        warning('Not all EEG contains tInfo structure. Using tInfo of ALLEEG(%d)...',find(hastInfo,1));
+                    if numel(alltInfo) < numel(EEG)
+                        tInfo = EEG(find(hastInfo,1)).BIDS.tInfo;
+                        warning('Not all EEG contains tInfo structure. Using tInfo of EEG(%d)...',find(hastInfo,1));
                     else
                         tInfo = alltInfo(1);
-                        fprintf('Using tInfo of ALLEEG(1)...\n');
+                        fprintf('Using tInfo of EEG(1)...\n');
                     end
                 catch % field inconsistent
-                    tInfo = ALLEEG(find(hastInfo,1)).BIDS.tInfo;
-                    warning('Inconsistence found in tInfo structures. Using tInfo of ALLEEG(%d)...',find(hastInfo,1));
+                    tInfo = EEG(find(hastInfo,1)).BIDS.tInfo;
+                    warning('Inconsistence found in tInfo structures. Using tInfo of EEG(%d)...',find(hastInfo,1));
                 end
             end
         end
     end
-    function gInfo = getgInfo(ALLEEG)
-        hasBIDS = arrayfun(@(x) isfield(x,'BIDS') && ~isempty(x.BIDS),ALLEEG);
-        if sum(hasBIDS) == 0 %if no BIDS found for any ALLEEG
+    function gInfo = getgInfo(EEG)
+        hasBIDS = arrayfun(@(x) isfield(x,'BIDS') && ~isempty(x.BIDS),EEG);
+        if sum(hasBIDS) == 0 %if no BIDS found for any EEG
             gInfo = [];
         else % at least one EEG has BIDS
-            if sum(hasBIDS) < numel(ALLEEG) % not all have BIDS
+            if sum(hasBIDS) < numel(EEG) % not all have BIDS
                 warning('Not all EEG contains BIDS information.');
             end
-            hasgInfo = arrayfun(@(x) isfield(x,'BIDS') && isfield(x.BIDS,'gInfo') && ~isempty(x.BIDS.gInfo),ALLEEG);
+            hasgInfo = arrayfun(@(x) isfield(x,'BIDS') && isfield(x.BIDS,'gInfo') && ~isempty(x.BIDS.gInfo),EEG);
             if sum(hasBIDS) == 0
                 gInfo = [];
             else % at least one EEG has BIDS.tInfo
                 try
-                    bids = [ALLEEG(hasgInfo).BIDS];
+                    bids = [EEG(hasgInfo).BIDS];
                     allgInfo = [bids.gInfo];
-                    if numel(allgInfo) < numel(ALLEEG)
-                        gInfo = ALLEEG(find(hasgInfo,1)).BIDS.gInfo;
-                        warning('Not all EEG contains gInfo structure. Using gInfo of ALLEEG(%d)...',find(hasgInfo,1));
+                    if numel(allgInfo) < numel(EEG)
+                        gInfo = EEG(find(hasgInfo,1)).BIDS.gInfo;
+                        warning('Not all EEG contains gInfo structure. Using gInfo of EEG(%d)...',find(hasgInfo,1));
                     else
                         gInfo = allgInfo(1);
-                        fprintf('Using tInfo of ALLEEG(1)...\n');
+                        fprintf('Using tInfo of EEG(1)...\n');
                     end
                 catch % field inconsistent
-                    gInfo = ALLEEG(find(hasgInfo,1)).BIDS.gInfo;
-                    warning('Inconsistence found in gInfo structures. Using gInfo of ALLEEG(%d)...',find(hasgInfo,1));
+                    gInfo = EEG(find(hasgInfo,1)).BIDS.gInfo;
+                    warning('Inconsistence found in gInfo structures. Using gInfo of EEG(%d)...',find(hasgInfo,1));
                 end
             end
         end

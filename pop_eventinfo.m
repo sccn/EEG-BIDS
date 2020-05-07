@@ -2,13 +2,13 @@
 %                   fields of EEG.event
 %
 % Usage:
-%   >> [ALLEEG, eInfoDesc, eInfo] = pop_eventinfo( ALLEEG );
+%   >> [EEG, eInfoDesc, eInfo] = pop_eventinfo( EEG );
 %                                              
 % Inputs:
-%   ALLEEG        - ALLEEG dataset structure. May only contain one dataset.
+%   EEG        - EEG dataset structure. May only contain one dataset.
 %
 % Outputs:
-%  'ALLEEG'       - [struct] Updated ALLEEG structure containing event BIDS information
+%  'EEG'       - [struct] Updated EEG structure containing event BIDS information
 %                in each EEG structure at EEG.BIDS.eInfoDesc and EEG.BIDS.eInfo
 %
 %  'eInfoDesc' - [struct] structure describing BIDS event fields as you specified.
@@ -21,16 +21,16 @@
 %                (duration in sec), "value" (EEGLAB event type)
 %
 % Author: Dung Truong, Arnaud Delorme
-function [ALLEEG, eInfoDesc, eInfo, command] = pop_eventinfo(ALLEEG)
-    % perform check to make sure EEG.event is consistent across ALLEEG
+function [EEG, eInfoDesc, eInfo, command] = pop_eventinfo(EEG)
+    % perform check to make sure EEG.event is consistent across EEG
     try
-       eventFields = fieldnames([ALLEEG.event]);
+       eventFields = fieldnames([EEG.event]);
     catch ME
         if (strcmp(ME.identifier, 'MATLAB:catenate:structFieldBad'))
-            numFields = cellfun(@(x) numel(fieldnames(x)), {ALLEEG.event});
+            numFields = cellfun(@(x) numel(fieldnames(x)), {EEG.event});
             [num, idx] = max(numFields);
-            eventFields = fieldnames(ALLEEG(idx).event);
-            warning('There is mismatch in number of fields in EEG.event structures. Using fields of ALLEEG(%d) which has the highest number of fields (%d).', idx, num);
+            eventFields = fieldnames(EEG(idx).event);
+            warning('There is mismatch in number of fields in EEG.event structures. Using fields of EEG(%d) which has the highest number of fields (%d).', idx, num);
         end
     end
     % default settings
@@ -140,15 +140,16 @@ function [ALLEEG, eInfoDesc, eInfo, command] = pop_eventinfo(ALLEEG)
                 end
             end
         end
-        if numel(ALLEEG) == 1
+        if numel(EEG) == 1
             command = '[EEG, eInfoDesc, eInfo] = pop_eventinfo(EEG);';
         else
-            command = '[ALLEEG, eInfoDesc, eInfo] = pop_eventinfo(ALLEEG);';
+            command = '[EEG, eInfoDesc, eInfo] = pop_eventinfo(EEG);';
         end
-        for e=1:numel(ALLEEG)
-            ALLEEG(e).BIDS.eInfoDesc = eInfoDesc;
-            ALLEEG(e).BIDS.eInfo = eInfo;
-            ALLEEG(e).history = [ALLEEG(e).history command];
+        for e=1:numel(EEG)
+            EEG(e).BIDS.eInfoDesc = eInfoDesc;
+            EEG(e).BIDS.eInfo = eInfo;
+            EEG(e).saved = 'no';
+            EEG(e).history = [EEG(e).history command];
         end
         clear('eventBIDS');
         close(f);
@@ -234,12 +235,12 @@ function [ALLEEG, eInfoDesc, eInfo, command] = pop_eventinfo(ALLEEG)
             uicontrol(f, 'Style', 'text', 'String', 'Levels editing not applied for EEG.event.latency field.', 'Units', 'normalized', 'Position', [0.01 0.45 1 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
         else
             % retrieve all unique values from EEG.event.(field). 
-            % Use ALLEEG(1) as representative EEG
-            if isnumeric(ALLEEG(1).event(1).(field))
-                values = arrayfun(@(x) num2str(x), [ALLEEG(1).event.(field)], 'UniformOutput', false);
+            % Use EEG(1) as representative EEG
+            if isnumeric(EEG(1).event(1).(field))
+                values = arrayfun(@(x) num2str(x), [EEG(1).event.(field)], 'UniformOutput', false);
                 levels = unique(values)';
             else
-                levels = unique({ALLEEG(1).event.(field)})';
+                levels = unique({EEG(1).event.(field)})';
             end
             if strcmp(levelCellText,'Click to specify below') && length(levels) > levelThreshold 
                 msg = sprintf('\tThere are more than %d unique levels for field %s.\nAre you sure you want to specify levels for it?', levelThreshold, field);
@@ -351,14 +352,14 @@ function [ALLEEG, eInfoDesc, eInfo, command] = pop_eventinfo(ALLEEG)
     function event = newEventBIDS(eegIdx)
         event = [];
         bidsEEG = [];
-        if isfield(ALLEEG,'BIDS') % return true if any of EEG structure has BIDS
-            bidsIdx = find(~cellfun(@isempty,{ALLEEG.BIDS}));
+        if isfield(EEG,'BIDS') % return true if any of EEG structure has BIDS
+            bidsIdx = find(~cellfun(@isempty,{EEG.BIDS}));
             if ~isempty(bidsIdx)
-                if numel(ALLEEG) ~= numel(bidsIdx)
-                    fprintf(['EEG.BIDS is found in ' num2str(numel(bidsIdx)) ' out of ' num2str(numel(ALLEEG)) ' EEG structure(s). ']);
+                if numel(EEG) ~= numel(bidsIdx)
+                    fprintf(['EEG.BIDS is found in ' num2str(numel(bidsIdx)) ' out of ' num2str(numel(EEG)) ' EEG structure(s). ']);
                 end
-                fprintf(['Using BIDS info of ALLEEG(' num2str(bidsIdx(1)) ')...']);
-                bidsEEG = ALLEEG(bidsIdx(1));
+                fprintf(['Using BIDS info of EEG(' num2str(bidsIdx(1)) ')...']);
+                bidsEEG = EEG(bidsIdx(1));
             end
         end
         
@@ -404,8 +405,6 @@ function [ALLEEG, eInfoDesc, eInfo, command] = pop_eventinfo(ALLEEG)
                 event.(fields{idx}).Levels = [];
                 event.(fields{idx}).TermURL = '';
             end
-
-            clear('EEG');
         else % start fresh
             fields = eventFields; 
             for idx=1:length(fields)

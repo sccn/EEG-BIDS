@@ -1,13 +1,13 @@
 % pop_participantinfo() - GUI for BIDS participant info editing
 %
 % Usage:
-%   >> [ALLEEG, pInfoDesc, pInfo] = pop_participantinfo( ALLEEG );
+%   >> [EEG, pInfoDesc, pInfo] = pop_participantinfo( EEG );
 %                                              
 % Inputs:
-%   ALLEEG        - ALLEEG dataset structure. May only contain one dataset.
+%   EEG        - EEG dataset structure. May only contain one dataset.
 %
 % Outputs:
-%  'ALLEEG'       - [struct] Updated ALLEEG structure containing event BIDS information
+%  'EEG'       - [struct] Updated EEG structure containing event BIDS information
 %                in each EEG structure at EEG.BIDS
 %
 %  'pInfoDesc' - [struct] structure describing BIDS participant fields as you specified.
@@ -16,7 +16,7 @@
 %  'pInfo'     - [cell] BIDS participant information.
 %
 % Author: Dung Truong, Arnaud Delorme
-function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
+function [EEG, pInfoDesc, command] = pop_participantinfo(EEG)
     %% check if there's already an opened window
     if ~isempty(findobj('Tag','pInfoTable'))
         error('A window is already openened for pop_participantinfo');
@@ -34,8 +34,8 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
 %     pInfo = {};
     pInfoDesc = [];
     
-    if numel(ALLEEG) == 1
-        warning('This function can also be applied to multiple dataset (e.g. ALLEEG structures).');
+    if numel(EEG) == 1
+        warning('This function can also be applied to multiple dataset (e.g. EEG structures).');
     end
     
     %% create UI
@@ -44,13 +44,13 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
     f.Position(4) = appHeight;
     uicontrol(f, 'Style', 'text', 'String', 'Participant information', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0 0.86 0.4 0.1]);
     pInfoTbl = uitable(f, 'RowName',[],'ColumnName', ['filepath' pFields  'HeadCircumference' 'SubjectArtefactDescription'], 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'pInfoTable', 'ColumnEditable', true);
-    pInfoTbl.Data = cell(numel(ALLEEG), 3+length(pFields));
+    pInfoTbl.Data = cell(numel(EEG), 3+length(pFields));
     pInfoTbl.Position = [0.02 0.124 0.38 0.786];
     pInfoTbl.CellSelectionCallback = @pInfoCellSelectedCB;
     pInfoTbl.CellEditCallback = @pInfoCellEditCB;
     % pre-populate pInfo table
-    for i=1:length(ALLEEG)
-        curEEG = ALLEEG(i);
+    for i=1:length(EEG)
+        curEEG = EEG(i);
         pInfoTbl.Data{i,1} = fullfile(curEEG.filepath, curEEG.filename);
         % if EEG has BIDS.pInfo
         % pInfo is in format
@@ -101,7 +101,7 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
     for i=1:length(pFields)
         % pre-populate description
         field = pFields{i};
-        if numel(ALLEEG) == 1 || ~isfield(pInfoBIDS.(field),'Levels') % if previous specification of this field didn't include Levels
+        if numel(EEG) == 1 || ~isfield(pInfoBIDS.(field),'Levels') % if previous specification of this field didn't include Levels
             data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'n/a';
         elseif isempty(pInfoBIDS.(field).Levels)
             data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'Click to specify';
@@ -146,25 +146,26 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
             end
             pInfoDesc.(field).Levels = pInfoBIDS.(field).Levels;
         end
-        if numel(ALLEEG) == 1
+        if numel(EEG) == 1
             command = '[EEG, pInfoDesc] = pop_participantinfo(EEG);';
         else
-            command = '[ALLEEG, pInfoDesc] = pop_participantinfo(ALLEEG);';
+            command = '[EEG, pInfoDesc] = pop_participantinfo(EEG);';
         end
-        for e=1:numel(ALLEEG)
-            if ~isfield(ALLEEG(e),'BIDS')
-                ALLEEG(e).BIDS = [];
+        for e=1:numel(EEG)
+            if ~isfield(EEG(e),'BIDS')
+                EEG(e).BIDS = [];
             end
             tInfo = [];
-            if isfield(ALLEEG(e).BIDS,'tInfo')
-                tInfo = ALLEEG(e).BIDS.tInfo;
+            if isfield(EEG(e).BIDS,'tInfo')
+                tInfo = EEG(e).BIDS.tInfo;
             end
             tInfo.HeadCircumference = pTable.Data{e,end-1};
             tInfo.SubjectArtefactDescription = pTable.Data{e,end};
-            ALLEEG(e).BIDS.tInfo = tInfo;
-            ALLEEG(e).BIDS.pInfoDesc = pInfoDesc;
-            ALLEEG(e).BIDS.pInfo = [pFields; pTable.Data(e,2:end-2)];
-            ALLEEG(e).history = [ALLEEG(e).history command];
+            EEG(e).BIDS.tInfo = tInfo;
+            EEG(e).BIDS.pInfoDesc = pInfoDesc;
+            EEG(e).BIDS.pInfo = [pFields; pTable.Data(e,2:end-2)];
+            EEG(e).saved = 'no';
+            EEG(e).history = [EEG(e).history command];
         end       
         
         clear('pInfoBIDS');
@@ -276,7 +277,7 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
     function createLevelUI(src,event,table,field)
         removeLevelUI();
         lvlHeight = 0.43;
-        if numel(ALLEEG) == 1
+        if numel(EEG) == 1
             uicontrol(f, 'Style', 'text', 'String', 'Documentation of levels does not apply to single dataset - edit at the study level.', 'Units', 'normalized', 'Position', [0.42 lvlHeight bidsWidth 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
         elseif strcmp(field, 'Participant_ID') || strcmp(field, 'Age')
             uicontrol(f, 'Style', 'text', 'String', 'Levels editing does not apply to this field.', 'Units', 'normalized', 'Position', [0.42 lvlHeight bidsWidth 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
@@ -437,30 +438,30 @@ function [ALLEEG, pInfoDesc, command] = pop_participantinfo(ALLEEG)
         end 
     end
     function info = getpInfoDesc()
-        hasBIDS = arrayfun(@(x) isfield(x,'BIDS') && ~isempty(x.BIDS),ALLEEG);
-        if sum(hasBIDS) == 0 %if no BIDS found for any ALLEEG
+        hasBIDS = arrayfun(@(x) isfield(x,'BIDS') && ~isempty(x.BIDS),EEG);
+        if sum(hasBIDS) == 0 %if no BIDS found for any EEG
             info = [];
         else % at least one EEG has BIDS
-            if sum(hasBIDS) < numel(ALLEEG) % not all have BIDS
+            if sum(hasBIDS) < numel(EEG) % not all have BIDS
                 warning('Not all EEG contains BIDS information.');
             end
-            haspInfoDesc = arrayfun(@(x) isfield(x,'BIDS') && isfield(x.BIDS,'pInfoDesc') && ~isempty(x.BIDS.pInfoDesc),ALLEEG);
+            haspInfoDesc = arrayfun(@(x) isfield(x,'BIDS') && isfield(x.BIDS,'pInfoDesc') && ~isempty(x.BIDS.pInfoDesc),EEG);
             if sum(hasBIDS) == 0
                 info = [];
             else % at least one EEG has BIDS.pInfoDesc
                 try
-                    bids = [ALLEEG(haspInfoDesc).BIDS];
+                    bids = [EEG(haspInfoDesc).BIDS];
                     allpInfoDesc = [bids.pInfoDesc];
-                    if numel(allpInfoDesc) < numel(ALLEEG)
-                        info = ALLEEG(find(haspInfoDesc,1)).BIDS.pInfoDesc;
-                        warning('Not all EEG contains pInfoDesc structure. Using pInfoDesc of ALLEEG(%d)...',find(haspInfoDesc,1));
+                    if numel(allpInfoDesc) < numel(EEG)
+                        info = EEG(find(haspInfoDesc,1)).BIDS.pInfoDesc;
+                        warning('Not all EEG contains pInfoDesc structure. Using pInfoDesc of EEG(%d)...',find(haspInfoDesc,1));
                     else
                         info = allpInfoDesc(1);
-                        fprintf('Using pInfoDesc of ALLEEG(1)...\n');
+                        fprintf('Using pInfoDesc of EEG(1)...\n');
                     end
                 catch % field inconsistent
-                    info = ALLEEG(find(haspInfoDesc,1)).BIDS.pInfoDesc;
-                    warning('Inconsistence found in tInfo structures. Using tInfo of ALLEEG(%d)...',find(haspInfoDesc,1));
+                    info = EEG(find(haspInfoDesc,1)).BIDS.pInfoDesc;
+                    warning('Inconsistence found in tInfo structures. Using tInfo of EEG(%d)...',find(haspInfoDesc,1));
                 end
             end
         end
