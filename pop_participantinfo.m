@@ -20,7 +20,6 @@ function [EEG, pInfoDesc, command] = pop_participantinfo(EEG)
     %% check if there's already an opened window
     if ~isempty(findobj('Tag','pInfoTable'))
         error('A window is already openened for pop_participantinfo');
-        return;
     end
     %% default settings
     appWidth = 1300;
@@ -29,8 +28,7 @@ function [EEG, pInfoDesc, command] = pop_participantinfo(EEG)
     fg = [0 0 0.4];
     levelThreshold = 20;
     fontSize = 12;
-    pFields = { 'Participant_ID' 'Gender' 'Age' 'Group'};
-    pInfoBIDS = newpInfoBIDS();    
+    [pInfoBIDS, pFields] = newpInfoBIDS();    
 %     pInfo = {};
     pInfoDesc = [];
     
@@ -159,11 +157,13 @@ function [EEG, pInfoDesc, command] = pop_participantinfo(EEG)
             if isfield(EEG(e).BIDS,'tInfo')
                 tInfo = EEG(e).BIDS.tInfo;
             end
-            tInfo.HeadCircumference = pTable.Data{e,end-1};
-            tInfo.SubjectArtefactDescription = pTable.Data{e,end};
+            tInfo.HeadCircumference = pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)};
+            tInfo.SubjectArtefactDescription = pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)};
             EEG(e).BIDS.tInfo = tInfo;
             EEG(e).BIDS.pInfoDesc = pInfoDesc;
-            EEG(e).BIDS.pInfo = [pFields; pTable.Data(e,2:end-2)];
+            colIdx = 1:numel(pTable.ColumnName);
+            colIdx = colIdx(~strcmp('HeadCircumference',pTable.ColumnName) & ~strcmp('SubjectArtefactDescription',pTable.ColumnName));
+            EEG(e).BIDS.pInfo = [pFields; pTable.Data(e,colIdx(2:end))];
             EEG(e).saved = 'no';
             EEG(e).history = [EEG(e).history command];
         end       
@@ -352,7 +352,7 @@ function [EEG, pInfoDesc, command] = pop_participantinfo(EEG)
         if ~isempty(str2num(str))
             formatted = ['x' str];
         else
-            formatted = str;
+            formatted = strrep(str,' ','_'); %replace space with _
         end
     end
     function removeLevelUI()
@@ -398,9 +398,10 @@ function [EEG, pInfoDesc, command] = pop_participantinfo(EEG)
             delete(h);
         end
     end
-    function pBIDS = newpInfoBIDS()
+    function [pBIDS, pFields] = newpInfoBIDS()
         pBIDS = getpInfoDesc();
         if isempty(pBIDS)
+            pFields = { 'Participant_ID' 'Gender' 'Age' 'Group'};
             for idx=1:length(pFields)
                 if strcmp(pFields{idx}, 'Participant_ID')
                     pBIDS.Participant_ID.Description = 'Unique participant label';
@@ -435,6 +436,8 @@ function [EEG, pInfoDesc, command] = pop_participantinfo(EEG)
     %                     event.(fields{idx}).TermURL = '';
                 end
             end
+        else
+            pFields = fieldnames(pBIDS)';
         end 
     end
     function info = getpInfoDesc()
