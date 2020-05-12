@@ -107,13 +107,13 @@ function [EEG,com] = pop_taskinfo(EEG)
     uicontrol('Style', 'edit', 'string', '','tag', 'CapManufacturersModelName', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
     top = top-0.06;
     uicontrol('Style', 'text', 'string', 'EEG reference location', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
-    uicontrol('Style', 'edit', 'string', '','tag', 'EEGreference', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
+    uicontrol('Style', 'edit', 'string', '','tag', 'EEGReference', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
     top = top-0.06;
     uicontrol('Style', 'text', 'string', 'EEG ground electrode location', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '','tag', 'EEGGround', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
     top = top-0.06;
     uicontrol('Style', 'text', 'string', 'EEG montage system (10-20, 10-10, custom)', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight+0.01]);
-    uicontrol('Style', 'edit', 'string', '','tag', 'EEGEEGPlacementScheme', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
+    uicontrol('Style', 'edit', 'string', '','tag', 'EEGPlacementScheme', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
     top = top-0.06;
     uicontrol('Style', 'text', 'string', 'EEG amplifier maker', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '','tag', 'Manufacturer', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB); 
@@ -174,7 +174,11 @@ function [EEG,com] = pop_taskinfo(EEG)
                 if ~isempty(objs(i).Tag)
                     if ~isempty(objs(i).String)
                         if strcmp(objs(i).Tag, 'README') || strcmp(objs(i).Tag, 'Name') || strcmp(objs(i).Tag, 'ReferencesAndLinks') || strcmp(objs(i).Tag, 'Authors')
-                            gInfo.(objs(i).Tag) = objs(i).String;
+                            if strcmp(objs(i).Tag, 'ReferencesAndLinks') || strcmp(objs(i).Tag, 'Authors')
+                                gInfo.(objs(i).Tag) = {objs(i).String};
+                            else
+                                gInfo.(objs(i).Tag) = objs(i).String;
+                            end
                         else
                             if strcmp(objs(i).Style, 'popupmenu')
                                 if objs(i).Value > 1 % dropdown
@@ -221,7 +225,11 @@ function [EEG,com] = pop_taskinfo(EEG)
                     if strcmp(objs(i).Style, 'popupmenu') % dropdown
                         objs(i).Value = find(strcmp(objs(i).String, prevgInfo.(objs(i).Tag))); % set position of dropdown menu to the appropriate string
                     else
-                        objs(i).String = prevgInfo.(objs(i).Tag);
+                        if iscell(prevgInfo.(objs(i).Tag))
+                            objs(i).String = prevgInfo.(objs(i).Tag){1}; % e.g., Authors & ReferencesAndLinks
+                        else
+                            objs(i).String = prevgInfo.(objs(i).Tag);
+                        end
                     end
                 end
             end

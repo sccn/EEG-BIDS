@@ -132,7 +132,7 @@ function [EEG, eInfoDesc, eInfo, command] = pop_eventinfo(EEG)
                 if ~isempty(eventBIDS.(eegField).Units)
                     eInfoDesc.(bidsField).Units = eventBIDS.(eegField).Units;
                 end
-                if ~isempty(eventBIDS.(eegField).Levels)
+                if isfield(eventBIDS.(eegField),'Levels') && ~isempty(eventBIDS.(eegField).Levels) && ~strcmp(eventBIDS.(eegField).Levels,'n/a')
                     eInfoDesc.(bidsField).Levels = eventBIDS.(eegField).Levels;
                 end
                 if ~isempty(eventBIDS.(eegField).TermURL)
@@ -358,7 +358,7 @@ function [EEG, eInfoDesc, eInfo, command] = pop_eventinfo(EEG)
                 if numel(EEG) ~= numel(bidsIdx)
                     fprintf(['EEG.BIDS is found in ' num2str(numel(bidsIdx)) ' out of ' num2str(numel(EEG)) ' EEG structure(s). ']);
                 end
-                fprintf(['Using BIDS info of EEG(' num2str(bidsIdx(1)) ')...']);
+                fprintf(['Using BIDS info of EEG(' num2str(bidsIdx(1)) ')...\n']);
                 bidsEEG = EEG(bidsIdx(1));
             end
         end

@@ -893,6 +893,7 @@ tInfoFields = {...
     'EEGReference' 'REQUIRED' 'char' 'Unknown';
     'PowerLineFrequency' 'REQUIRED' '' 0;
     'EEGGround' 'RECOMMENDED ' 'char' '';
+    'HeadCircumference' 'OPTIONAL ' 'char' '';
     'MiscChannelCount' ' OPTIONAL' '' '';
     'TriggerChannelCount' 'RECOMMENDED' 'char' '';
     'EEGPlacementScheme' 'RECOMMENDED' 'char' '';

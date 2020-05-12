@@ -81,10 +81,6 @@ if nargin < 3 && ~ischar(STUDY)
     % options
     allpInfo = getpInfo(ALLEEG);
     options = { 'targetdir' restag.outputfolder 'License' restag.license 'CHANGES' restag.changes };
-    if isfield(ALLEEG(1).BIDS, 'gInfo') && isfield(ALLEEG(1).BIDS.gInfo,'README') %as README is combined with taskinfo
-        options = [options 'README' {ALLEEG(1).BIDS.gInfo.README}];
-        ALLEEG(1).BIDS.gInfo = rmfield(ALLEEG(1).BIDS.gInfo,'README');
-    end
     bidsFieldsFromALLEEG = fieldnames(ALLEEG(1).BIDS); % All EEG should share same BIDS info
     for f=1:numel(bidsFieldsFromALLEEG)
         if strcmp('pInfo', bidsFieldsFromALLEEG{f})
@@ -149,9 +145,7 @@ end
 function pInfo = getpInfo(ALLEEG)
     pInfo = ALLEEG(1).BIDS.pInfo;
     for a=2:numel(ALLEEG)
-        if sum(strcmp(pInfo(:,1),ALLEEG(a).BIDS.pInfo(2,1))) == 0
-            pInfo = [pInfo; ALLEEG(a).BIDS.pInfo(2,:)];
-        end
+        pInfo = [pInfo; ALLEEG(a).BIDS.pInfo(2,:)];
     end
 end
 end

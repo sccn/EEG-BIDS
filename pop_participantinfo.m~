@@ -142,9 +142,8 @@ function [EEG, pInfoDesc, command] = pop_participantinfo(EEG)
             else
                 pInfoDesc.(field).Units = pInfoBIDS.(field).Units;
             end
-            if isfield(pInfoBIDS.(field),'Levels') && ~strcmp(pInfoBIDS.(field).Levels, 'n/a')
-                pInfoDesc.(field).Levels = pInfoBIDS.(field).Levels;
-            end
+            if ~strcmp(pInfoBIDS.(field).Levels, )
+            pInfoDesc.(field).Levels = pInfoBIDS.(field).Levels;
         end
         if numel(EEG) == 1
             command = '[EEG, pInfoDesc] = pop_participantinfo(EEG);';
@@ -159,8 +158,8 @@ function [EEG, pInfoDesc, command] = pop_participantinfo(EEG)
             if isfield(EEG(e).BIDS,'tInfo')
                 tInfo = EEG(e).BIDS.tInfo;
             end
-            tInfo.HeadCircumference = char(pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)});
-            tInfo.SubjectArtefactDescription = char(pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)});
+            tInfo.HeadCircumference = pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)};
+            tInfo.SubjectArtefactDescription = pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)};
             EEG(e).BIDS.tInfo = tInfo;
             EEG(e).BIDS.pInfoDesc = pInfoDesc;
             colIdx = 1:numel(pTable.ColumnName);
