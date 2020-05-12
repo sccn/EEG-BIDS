@@ -403,7 +403,7 @@ function [EEG, pInfoDesc, command] = pop_participantinfo(EEG)
     function [pBIDS, pFields] = newpInfoBIDS()
         pBIDS = getpInfoDesc();
         if isempty(pBIDS)
-            pFields = { 'Participant_ID' 'Gender' 'Age' 'Group'};
+            pFields = { 'participant_id' 'Gender' 'Age' 'Group'};
             for idx=1:length(pFields)
                 if strcmp(pFields{idx}, 'Participant_ID')
                     pBIDS.Participant_ID.Description = 'Unique participant label';

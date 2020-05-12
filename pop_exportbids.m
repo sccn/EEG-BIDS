@@ -26,7 +26,7 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-function [STUDY,ALLEEG,com] = pop_exportbids(STUDY, ALLEEG, varargin)
+function [STUDY,EEG,com] = pop_exportbids(STUDY, EEG, varargin)
 
 com = '';
 if isempty(STUDY)
@@ -62,12 +62,12 @@ if nargin < 3 && ~ischar(STUDY)
     relSize = 0.7;
     geometry = { [1] [1] [1-relSize relSize*0.8 relSize*0.2] [1-relSize relSize] [1] [1] [1 1 1] };
     geomvert =   [1  0.2 1                                   1                   1   3   1];
-    userdata.ALLEEG = ALLEEG;
+    userdata.EEG = EEG;
     userdata.STUDY = STUDY;
     [results,userdata,~,restag] = inputgui( 'geometry', geometry, 'geomvert', geomvert, 'uilist', uilist, 'helpcom', 'pophelp(''pop_exportbids'');', 'title', 'Export EEGLAB STUDY to BIDS -- pop_exportbids()', 'userdata', userdata );
     if length(results) == 0, return; end
     STUDY  = userdata.STUDY;
-    ALLEEG = userdata.ALLEEG;
+    EEG = userdata.EEG;
 
     % decode some outputs
     if ~isempty(strfind(restag.license, 'CC0')), restag.license = 'CC0'; end
@@ -79,34 +79,34 @@ if nargin < 3 && ~ischar(STUDY)
 %     end
     
     % options
-    allpInfo = getpInfo(ALLEEG);
+    allpInfo = getpInfo(EEG);
     options = { 'targetdir' restag.outputfolder 'License' restag.license 'CHANGES' restag.changes };
-    if isfield(ALLEEG(1).BIDS, 'gInfo') && isfield(ALLEEG(1).BIDS.gInfo,'README') %as README is combined with taskinfo
-        options = [options 'README' {ALLEEG(1).BIDS.gInfo.README}];
-        ALLEEG(1).BIDS.gInfo = rmfield(ALLEEG(1).BIDS.gInfo,'README');
+    if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'README') %as README is combined with taskinfo
+        options = [options 'README' {EEG(1).BIDS.gInfo.README}];
+        EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'README');
     end
-    bidsFieldsFromALLEEG = fieldnames(ALLEEG(1).BIDS); % All EEG should share same BIDS info
+    bidsFieldsFromALLEEG = fieldnames(EEG(1).BIDS); % All EEG should share same BIDS info
     for f=1:numel(bidsFieldsFromALLEEG)
         if strcmp('pInfo', bidsFieldsFromALLEEG{f})
             options = [options 'pInfo' {allpInfo}];
         else
-            options = [options bidsFieldsFromALLEEG{f} {ALLEEG(1).BIDS.(bidsFieldsFromALLEEG{f})}];
+            options = [options bidsFieldsFromALLEEG{f} {EEG(1).BIDS.(bidsFieldsFromALLEEG{f})}];
         end
     end
     
 elseif ischar(STUDY)
     command = STUDY;
-    fig = ALLEEG;
+    fig = EEG;
     userdata = get(fig, 'userdata');
     switch command
         case 'edit_participants'
-            userdata.ALLEEG = pop_participantinfo(userdata.ALLEEG);
+            userdata.EEG = pop_participantinfo(userdata.EEG);
         case 'edit_events'
-            userdata.ALLEEG = pop_eventinfo(userdata.ALLEEG);
+            userdata.EEG = pop_eventinfo(userdata.EEG);
         case 'edit_task'
-            userdata.STUDY  = pop_taskinfo(userdata.ALLEEG);
+            userdata.EEG  = pop_taskinfo(userdata.EEG);
         case 'edit_eeg'
-            userdata.ALLEEG = pop_eegacqinfo(userdata.ALLEEG);
+            userdata.EEG = pop_eegacqinfo(userdata.EEG);
     end
     set(fig, 'userdata', userdata);
     return
@@ -146,11 +146,11 @@ if nargin < 1
     com = sprintf('pop_exportbids(STUDY, %s);', vararg2str(options));
 end
 
-function pInfo = getpInfo(ALLEEG)
-    pInfo = ALLEEG(1).BIDS.pInfo;
-    for a=2:numel(ALLEEG)
-        if sum(strcmp(pInfo(:,1),ALLEEG(a).BIDS.pInfo(2,1))) == 0
-            pInfo = [pInfo; ALLEEG(a).BIDS.pInfo(2,:)];
+function pInfo = getpInfo(EEG)
+    pInfo = EEG(1).BIDS.pInfo;
+    for a=2:numel(EEG)
+        if sum(strcmp(pInfo(:,1),EEG(a).BIDS.pInfo(2,1))) == 0
+            pInfo = [pInfo; EEG(a).BIDS.pInfo(2,:)];
         end
     end
 end
