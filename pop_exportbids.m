@@ -109,15 +109,6 @@ allSessions(cellfun(@isempty, allSessions)) = { 1 };
 allSessions = cellfun(@num2str, allSessions, 'uniformoutput', false);
 uniqueSessions = unique(allSessions);
 
-% check if STUDY is compatible
-% ----------------------------
-for iSubj = 1:length(uniqueSubjects)
-    indS = strmatch( STUDY.subject{iSubj}, { STUDY.datasetinfo.subject }, 'exact' );
-    if length(indS) ~= length(unique(allSessions(indS)))
-        error('STUDY is not compatible: some files need to be merged prior to exporting the data as there can only be one file per subject per session in BIDS');
-    end
-end
-
 % export STUDY to BIDS
 % --------------------
 files = struct('file',{}, 'session', [], 'run', []);
@@ -126,7 +117,11 @@ for iSubj = 1:length(uniqueSubjects)
     for iFile = 1:length(indS)
         files(iSubj).file{iFile} = fullfile( STUDY.datasetinfo(indS(iFile)).filepath, STUDY.datasetinfo(indS(iFile)).filename);
         files(iSubj).session(iFile) = iFile; % In this tool we allow only one file per session. Number of session = length(files per subject)
-        files(iSubj).run(iFile) = 1; % In this tool we allow only one file per session -> run = 1
+        if isfield(STUDY.datasetinfo(indS(iFile)), 'run')
+            files(iSubj).run(iFile) = STUDY.datasetinfo(indS(iFile)).run; % In this tool we allow only one file per session -> run = 1
+        else
+            files(iSubj).run(iFile) = 1;
+        end
     end
 end
 bids_export(files, options{:});
