@@ -130,11 +130,15 @@ for iSubj = 1:length(uniqueSubjects)
     indS = strmatch( STUDY.subject{iSubj}, { STUDY.datasetinfo.subject }, 'exact' );
     for iFile = 1:length(indS)
         files(iSubj).file{iFile} = fullfile( STUDY.datasetinfo(indS(iFile)).filepath, STUDY.datasetinfo(indS(iFile)).filename);
-        files(iSubj).session(iFile) = STUDY.datasetinfo(indS(iFile)).session; % In this tool we allow only one file per session. Number of session = length(files per subject)
-        if isfield(STUDY.datasetinfo(indS(iFile)), 'run')
-            files(iSubj).run(iFile) = STUDY.datasetinfo(indS(iFile)).run; % In this tool we allow only one file per session -> run = 1
+        if isfield(STUDY.datasetinfo(indS(iFile)), 'session') && ~isempty(STUDY.datasetinfo(indS(iFile)).session)
+            files(iSubj).session(iFile) = STUDY.datasetinfo(indS(iFile)).session;
         else
-            files(iSubj).run(iFile) = 1;
+            files(iSubj).session(iFile) = iFile;
+        end
+        if isfield(STUDY.datasetinfo(indS(iFile)), 'run')
+            files(iSubj).run(iFile) = STUDY.datasetinfo(indS(iFile)).run;
+        else
+            files(iSubj).run(iFile) = 1;  % Assume only one run
         end
     end
 end

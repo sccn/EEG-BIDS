@@ -902,7 +902,7 @@ tInfoFields = {...
     'CapManufacturer' 'RECOMMENDED' 'char' 'Unknown';
     'CapManufacturersModelName' 'OPTIONAL' 'char' '';
     'HardwareFilters' 'OPTIONAL' 'char' '';
-    'SoftwareFilters' 'REQUIRED' 'struct' 'n/a';
+    'SoftwareFilters' 'REQUIRED' 'char' 'n/a';
     'RecordingDuration' 'RECOMMENDED' '' 'n/a';
     'RecordingType' 'RECOMMENDED' 'char' '';
     'EpochLength' 'RECOMMENDED' '' 'n/a';
