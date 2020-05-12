@@ -43,9 +43,9 @@ function vers = eegplugin_bids(fig, trystrs, catchstrs)
 
     % create BIDS menus
     % -----------------
-    comtaskinfo  = '[ALLEEG,COM] = pop_taskinfo(ALLEEG);';
-    comsubjinfo  = '[ALLEEG,COM] = pop_participantinfo(ALLEEG);';
-    comeventinfo = '[ALLEEG,COM] = pop_eventinfo(ALLEEG);';
+    comtaskinfo  = '[EEG,COM] = pop_taskinfo(EEG);';
+    comsubjinfo  = '[EEG,COM] = pop_participantinfo(EEG);';
+    comeventinfo = '[EEGs,COM] = pop_eventinfo(EEG);';
     bids = uimenu( menui3, 'label', 'BIDS tools', 'separator', 'on', 'position', 5, 'userdata', 'startup:on;study:on');
     
     uimenu( bids, 'label', 'Edit BIDS task info (STUDY required)', 'callback', comtaskinfo, 'userdata', 'study:on');
