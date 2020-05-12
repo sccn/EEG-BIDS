@@ -21,7 +21,7 @@
 %                (duration in sec), "value" (EEGLAB event type)
 %
 % Author: Dung Truong, Arnaud Delorme
-function [EEG, eInfoDesc, eInfo, command] = pop_eventinfo(EEG)
+function [EEG, command] = pop_eventinfo(EEG)
     % perform check to make sure EEG.event is consistent across EEG
     try
        eventFields = fieldnames([EEG.event]);
