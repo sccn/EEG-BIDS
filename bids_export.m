@@ -893,7 +893,7 @@ tInfoFields = {...
     'EEGReference' 'REQUIRED' 'char' 'Unknown';
     'PowerLineFrequency' 'REQUIRED' '' 0;
     'EEGGround' 'RECOMMENDED ' 'char' '';
-    'HeadCircumference' 'OPTIONAL ' 'char' '';
+    'HeadCircumference' 'OPTIONAL ' '' 0;
     'MiscChannelCount' ' OPTIONAL' '' '';
     'TriggerChannelCount' 'RECOMMENDED' 'char' '';
     'EEGPlacementScheme' 'RECOMMENDED' 'char' '';
@@ -901,8 +901,8 @@ tInfoFields = {...
     'ManufacturersModelName' 'OPTIONAL' 'char' '';
     'CapManufacturer' 'RECOMMENDED' 'char' 'Unknown';
     'CapManufacturersModelName' 'OPTIONAL' 'char' '';
-    'HardwareFilters' 'OPTIONAL' 'char' '';
-    'SoftwareFilters' 'REQUIRED' 'char' 'n/a';
+    'HardwareFilters' 'OPTIONAL' 'struct' '';
+    'SoftwareFilters' 'REQUIRED' 'struct' 'n/a';
     'RecordingDuration' 'RECOMMENDED' '' 'n/a';
     'RecordingType' 'RECOMMENDED' 'char' '';
     'EpochLength' 'RECOMMENDED' '' 'n/a';
