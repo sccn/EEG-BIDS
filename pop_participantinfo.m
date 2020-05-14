@@ -144,9 +144,7 @@ function [EEG, command] = pop_participantinfo(EEG)
                 pInfoDesc.(field).Units = pInfoBIDS.(field).Units;
             end
             if isfield(pInfoBIDS.(field),'Levels') 
-                if isempty(pInfoBIDS.(field).Levels)
-                    pInfoDesc.(field).Levels = struct([]);
-                elseif ~strcmp(pInfoBIDS.(field).Levels, 'n/a')
+                if ~isempty(pInfoBIDS.(field).Levels) && ~strcmp(pInfoBIDS.(field).Levels, 'n/a')
                     pInfoDesc.(field).Levels = pInfoBIDS.(field).Levels;
                 end
             end
