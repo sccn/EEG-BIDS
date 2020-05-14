@@ -185,7 +185,15 @@ function [EEG,com] = pop_taskinfo(EEG)
                                     tInfo.(objs(i).Tag) = objs(i).String{objs(i).Value};
                                 end
                             else
-                                tInfo.(objs(i).Tag) = objs(i).String;
+                                if strcmp(objs(i).Tag, 'PowerLineFrequency') || strcmp(objs(i).Tag, 'HeadCircumference')
+                                    tInfo.(objs(i).Tag) = str2double(objs(i).String);
+                                elseif strcmp(objs(i).Tag, 'HardwareFilters') || strcmp(objs(i).Tag, 'SoftwareFilters')
+                                    tmp = [];
+                                    tmp.FilterDescription = objs(i).String;
+                                    tInfo.(objs(i).Tag) = tmp;
+                                else
+                                    tInfo.(objs(i).Tag) = objs(i).String;
+                                end
                             end
                         end
                     end
