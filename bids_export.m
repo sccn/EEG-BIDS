@@ -365,7 +365,7 @@ end
 % write participants field description (participants.json)
 % --------------------------------------------------------
 descFields = { 'LongName'     'optional' 'char'   '';
-    'Levels'       'optional' 'struct' {};
+    'Levels'       'optional' 'struct' struct([]);
     'Description'  'optional' 'char'   '';
     'Units'        'optional' 'char'   '';
     'TermURL'      'optional' 'char'   '' };
@@ -901,8 +901,8 @@ tInfoFields = {...
     'ManufacturersModelName' 'OPTIONAL' 'char' '';
     'CapManufacturer' 'RECOMMENDED' 'char' 'Unknown';
     'CapManufacturersModelName' 'OPTIONAL' 'char' '';
-    'HardwareFilters' 'OPTIONAL' 'struct' '';
-    'SoftwareFilters' 'REQUIRED' 'struct' 'n/a';
+    'HardwareFilters' 'OPTIONAL' 'struct' struct([]);
+    'SoftwareFilters' 'REQUIRED' 'struct' struct([]);
     'RecordingDuration' 'RECOMMENDED' '' 'n/a';
     'RecordingType' 'RECOMMENDED' 'char' '';
     'EpochLength' 'RECOMMENDED' '' 'n/a';
