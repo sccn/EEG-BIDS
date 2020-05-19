@@ -137,7 +137,7 @@ function [EEG,com] = pop_taskinfo(EEG)
     uicontrol('Style', 'popupmenu', 'string', {'Select','50','60'},'tag', 'PowerLineFrequency', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth 0.05], 'Callback', @editedCB);
     
     % prefill data
-    preFill()
+    preFill();
     
     % wait
     waitfor(f);
@@ -182,10 +182,21 @@ function [EEG,com] = pop_taskinfo(EEG)
                         else
                             if strcmp(objs(i).Style, 'popupmenu')
                                 if objs(i).Value > 1 % dropdown
-                                    tInfo.(objs(i).Tag) = objs(i).String{objs(i).Value};
+                                    if strcmp(objs(i).Tag, 'PowerLineFrequency')
+                                        tInfo.(objs(i).Tag) = str2double(objs(i).String{objs(i).Value});
+                                    else
+                                        tInfo.(objs(i).Tag) = objs(i).String{objs(i).Value};
+                                    end
                                 end
                             else
-                                tInfo.(objs(i).Tag) = objs(i).String;
+                                if strcmp(objs(i).Tag, 'HardwareFilters') || strcmp(objs(i).Tag, 'SoftwareFilters')
+                                    tmp = [];
+                                    tmp.FilterDescription = [];
+                                    tmp.FilterDescription.Description = objs(i).String;
+                                    tInfo.(objs(i).Tag) = tmp;
+                                else
+                                    tInfo.(objs(i).Tag) = objs(i).String;
+                                end
                             end
                         end
                     end
@@ -209,9 +220,11 @@ function [EEG,com] = pop_taskinfo(EEG)
             for i=1:numel(objs)
                 if ~isempty(objs(i).Tag) && isfield(prevtInfo, objs(i).Tag)
                     if strcmp(objs(i).Style, 'popupmenu') % dropdown
-                        objs(i).Value = find(strcmp(objs(i).String, prevtInfo.(objs(i).Tag))); % set position of dropdown menu to the appropriate string
+                        objs(i).Value = find(strcmp(objs(i).String, num2str(prevtInfo.(objs(i).Tag)))); % set position of dropdown menu to the appropriate string
+                    elseif strcmp(objs(i).Tag, 'HardwareFilters') || strcmp(objs(i).Tag, 'SoftwareFilters')
+                        objs(i).String = prevtInfo.(objs(i).Tag).FilterDescription;
                     else
-                        objs(i).String = prevtInfo.(objs(i).Tag);
+                        objs(i).String = char(prevtInfo.(objs(i).Tag));
                     end
                 end
             end
