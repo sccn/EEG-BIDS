@@ -684,7 +684,7 @@ for iEvent = 1:length(EEG.event)
 
                 case 'sample'
                     if isfield(EEG.event, tmpField)
-                        sample = num2str(EEG.event.(tmpField));
+                        sample = num2str(EEG.event(iEvent).(tmpField));
                     else
                         sample = 'n/a';
                     end
@@ -694,25 +694,29 @@ for iEvent = 1:length(EEG.event)
                     fprintf(fid, '\t%s', sample);
 
                 case 'trial_type'
-                    % trial type (which is the type of event - not the same as EEGLAB)
-                    trialType = 'STATUS';
-                    if ~isempty(EEG.event(iEvent).(tmpField))
-                        eventVal = EEG.event(iEvent).(tmpField);
+                    % trial type (which is the experimental condition - not the same as EEGLAB)
+                    if isfield(EEG.event(iEvent), tmpField) && ~isempty(EEG.event(iEvent).(tmpField))
+                        trialType = EEG.event(iEvent).(tmpField);
                     else
-                        eventVal = EEG.event(iEvent).type;
-                    end
-                    if ~isempty(opt.trialtype)
-                        % mapping on event value
-                        if ~isempty(eventVal)
-                            indTrial = strmatch(eventVal, opt.trialtype(:,1), 'exact');
-                            if ~isempty(indTrial)
-                                trialType = opt.trialtype{indTrial,2};
+                        trialType = 'STATUS';
+    %                     if ~isempty(EEG.event(iEvent).(tmpField))
+    %                         eventVal = EEG.event(iEvent).(tmpField);
+    %                     else
+                            eventVal = EEG.event(iEvent).type;
+    %                     end
+                        if ~isempty(opt.trialtype)
+                            % mapping on event value
+                            if ~isempty(eventVal)
+                                indTrial = strmatch(eventVal, opt.trialtype(:,1), 'exact');
+                                if ~isempty(indTrial)
+                                    trialType = opt.trialtype{indTrial,2};
+                                end
                             end
                         end
-                    end
-                    if insertEpoch
-                        if any(indtle == iEvent)
-                            trialType = 'Epoch';
+                        if insertEpoch
+                            if any(indtle == iEvent)
+                                trialType = 'Epoch';
+                            end
                         end
                     end
                     if isnumeric(trialType)

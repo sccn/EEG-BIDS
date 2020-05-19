@@ -79,7 +79,6 @@ if nargin < 3 && ~ischar(STUDY)
 %     end
     
     % options
-    allpInfo = getpInfo(EEG);
     options = { 'targetdir' restag.outputfolder 'License' restag.license 'CHANGES' restag.changes };
     if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'README') %as README is combined with taskinfo
         options = [options 'README' {EEG(1).BIDS.gInfo.README}];
@@ -87,11 +86,7 @@ if nargin < 3 && ~ischar(STUDY)
     end
     bidsFieldsFromALLEEG = fieldnames(EEG(1).BIDS); % All EEG should share same BIDS info
     for f=1:numel(bidsFieldsFromALLEEG)
-        if strcmp('pInfo', bidsFieldsFromALLEEG{f})
-            options = [options 'pInfo' {allpInfo}];
-        else
-            options = [options bidsFieldsFromALLEEG{f} {EEG(1).BIDS.(bidsFieldsFromALLEEG{f})}];
-        end
+        options = [options bidsFieldsFromALLEEG{f} {EEG(1).BIDS.(bidsFieldsFromALLEEG{f})}];
     end
     
 elseif ischar(STUDY)
@@ -116,8 +111,8 @@ end
 
 % get subjects and sessions
 % -------------------------
-allSubjects = { STUDY.datasetinfo.subject };
-allSessions = { STUDY.datasetinfo.session };
+allSubjects = { EEG.subject };
+allSessions = { EEG.session };
 uniqueSubjects = unique(allSubjects);
 allSessions(cellfun(@isempty, allSessions)) = { 1 };
 allSessions = cellfun(@num2str, allSessions, 'uniformoutput', false);
@@ -125,24 +120,34 @@ uniqueSessions = unique(allSessions);
 
 % export STUDY to BIDS
 % --------------------
-files = struct('file',{}, 'session', [], 'run', []);
+pInfo = {}; % each EEG file has its own pInfo --> need to aggregate
+if isfield(EEG(1).BIDS,'pInfo') 
+    pInfo = EEG(1).BIDS.pInfo(1,:);
+end
+subjects = struct('file',{}, 'session', [], 'run', []);
 for iSubj = 1:length(uniqueSubjects)
-    indS = strmatch( STUDY.subject{iSubj}, { STUDY.datasetinfo.subject }, 'exact' );
+    indS = strmatch( uniqueSubjects{iSubj}, allSubjects, 'exact' );
     for iFile = 1:length(indS)
-        files(iSubj).file{iFile} = fullfile( STUDY.datasetinfo(indS(iFile)).filepath, STUDY.datasetinfo(indS(iFile)).filename);
-        if isfield(STUDY.datasetinfo(indS(iFile)), 'session') && ~isempty(STUDY.datasetinfo(indS(iFile)).session)
-            files(iSubj).session(iFile) = STUDY.datasetinfo(indS(iFile)).session;
+        subjects(iSubj).file{iFile} = fullfile( EEG(indS(iFile)).filepath, EEG(indS(iFile)).filename);
+        if isfield(EEG(indS(iFile)), 'session') && ~isempty(EEG(indS(iFile)).session)
+            subjects(iSubj).session(iFile) = EEG(indS(iFile)).session;
         else
-            files(iSubj).session(iFile) = iFile;
+            subjects(iSubj).session(iFile) = iFile;
         end
-        if isfield(STUDY.datasetinfo(indS(iFile)), 'run')
-            files(iSubj).run(iFile) = STUDY.datasetinfo(indS(iFile)).run;
+        if isfield(EEG(indS(iFile)), 'run')
+            subjects(iSubj).run(iFile) = EEG(indS(iFile)).run;
         else
-            files(iSubj).run(iFile) = 1;  % Assume only one run
+            subjects(iSubj).run(iFile) = 1;  % Assume only one run
         end
     end
+    if isfield(EEG(indS(1)).BIDS,'pInfo')
+        pInfo = [pInfo; EEG(indS(1)).BIDS.pInfo(2,:)];
+    end
 end
-bids_export(files, options{:});
+if ~isempty(pInfo)
+    options = [options 'pInfo' {pInfo}];
+end
+bids_export(subjects, options{:});
 
 % history
 % -------
@@ -150,12 +155,4 @@ if nargin < 1
     com = sprintf('pop_exportbids(STUDY, %s);', vararg2str(options));
 end
 
-function pInfo = getpInfo(EEG)
-    pInfo = EEG(1).BIDS.pInfo;
-    for a=2:numel(EEG)
-        if sum(strcmp(pInfo(:,1),EEG(a).BIDS.pInfo(2,1))) == 0
-            pInfo = [pInfo; EEG(a).BIDS.pInfo(2,:)];
-        end
-    end
-end
 end

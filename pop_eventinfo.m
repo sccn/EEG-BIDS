@@ -22,6 +22,7 @@
 %
 % Author: Dung Truong, Arnaud Delorme
 function [EEG, command] = pop_eventinfo(EEG)
+    command = '[EEG, command] = pop_eventinfo(EEG)';
     % perform check to make sure EEG.event is consistent across EEG
     try
        eventFields = fieldnames([EEG.event]);
