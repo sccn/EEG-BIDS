@@ -46,8 +46,8 @@ function [EEG,com] = pop_taskinfo(EEG)
     top = 0.92;
     uicontrol('Style', 'text', 'string', 'BIDS task information', 'fontweight', 'bold', 'fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top halfWidth 0.05]);
     top = top - 0.03;
-    uicontrol('Style', 'text', 'string', 'Experiment name','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
-    uicontrol('Style', 'edit', 'string', '', 'tag', 'Name','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
+    uicontrol('Style', 'text', 'string', 'Task name (no space)','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'TaskName','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
     top = top - tfHeight - 0.01;
     uicontrol('Style', 'text', 'string', 'README (short introduction to the experiment):','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight]);
     top = top - tfHeight*2.2;
@@ -173,7 +173,9 @@ function [EEG,com] = pop_taskinfo(EEG)
             for i=1:numel(objs)
                 if ~isempty(objs(i).Tag)
                     if ~isempty(objs(i).String)
-                        if strcmp(objs(i).Tag, 'README') || strcmp(objs(i).Tag, 'Name') || strcmp(objs(i).Tag, 'ReferencesAndLinks') || strcmp(objs(i).Tag, 'Authors')
+                        if strcmp(objs(i).Tag, 'TaskName')
+                            gInfo.(objs(i).Tag) = strrep(objs(i).String,' ',''); % no space allowed for task name
+                        elseif strcmp(objs(i).Tag, 'README') || strcmp(objs(i).Tag, 'ReferencesAndLinks') || strcmp(objs(i).Tag, 'Authors')
                             if strcmp(objs(i).Tag, 'ReferencesAndLinks') || strcmp(objs(i).Tag, 'Authors')
                                 gInfo.(objs(i).Tag) = {objs(i).String};
                             else
@@ -222,7 +224,11 @@ function [EEG,com] = pop_taskinfo(EEG)
                     if strcmp(objs(i).Style, 'popupmenu') % dropdown
                         objs(i).Value = find(strcmp(objs(i).String, num2str(prevtInfo.(objs(i).Tag)))); % set position of dropdown menu to the appropriate string
                     elseif strcmp(objs(i).Tag, 'HardwareFilters') || strcmp(objs(i).Tag, 'SoftwareFilters')
-                        objs(i).String = prevtInfo.(objs(i).Tag).FilterDescription;
+                        if ischar(prevtInfo.(objs(i).Tag)) % accommodate previous code
+                            objs(i).String = prevtInfo.(objs(i).Tag);
+                        else
+                            objs(i).String = prevtInfo.(objs(i).Tag).FilterDescription.Description;
+                        end
                     else
                         objs(i).String = char(prevtInfo.(objs(i).Tag));
                     end

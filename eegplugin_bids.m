@@ -33,7 +33,7 @@ function vers = eegplugin_bids(fig, trystrs, catchstrs)
     % menu callbacks
     % --------------
     comcnt1 = [ trystrs.no_check '[STUDYTMP, ALLEEGTMP, ~, LASTCOM] = pop_importbids; '  catchstrs.load_study ];
-    comcnt2 = [ trystrs.no_check 'pop_exportbids(STUDY, ALLEEG);' catchstrs.add_to_hist ];
+    comcnt2 = [ trystrs.no_check 'pop_exportbids(STUDY, EEG);' catchstrs.add_to_hist ];
                 
     % create menus
     % ------------
