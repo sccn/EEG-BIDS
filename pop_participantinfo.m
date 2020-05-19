@@ -17,7 +17,6 @@
 %
 % Author: Dung Truong, Arnaud Delorme
 function [EEG, command] = pop_participantinfo(EEG)
-    command = '[EEG, command] = pop_participantinfo(EEG);';
     %% check if there's already an opened window
     if ~isempty(findobj('Tag','pInfoTable'))
         error('A window is already openened for pop_participantinfo');
@@ -144,12 +143,18 @@ function [EEG, command] = pop_participantinfo(EEG)
                 pInfoDesc.(field).Units = pInfoBIDS.(field).Units;
             end
             if isfield(pInfoBIDS.(field),'Levels') 
-                if ~isempty(pInfoBIDS.(field).Levels) && ~strcmp(pInfoBIDS.(field).Levels, 'n/a')
+                if isempty(pInfoBIDS.(field).Levels)
+                    pInfoDesc.(field).Levels = struct([]);
+                elseif ~strcmp(pInfoBIDS.(field).Levels, 'n/a')
                     pInfoDesc.(field).Levels = pInfoBIDS.(field).Levels;
                 end
             end
         end
-
+        if numel(EEG) == 1
+            command = '[EEG, command] = pop_participantinfo(EEG);';
+        else
+            command = '[EEG, command] = pop_participantinfo(EEG);';
+        end
         for e=1:numel(EEG)
             if ~isfield(EEG(e),'BIDS')
                 EEG(e).BIDS = [];
@@ -158,12 +163,8 @@ function [EEG, command] = pop_participantinfo(EEG)
             if isfield(EEG(e).BIDS,'tInfo')
                 tInfo = EEG(e).BIDS.tInfo;
             end
-            if ~isempty(pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)})
-                tInfo.HeadCircumference = str2double(pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)});
-            end
-            if ~isempty(pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)})
-                tInfo.SubjectArtefactDescription = char(pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)});
-            end
+            tInfo.HeadCircumference = char(pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)});
+            tInfo.SubjectArtefactDescription = char(pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)});
             EEG(e).BIDS.tInfo = tInfo;
             EEG(e).BIDS.pInfoDesc = pInfoDesc;
             colIdx = 1:numel(pTable.ColumnName);
