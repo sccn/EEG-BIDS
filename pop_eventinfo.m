@@ -366,10 +366,9 @@ function [EEG, command] = pop_eventinfo(EEG)
         
         % if resume editing
         if ~isempty(bidsEEG) && isfield(bidsEEG.BIDS,'eInfoDesc') && isfield(bidsEEG.BIDS,'eInfo')
-
             for idx=1:size(bidsEEG.BIDS.eInfo,1)
-                field = bidsEEG.BIDS.eInfo{idx,2}; 
-                bids_field = bidsEEG.BIDS.eInfo{idx,1};
+                field = bidsEEG.BIDS.eInfo{idx,2}; % EEGLAB field
+                bids_field = bidsEEG.BIDS.eInfo{idx,1}; % index for eInfoDesc
                 event.(field).BIDSField = bids_field;
                 if isfield(bidsEEG.BIDS.eInfoDesc,bids_field) && isfield(bidsEEG.BIDS.eInfoDesc.(bids_field), 'LongName')
                     event.(field).LongName = bidsEEG.BIDS.eInfoDesc.(bids_field).LongName;
