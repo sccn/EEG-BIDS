@@ -236,13 +236,7 @@ function [EEG, command] = pop_eventinfo(EEG)
             uicontrol(f, 'Style', 'text', 'String', 'Levels editing not applied for EEG.event.latency field.', 'Units', 'normalized', 'Position', [0.01 0.45 1 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
         else
             % retrieve all unique values from EEG.event.(field). 
-            % Use EEG(1) as representative EEG
-            if isnumeric(EEG(1).event(1).(field))
-                values = arrayfun(@(x) num2str(x), [EEG(1).event.(field)], 'UniformOutput', false);
-                levels = unique(values)';
-            else
-                levels = unique({EEG(1).event.(field)})';
-            end
+            levels = getAllUniqueFieldValues(EEG, field)';
             if strcmp(levelCellText,'Click to specify below') && length(levels) > levelThreshold 
                 msg = sprintf('\tThere are more than %d unique levels for field %s.\nAre you sure you want to specify levels for it?', levelThreshold, field);
                 c4 = uicontrol(f, 'Style', 'text', 'String', msg, 'Units', 'normalized', 'FontWeight', 'bold', 'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'confirmMsg');
@@ -348,7 +342,25 @@ function [EEG, command] = pop_eventinfo(EEG)
             delete(h);
         end
     end
-
+    % get unique event value for all EEG
+    function uniqueValues = getAllUniqueFieldValues(EEG, field)
+        if isnumeric(EEG(1).event(1).(field))
+        uniqueValues = [];
+        elseif ischar(EEG(1).event(1).(field))
+            uniqueValues = {};
+        end
+        for i=1:numel(EEG)
+            if ischar(EEG(i).event(1).(field))
+                uniqueValues = [uniqueValues{:} {EEG(i).event.(field)}];
+            else
+                uniqueValues = [uniqueValues EEG(i).event.(field)];
+            end
+            uniqueValues = unique(uniqueValues);
+        end 
+        if isnumeric(uniqueValues(1))
+            uniqueValues = arrayfun(@num2str,uniqueValues,'UniformOutput',false);
+        end
+    end
     % generate 
     function event = newEventBIDS(eegIdx)
         event = [];
