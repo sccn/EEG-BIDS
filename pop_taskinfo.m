@@ -46,6 +46,9 @@ function [EEG,com] = pop_taskinfo(EEG)
     top = 0.92;
     uicontrol('Style', 'text', 'string', 'BIDS task information', 'fontweight', 'bold', 'fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top halfWidth 0.05]);
     top = top - 0.03;
+    uicontrol('Style', 'text', 'string', 'Dataset name','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'edit', 'string', '', 'tag', 'Name','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
+    top = top - tfHeight - 0.01;
     uicontrol('Style', 'text', 'string', 'Task name (no space)','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '', 'tag', 'TaskName','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
     top = top - tfHeight - 0.01;
@@ -87,9 +90,9 @@ function [EEG,com] = pop_taskinfo(EEG)
     top = top - tfHeight - 0.005;    
     uicontrol('Style', 'text', 'string', 'Institution location','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '', 'tag', 'InstitutionAddress','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]);        
-    uicontrol(f, 'Style', 'pushbutton', 'String', 'Help', 'FontSize',fontSize, 'Units', 'normalized', 'Position', [0.05 0.02 0.15 0.04], 'Callback', @helpCB); 
-    uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'FontSize',fontSize, 'Units', 'normalized', 'Position', [0.80 0.02 0.15 0.04], 'Callback', @okCB); 
-    uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'FontSize',fontSize, 'Units', 'normalized', 'Position', [0.64 0.02 0.15 0.04], 'Callback', @cancelCB); 
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Help', 'FontSize',fontSize, 'Units', 'normalized', 'Position', [0.05 0.01 0.15 0.04], 'Callback', @helpCB); 
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'FontSize',fontSize, 'Units', 'normalized', 'Position', [0.80 0.01 0.15 0.04], 'Callback', @okCB); 
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'FontSize',fontSize, 'Units', 'normalized', 'Position', [0.64 0.01 0.15 0.04], 'Callback', @cancelCB); 
 
     %% EEG specific info
     leftMargin = halfWidth;
@@ -175,7 +178,7 @@ function [EEG,com] = pop_taskinfo(EEG)
                     if ~isempty(objs(i).String)
                         if strcmp(objs(i).Tag, 'TaskName')
                             gInfo.(objs(i).Tag) = strrep(objs(i).String,' ',''); % no space allowed for task name
-                        elseif strcmp(objs(i).Tag, 'README') || strcmp(objs(i).Tag, 'ReferencesAndLinks') || strcmp(objs(i).Tag, 'Authors')
+                        elseif strcmp(objs(i).Tag, 'README') || strcmp(objs(i).Tag, 'Name') || strcmp(objs(i).Tag, 'ReferencesAndLinks') || strcmp(objs(i).Tag, 'Authors')
                             if strcmp(objs(i).Tag, 'ReferencesAndLinks') || strcmp(objs(i).Tag, 'Authors')
                                 gInfo.(objs(i).Tag) = {objs(i).String};
                             else
