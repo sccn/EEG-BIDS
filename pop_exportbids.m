@@ -133,7 +133,7 @@ for iSubj = 1:length(uniqueSubjects)
         else
             subjects(iSubj).session(iFile) = iFile;
         end
-        if isfield(EEG(indS(iFile)), 'run')
+        if isfield(EEG(indS(iFile)), 'run') && ~isempty(EEG(indS(iFile)).run)
             subjects(iSubj).run(iFile) = EEG(indS(iFile)).run;
         else
             subjects(iSubj).run(iFile) = 1;  % Assume only one run
