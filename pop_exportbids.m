@@ -82,6 +82,11 @@ if nargin < 3 && ~ischar(STUDY)
     options = { 'targetdir' restag.outputfolder 'License' restag.license 'CHANGES' restag.changes};
     if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'README') 
         options = [options 'README' {EEG(1).BIDS.gInfo.README}];
+        EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'README');
+    end
+    if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'TaskName') 
+        options = [options 'taskName' {EEG(1).BIDS.gInfo.TaskName}];
+        EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'TaskName');
     end
     bidsFieldsFromALLEEG = fieldnames(EEG(1).BIDS); % All EEG should share same BIDS info -> using EEG(1)
     for f=1:numel(bidsFieldsFromALLEEG)
@@ -110,8 +115,16 @@ end
 
 % get subjects and sessions
 % -------------------------
-allSubjects = { EEG.subject };
-allSessions = { EEG.session };
+if ~isempty(EEG(1).subject)
+    allSubjects = { EEG.subject };
+elseif ~isempty(STUDY.datasetinfo(1).subject)
+    allSubjects = { STUDY.datasetinfo.subject };
+end
+if ~isempty(EEG(1).session)
+    allSessions = { EEG.session };
+elseif ~isempty(STUDY.datasetinfo(1).session)
+    allSessions = { STUDY.datasetinfo.session };
+end
 uniqueSubjects = unique(allSubjects);
 allSessions(cellfun(@isempty, allSessions)) = { 1 };
 allSessions = cellfun(@num2str, allSessions, 'uniformoutput', false);
