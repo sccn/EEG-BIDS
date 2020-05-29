@@ -119,11 +119,15 @@ if ~isempty(EEG(1).subject)
     allSubjects = { EEG.subject };
 elseif ~isempty(STUDY.datasetinfo(1).subject)
     allSubjects = { STUDY.datasetinfo.subject };
+else
+    error('No subject info found in either EEG or STUDY.datasetinfo. Please add using Study > Edit STUDY info');
 end
 if ~isempty(EEG(1).session)
     allSessions = { EEG.session };
 elseif ~isempty(STUDY.datasetinfo(1).session)
     allSessions = { STUDY.datasetinfo.session };
+else
+    error('No session info found in either EEG or STUDY.datasetinfo. Please add using Study > Edit STUDY info');
 end
 uniqueSubjects = unique(allSubjects);
 allSessions(cellfun(@isempty, allSessions)) = { 1 };
