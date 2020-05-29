@@ -53,7 +53,7 @@
 %  'targetdir' - [string] target directory. Default is 'bidsexport' in the
 %                current folder.
 %
-%  'taskname'  - [string] name of the task. No space are allowed and no
+%  'taskName'  - [string] name of the task. No space are allowed and no
 %                special characters. Default is ''.
 %
 %  'README'    - [string] content of the README file. If the string points
