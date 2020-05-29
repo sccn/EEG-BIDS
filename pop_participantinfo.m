@@ -155,16 +155,32 @@ function [EEG, command] = pop_participantinfo(EEG)
             if isfield(EEG(e).BIDS,'tInfo')
                 tInfo = EEG(e).BIDS.tInfo;
             end
-            if ~isempty(pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)})
-                tInfo.HeadCircumference = str2double(pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)});
+            if isempty(pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)})
+                if isfield(tInfo, 'HeadCircumference')
+                    tInfo = rmfield(tInfo, 'HeadCircumference');
+                end
+            else
+                if ~isnumeric(pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)})
+                    tInfo.HeadCircumference = str2double(pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)});
+                else
+                    tInfo.HeadCircumference = pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)};
+                end
             end
-            if ~isempty(pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)})
-                tInfo.SubjectArtefactDescription = char(pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)});
+            if isempty(pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)})
+                if isfield(tInfo, 'SubjectArtefactDescription')
+                    tInfo = rmfield(tInfo,'SubjectArtefactDescription');
+                end
+            else
+                if ~ischar(pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)})
+                    tInfo.SubjectArtefactDescription = char(pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)});
+                else
+                    tInfo.SubjectArtefactDescription = pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)};
+                end
             end
             EEG(e).BIDS.tInfo = tInfo;
             EEG(e).BIDS.pInfoDesc = pInfoDesc;
             colIdx = 1:numel(pTable.ColumnName);
-            colIdx = colIdx(~strcmp('HeadCircumference',pTable.ColumnName) & ~strcmp('SubjectArtefactDescription',pTable.ColumnName));
+            colIdx = colIdx(~strcmp('HeadCircumference',pTable.ColumnName) & ~strcmp('SubjectArtefactDescription',pTable.ColumnName)); % these are not pInfo fields
             EEG(e).BIDS.pInfo = [pFields; pTable.Data(e,colIdx(2:end))];
             EEG(e).saved = 'no';
             EEG(e).history = [EEG(e).history command];
