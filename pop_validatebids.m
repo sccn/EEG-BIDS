@@ -43,7 +43,7 @@ function pop_validatebids()
             [status,fileSize] = system(['curl -sI ' gitpath ' | grep -i Content-Length | cut -d'' '' -f2 | tr -d ''\r''']);
             if status == 0
                 fileSize = round(str2double(fileSize)/1024/1024);
-                downloadcom = sprintf('system(''curl -o %s %s'');close(gcf);',filepath, gitpath); 
+                downloadcom = sprintf('system(''curl -o %s %s''); system(''chmod u+x %s'');close(gcf);',filepath, gitpath); 
                 cancelcom = 'close(gcf);';
                 supergui('geomhoriz', {[1] [1] [1 1]}, 'geomvert', [1 1 1], 'uilist', {{'Style','text','string',['The validator needs to be downloaded, which will consume ' num2str(fileSize) ' MB of disk space. Would you like to continue?']},...
                                                                               {}, ...
