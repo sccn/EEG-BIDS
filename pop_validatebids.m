@@ -34,7 +34,8 @@ function pop_validatebids()
     function validateCB(src, event)
         obj = findobj('Tag','outputfolder');
         dir = obj.String;
-        system([filepath ' ' dir]); edit eegplugin_bids.m
+        system([filepath ' ' dir]);
+        close(gcf);
     end
 
     function checkValidator()
@@ -43,7 +44,11 @@ function pop_validatebids()
             [status,fileSize] = system(['curl -sI ' gitpath ' | grep -i Content-Length | cut -d'' '' -f2 | tr -d ''\r''']);
             if status == 0
                 fileSize = round(str2double(fileSize)/1024/1024);
-                downloadcom = sprintf('system(''curl -o %s %s''); system(''chmod u+x %s'');close(gcf);',filepath, gitpath); 
+                if isunix || ismac
+                    downloadcom = sprintf('system(''curl -o %s %s''); system(''chmod u+x %s'');close(gcf);',filepath, gitpath,filepath); 
+                elseif ispc
+                    downloadcom = sprintf('system(''curl -o %s %s'');close(gcf);',filepath, gitpath); 
+                end
                 cancelcom = 'close(gcf);';
                 supergui('geomhoriz', {[1] [1] [1 1]}, 'geomvert', [1 1 1], 'uilist', {{'Style','text','string',['The validator needs to be downloaded, which will consume ' num2str(fileSize) ' MB of disk space. Would you like to continue?']},...
                                                                               {}, ...
