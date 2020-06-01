@@ -57,7 +57,9 @@ function vers = eegplugin_bids(fig, trystrs, catchstrs)
     uimenu( bids, 'label', 'Validate BIDS dataset', 'separator', 'on', 'callback', @validatebidsCB, 'userdata', 'startup:on;study:on');
     
     function validatebidsCB(src,event)
-        if plugin_askinstall('bids-validator','pop_validatebids') == 1 
+        if plugin_status('bids-validator') == 0
+            plugin_askinstall('bids-validator');
+        else
             pop_validatebids()
          end
     end
