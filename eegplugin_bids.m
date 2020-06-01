@@ -46,7 +46,7 @@ function vers = eegplugin_bids(fig, trystrs, catchstrs)
     comtaskinfo  = '[EEG,COM] = pop_taskinfo(EEG);';
     comsubjinfo  = '[EEG,COM] = pop_participantinfo(EEG);';
     comeventinfo = '[EEG,COM] = pop_eventinfo(EEG);';
-    comvalidatebids = [ trystrs.no_check 'pop_validatebids();' catchstrs.add_to_hist ];
+%     comvalidatebids = [ trystrs.no_check 'if plugin_askinstall(''bids-validator'',''pop_validatebids'') == 1 pop_validatebids() end' catchstrs.add_to_hist ];
     bids = uimenu( menui3, 'label', 'BIDS tools', 'separator', 'on', 'position', 5, 'userdata', 'startup:on;study:on');
     
     uimenu( bids, 'label', 'Edit BIDS task info', 'callback', comtaskinfo, 'userdata', 'study:on');
@@ -54,4 +54,11 @@ function vers = eegplugin_bids(fig, trystrs, catchstrs)
     uimenu( bids, 'label', 'Edit BIDS event info', 'callback', comeventinfo, 'userdata', 'study:on');
     uimenu( bids, 'label', 'Import BIDS folder to STUDY', 'separator', 'on', 'callback', comcnt1);
     uimenu( bids, 'label', 'Export STUDY to BIDS folder', 'callback', comcnt2, 'userdata', 'startup:off;study:on');
-    uimenu( bids, 'label', 'Validate BIDS dataset', 'separator', 'on', 'callback', comvalidatebids, 'userdata', 'startup:on;study:on');
+    uimenu( bids, 'label', 'Validate BIDS dataset', 'separator', 'on', 'callback', @validatebidsCB, 'userdata', 'startup:on;study:on');
+    
+    function validatebidsCB(src,event)
+        if plugin_askinstall('bids-validator','pop_validatebids') == 1 
+            pop_validatebids()
+         end
+    end
+end
