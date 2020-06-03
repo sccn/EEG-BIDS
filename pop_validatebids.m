@@ -22,7 +22,7 @@ function pop_validatebids(varargin)
     if ismac || isunix
         system(['chmod u+x ' filepath]);
     end
-    if ~isfile(filepath)
+    if ~exist(filepath,'file')
         supergui('geomhoriz', {[1] [1] [1]}, 'geomvert', [1 1 1], 'uilist', {{'Style','text','string','No validator found. Abort'},...
                                                                               {}, ...
                                                                               { 'Style', 'pushbutton', 'string', 'Ok' 'callback' 'close(gcf)' }}, 'title','Error -- pop_validatebids()');
