@@ -906,7 +906,7 @@ tInfoFields = {...
     'CapManufacturer' 'RECOMMENDED' 'char' 'Unknown';
     'CapManufacturersModelName' 'OPTIONAL' 'char' '';
     'HardwareFilters' 'OPTIONAL' 'struct' struct([]);
-    'SoftwareFilters' 'REQUIRED' 'struct' struct([]);
+    'SoftwareFilters' 'REQUIRED' 'struct' 'n/a';
     'RecordingDuration' 'RECOMMENDED' '' 'n/a';
     'RecordingType' 'RECOMMENDED' 'char' '';
     'EpochLength' 'RECOMMENDED' '' 'n/a';

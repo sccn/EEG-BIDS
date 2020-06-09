@@ -80,17 +80,19 @@ if nargin < 3 && ~ischar(STUDY)
     
     % options
     options = { 'targetdir' restag.outputfolder 'License' restag.license 'CHANGES' restag.changes};
-    if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'README') 
-        options = [options 'README' {EEG(1).BIDS.gInfo.README}];
-        EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'README');
-    end
-    if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'TaskName') 
-        options = [options 'taskName' {EEG(1).BIDS.gInfo.TaskName}];
-        EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'TaskName');
-    end
-    bidsFieldsFromALLEEG = fieldnames(EEG(1).BIDS); % All EEG should share same BIDS info -> using EEG(1)
-    for f=1:numel(bidsFieldsFromALLEEG)
-        options = [options bidsFieldsFromALLEEG{f} {EEG(1).BIDS.(bidsFieldsFromALLEEG{f})}];
+    if isfield(EEG(1), 'BIDS')
+        if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'README') 
+            options = [options 'README' {EEG(1).BIDS.gInfo.README}];
+            EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'README');
+        end
+        if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'TaskName') 
+            options = [options 'taskName' {EEG(1).BIDS.gInfo.TaskName}];
+            EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'TaskName');
+        end
+        bidsFieldsFromALLEEG = fieldnames(EEG(1).BIDS); % All EEG should share same BIDS info -> using EEG(1)
+        for f=1:numel(bidsFieldsFromALLEEG)
+            options = [options bidsFieldsFromALLEEG{f} {EEG(1).BIDS.(bidsFieldsFromALLEEG{f})}];
+        end
     end
     
 elseif ischar(STUDY)
@@ -135,7 +137,7 @@ uniqueSessions = unique(allSessions);
 % export STUDY to BIDS
 % --------------------
 pInfo = {}; % each EEG file has its own pInfo --> need to aggregate
-if isfield(EEG(1).BIDS,'pInfo') 
+if isfield(EEG(1), 'BIDS') && isfield(EEG(1).BIDS,'pInfo') 
     pInfo = EEG(1).BIDS.pInfo(1,:);
 end
 subjects = struct('file',{}, 'session', [], 'run', []);
@@ -154,7 +156,7 @@ for iSubj = 1:length(uniqueSubjects)
             subjects(iSubj).run(iFile) = 1;  % Assume only one run
         end
     end
-    if isfield(EEG(indS(1)).BIDS,'pInfo')
+    if isfield(EEG(indS(1)), 'BIDS') && isfield(EEG(indS(1)).BIDS,'pInfo')
         pInfo = [pInfo; EEG(indS(1)).BIDS.pInfo(2,:)];
     end
 end
