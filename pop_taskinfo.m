@@ -29,12 +29,12 @@ function [EEG,com] = pop_taskinfo(EEG)
     %% Default settings
     bg = [0.65 0.76 1];
     fg = [0 0 0.4];
-    fontSize = 12;
+    fontSize = 11;
     tfHeight = 0.04;
     
     f = figure('MenuBar', 'None', 'ToolBar', 'None', 'Name', 'BIDS task information -- pop_taskinfo()', 'Color', bg, 'IntegerHandle','off');
-    f.Position(3) = 1000;
-    f.Position(4) = 700;
+    f.Position(3) = 1200;
+    f.Position(4) = 900;
     halfWidth = 0.5;
 
     %% Generic task info
@@ -115,7 +115,7 @@ function [EEG,com] = pop_taskinfo(EEG)
     uicontrol('Style', 'text', 'string', 'EEG ground electrode location', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '','tag', 'EEGGround', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
     top = top-0.06;
-    uicontrol('Style', 'text', 'string', 'EEG montage system (10-20, 10-10, custom)', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight+0.01]);
+    uicontrol('Style', 'text', 'string', 'EEG montage system (10-20, 10-10, custom)', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '','tag', 'EEGPlacementScheme', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
     top = top-0.06;
     uicontrol('Style', 'text', 'string', 'EEG amplifier maker', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
