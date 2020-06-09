@@ -46,7 +46,7 @@ function [EEG,com] = pop_taskinfo(EEG)
     top = 0.92;
     uicontrol('Style', 'text', 'string', 'BIDS task information', 'fontweight', 'bold', 'fontsize',13,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top halfWidth 0.05]);
     top = top - 0.03;
-    uicontrol('Style', 'text', 'string', 'Dataset name','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'text', 'string', 'Dataset name*','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '', 'tag', 'Name','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
     top = top - tfHeight - 0.01;
     uicontrol('Style', 'text', 'string', 'Task name (no space)','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
@@ -109,7 +109,7 @@ function [EEG,com] = pop_taskinfo(EEG)
     uicontrol('Style', 'text', 'string', 'Cap model', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '','tag', 'CapManufacturersModelName', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
     top = top-0.06;
-    uicontrol('Style', 'text', 'string', 'EEG reference location', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
+    uicontrol('Style', 'text', 'string', 'EEG reference location*', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '','tag', 'EEGReference', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);
     top = top-0.06;
     uicontrol('Style', 'text', 'string', 'EEG ground electrode location', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
@@ -133,12 +133,13 @@ function [EEG,com] = pop_taskinfo(EEG)
     uicontrol('Style', 'text', 'string', 'Hardware filters', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight+0.002]);
     uicontrol('Style', 'edit', 'string', '','tag', 'HardwareFilters','FontSize',fontSize, 'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB);   
     top = top-0.06;
-    uicontrol('Style', 'text', 'string', 'Software filters', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight+0.002]);
+    uicontrol('Style', 'text', 'string', 'Software filters*', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight+0.002]);
     uicontrol('Style', 'edit', 'string', '','tag', 'SoftwareFilters', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'Callback', @editedCB); 
     top = top-0.06;
-    uicontrol('Style', 'text', 'string', 'Line frequency (Hz)', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth 0.05]);
+    uicontrol('Style', 'text', 'string', 'Line frequency (Hz)*', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth 0.05]);
     uicontrol('Style', 'popupmenu', 'string', {'Select','50','60'},'tag', 'PowerLineFrequency', 'FontSize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth 0.05], 'Callback', @editedCB);
-    
+    top = top-0.06;
+    uicontrol('Style','text','string','* Required field', 'Units', 'normalized','FontSize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg,'HorizontalAlignment','left', 'Position', [leftMargin top tfWidth tfHeight]);
     % prefill data
     preFill();
     
