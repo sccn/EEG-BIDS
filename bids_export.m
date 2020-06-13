@@ -232,6 +232,7 @@ opt = finputcheck(varargin, {
     'cInfoDesc' 'struct'  {}    struct([]);
     'trialtype' 'cell'    {}    {};
     'chanlocs'  ''        {}    '';
+    'subjectArtefact'      'string'  {}    '';
     'anattype'  ''        {}    'T1w';
     'defaced'   'string'  {'on' 'off'}    'on';
     'README'    'string'  {}    '';
@@ -528,20 +529,20 @@ for iSubj = 1:length(files)
             
             fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' opt.taskName '_eeg' files(iSubj).file{1}(end-3:end)]);
             %             copy_data_bids( files(iSubj).file{1}, fileOut, opt.eInfo, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
-            copy_data_bids( files(iSubj).file{1}, fileOut, opt, files(iSubj).chanlocs{1}, opt.copydata);
+            copy_data_bids( files(iSubj).file{1}, fileOut, opt, files(iSubj).chanlocs{1}, files(iSubj).subjectArtefact, opt.copydata);
             
         case 2 % Single-Session Mult-Run
             
             for iRun = 1:length(files(iSubj).run)
                 fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' opt.taskName sprintf('_run-%2.2d', iRun) '_eeg' files(iSubj).file{iRun}(end-3:end) ]);
-                copy_data_bids( files(iSubj).file{iRun}, fileOut, opt, files(iSubj).chanlocs{iRun}, opt.copydata);
+                copy_data_bids( files(iSubj).file{iRun}, fileOut, opt, files(iSubj).chanlocs{iRun}, files(iSubj).subjectArtefact, opt.copydata);
             end
             
         case 3 % Mult-Session Single-Run
             
             for iSess = 1:length(unique(files(iSubj).session))
                 fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName '_eeg' files(iSubj).file{iSess}(end-3:end)]);
-                copy_data_bids( files(iSubj).file{iSess}, fileOut, opt, files(iSubj).chanlocs{iSess}, opt.copydata);
+                copy_data_bids( files(iSubj).file{iSess}, fileOut, opt, files(iSubj).chanlocs{iSess}, files(iSubj).subjectArtefact, opt.copydata);
             end
             
         case 4 % Mult-Session Mult-Run
@@ -551,7 +552,7 @@ for iSubj = 1:length(files)
                 for iSet = runindx
                     iRun = files(iSubj).run(iSet);
                     fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName  sprintf('_run-%2.2d', iRun) '_eeg' files(iSubj).file{iSet}(end-3:end)]);
-                    copy_data_bids(files(iSubj).file{iSet}, fileOut, opt, files(iSubj).chanlocs{iSet}, opt.copydata);
+                    copy_data_bids(files(iSubj).file{iSet}, fileOut, opt, files(iSubj).chanlocs{iSet}, files(iSubj).subjectArtefact, opt.copydata);
                 end
             end
     end
@@ -560,7 +561,7 @@ end
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 %function copy_data_bids(fileIn, fileOut, eInfo, tInfo, trialtype, chanlocs, copydata)
-function copy_data_bids(fileIn, fileOut, opt, chanlocs, copydata)
+function copy_data_bids(fileIn, fileOut, opt, chanlocs, subjectArtefact, copydata)
 folderOut = fileparts(fileOut);
 if ~exist(folderOut)
     mkdir(folderOut);
@@ -913,6 +914,9 @@ tInfoFields = {...
     'SoftwareVersions' 'RECOMMENDED' 'char' '';
     'SubjectArtefactDescription' 'OPTIONAL' 'char' '' };
 tInfo = checkfields(tInfo, tInfoFields, 'tInfo');
+if ischar(subjectArtefact) && ~isempty(subjectArtefact)
+    tInfo.SubjectArtefactDescription = subjectArtefact;
+end
 
 jsonwrite([fileOut(1:end-7) 'eeg.json' ], tInfo,struct('indent','  '));
 
