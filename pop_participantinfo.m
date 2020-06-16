@@ -247,7 +247,8 @@ function [EEG, command] = pop_participantinfo(EEG)
             % for each row of the pInfo table
             for r=1:size(pTbl.Data,1)
                 % if same subject with celected cell then copy value to that row as well
-                if strcmp(pTbl.Data{r,2}, pTbl.Data{row,2})
+                participantColIdx = find(strcmp(pTbl.ColumnName,'participant_id'));
+                if strcmp(pTbl.Data{r,participantColIdx}, pTbl.Data{row,participantColIdx})
                     pTbl.Data{r,col} = entered;
                 end
             end
