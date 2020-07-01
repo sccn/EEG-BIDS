@@ -15,6 +15,7 @@ function [STUDY, ALLEEG] = pop_checkdatasetinfo(STUDY, ALLEEG)
          { 'style', 'text', 'string', 'Information between STUDY and single datasets is inconsistent.', 'HorizontalAlignment','center'},...
          { 'style', 'text', 'string', 'Would you like to overwrite dataset information with STUDY information and use that for BIDS?','HorizontalAlignment', 'center'}, { }, ...
          { 'style', 'pushbutton' , 'string', 'Yes', 'callback', @yesCB}, { 'style', 'pushbutton' , 'string', 'No', 'callback', @noCB } } );
+         waitfor(gcf);
     end
     
     function yesCB(src, event)
@@ -22,6 +23,7 @@ function [STUDY, ALLEEG] = pop_checkdatasetinfo(STUDY, ALLEEG)
         supergui( 'geomhoriz', { 1 1 1 }, 'uilist', { ...
         { 'style', 'text', 'string', 'Information updated. Resave dataset(s) if you want to save the information on disk', 'HorizontalAlignment', 'center'}, { }, ...
         { 'style', 'pushbutton', 'string', 'Ok', 'callback', 'close(gcf);'}});
+        waitfor(gcf);
         close(gcf); 
     end
     function noCB(src,event)

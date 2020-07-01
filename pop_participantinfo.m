@@ -27,7 +27,10 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY)
     end
     
     %% if STUDY is provided, check for consistency
-    studyConsistencyCheck(EEG,STUDY);
+    if exist('STUDY','var') && ~isempty(STUDY)
+        [STUDY, EEG] = pop_checkdatasetinfo(STUDY, EEG);
+        command = '[EEG, command] = pop_participantinfo(EEG, STUDY);';
+    end
     
     %% default settings
     appWidth = 1300;
@@ -515,9 +518,5 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY)
                 end
             end
         end
-    end
-    
-    function studyConsistencyCheck(EEG,STUDY)
-        
     end
 end
