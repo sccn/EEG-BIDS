@@ -79,7 +79,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY)
                 pInfoTbl.Data{i,strcmp(pInfoTbl.ColumnName, 'participant_id')} = curEEG.subject;
             end
             if isfield(curEEG,'group') && ~isempty(curEEG.group)
-                pInfoTbl.Data{i,strcmp(pInfoTbl.ColumnName, 'group')} = curEEG.group;
+                pInfoTbl.Data{i,strcmp(pInfoTbl.ColumnName, 'Group')} = curEEG.group;
             end
         end
         
