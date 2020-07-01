@@ -44,11 +44,7 @@ function vers = eegplugin_bids(fig, trystrs, catchstrs)
     % create BIDS menus
     % -----------------
     comtaskinfo  = '[EEG,COM] = pop_taskinfo(EEG);';
-    if exist('STUDY', 'var') && ~isempty(STUDY)
-        comsubjinfo  = '[EEG,COM] = pop_participantinfo(EEG,STUDY);';
-    else
-        comsubjinfo  = '[EEG,COM] = pop_participantinfo(EEG);';
-    end
+    comsubjinfo  = '[EEG,COM] = pop_participantinfo(EEG,STUDY);';
     comeventinfo = '[EEG,COM] = pop_eventinfo(EEG);';
 %     comvalidatebids = [ trystrs.no_check 'if plugin_askinstall(''bids-validator'',''pop_validatebids'') == 1 pop_validatebids() end' catchstrs.add_to_hist ];
     bids = uimenu( menui3, 'label', 'BIDS tools', 'separator', 'on', 'position', 5, 'userdata', 'startup:on;study:on');
