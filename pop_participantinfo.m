@@ -6,6 +6,8 @@
 % Inputs:
 %   EEG        - EEG dataset structure. May only contain one dataset.
 %
+%   STUDY      - (optional) If provided, subject and group information in
+%                the STUDY will be used to auto-populate participant id and group info.
 % Outputs:
 %  'EEG'       - [struct] Updated EEG structure containing event BIDS information
 %                in each EEG structure at EEG.BIDS
@@ -16,12 +18,17 @@
 %  'pInfo'     - [cell] BIDS participant information.
 %
 % Author: Dung Truong, Arnaud Delorme
-function [EEG, command] = pop_participantinfo(EEG)
+function [EEG, command] = pop_participantinfo(EEG,STUDY)
     command = '[EEG, command] = pop_participantinfo(EEG);';
+    
     %% check if there's already an opened window
     if ~isempty(findobj('Tag','pInfoTable'))
         error('A window is already openened for pop_participantinfo');
     end
+    
+    %% if STUDY is provided, check for consistency
+    studyConsistencyCheck(EEG,STUDY);
+    
     %% default settings
     appWidth = 1300;
     appHeight = 600;
@@ -64,8 +71,13 @@ function [EEG, command] = pop_participantinfo(EEG)
                                     
                 end
             end
-        elseif isfield(curEEG,'subject')
-            pInfoTbl.Data{i,2} = curEEG.subject;
+        else
+            if isfield(curEEG,'subject')
+                pInfoTbl.Data{i,strcmp(pInfoTbl.ColumnName, 'participant_id')} = curEEG.subject;
+            end
+            if isfield(curEEG,'group') && ~isempty(curEEG.group)
+                pInfoTbl.Data{i,strcmp(pInfoTbl.ColumnName, 'group')} = curEEG.group;
+            end
         end
         
         % update HeadCircumference and SubjectArtefactDescription from tInfo
@@ -503,5 +515,9 @@ function [EEG, command] = pop_participantinfo(EEG)
                 end
             end
         end
+    end
+    
+    function studyConsistencyCheck(EEG,STUDY)
+        
     end
 end
