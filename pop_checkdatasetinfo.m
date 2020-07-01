@@ -1,4 +1,4 @@
-function pop_checkdatasetinfo(STUDY, ALLEEG)
+function [STUDY, ALLEEG] = pop_checkdatasetinfo(STUDY, ALLEEG)
     datasetinfo = STUDY.datasetinfo;
     different = 0;
     for k = 1:length(ALLEEG)
@@ -11,12 +11,17 @@ function pop_checkdatasetinfo(STUDY, ALLEEG)
     end
     
     if different
-          supergui( 'geomhoriz', { 1 1 [1 1] }, 'uilist', { ...
-         { 'style', 'text', 'string', 'Information between STUDY and single datasets is inconsistent. Would you like to overwrite dataset information with STUDY information and use that for BIDS?' }, { }, ...
+          supergui( 'geomhoriz', { 1 1 1 [1 1] }, 'uilist', { ...
+         { 'style', 'text', 'string', 'Information between STUDY and single datasets is inconsistent.', 'HorizontalAlignment','center'},...
+         { 'style', 'text', 'string', 'Would you like to overwrite dataset information with STUDY information and use that for BIDS?','HorizontalAlignment', 'center'}, { }, ...
          { 'style', 'pushbutton' , 'string', 'Yes', 'callback', @yesCB}, { 'style', 'pushbutton' , 'string', 'No', 'callback', @noCB } } );
     end
     
     function yesCB(src, event)
+        [STUDY, ALLEEG] = std_editset(STUDY, ALLEEG, 'updatedat', 'on');
+        supergui( 'geomhoriz', { 1 1 1 }, 'uilist', { ...
+        { 'style', 'text', 'string', 'Information updated. Resave dataset(s) if you want to save the information on disk', 'HorizontalAlignment', 'center'}, { }, ...
+        { 'style', 'pushbutton', 'string', 'Ok', 'callback', 'close(gcf);'}});
         close(gcf); 
     end
     function noCB(src,event)
