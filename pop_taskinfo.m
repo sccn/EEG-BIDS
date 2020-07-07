@@ -205,6 +205,8 @@ function [EEG,com] = pop_taskinfo(EEG)
                                 end
                             end
                         end
+                    elseif isfield(tInfo,objs(i).Tag) % remove field if no longer has value
+                        tInfo = rmfield(tInfo, objs(i).Tag);
                     end
                 end
             end
