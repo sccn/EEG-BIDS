@@ -21,6 +21,8 @@ function dataStruct = validateBidsFile(file, fileStruct, fileSuffix)
         if strcmp(fileSuffix,'events')
             colID = find(strcmp('value',holdMe(1,:))); % Search for value column
             dataStruct.value = holdMe(2:end,colID);
+            sampID = find(strcmp('sample',holdMe(1,:))); % Search for sample column
+            dataStruct.sample = holdMe(2:end,sampID);
         elseif strcmp(fileSuffix,'electrodes')
             xID = find(strcmp('x',holdMe(1,:)));
             yID = find(strcmp('y',holdMe(1,:)));

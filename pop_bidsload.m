@@ -64,6 +64,11 @@ function EEG = pop_bidsload(fileLocation, varargin)
         
         % Relabel events
         eventData = validateBidsFile(fullFile, opt.eventLoc, 'events');
+        disp ('Generating event structure from events.tsv');
+        for i=1:length(eventData.sample)
+            EEG.event(i).latency = eventData.sample(i);
+        end
+        
         for i=1:length(eventData.value)
             try % Octave case
                 EEG.event(i).type = strtrim(num2str(eventData.value{i,:}));
@@ -71,6 +76,8 @@ function EEG = pop_bidsload(fileLocation, varargin)
                 EEG.event(i).type = strtrim(num2str(eventData.value(i,:)));
             end
         end
+        
+        EEG = eeg_checkset( EEG , 'makeur'); % Remake urevent
 
         % Update channel/electrode locations
         % Accounts for chanlocs and the tsv being out of order
