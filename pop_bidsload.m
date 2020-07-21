@@ -66,7 +66,7 @@ function EEG = pop_bidsload(fileLocation, varargin)
         eventData = validateBidsFile(fullFile, opt.eventLoc, 'events');
         disp ('Generating event structure from events.tsv');
         for i=1:length(eventData.sample)
-            EEG.event(i).latency = eventData.sample(i);
+            EEG.event(i).latency = eventData.sample{i};
         end
         
         for i=1:length(eventData.value)
