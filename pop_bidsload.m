@@ -66,7 +66,11 @@ function EEG = pop_bidsload(fileLocation, varargin)
         eventData = validateBidsFile(fullFile, opt.eventLoc, 'events');
         disp ('Generating event structure from events.tsv');
         for i=1:length(eventData.sample)
-            EEG.event(i).latency = eventData.sample{i};
+        	try % Octave	    
+			EEG.event(i).latency = eventData.sample{i};
+		catch % Matlab
+			EEG.event(i).latency = eventData.sample(i);
+		end
         end
         
         for i=1:length(eventData.value)
