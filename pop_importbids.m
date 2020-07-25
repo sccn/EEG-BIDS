@@ -159,7 +159,7 @@ for iSubject = 1:size(bids.participants,1)
         channelFile = searchparent(subjectFolder{iFold}, '*_channels.tsv');
         elecFile    = searchparent(subjectFolder{iFold}, '*_electrodes.tsv');
         eventFile   = dir(fullfile(subjectFolder{iFold}, '*_events.tsv'));
-        
+
         % raw data
         allFiles = { eegFile.name };
         ind = strmatch( 'json', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) );
@@ -222,11 +222,11 @@ for iSubject = 1:size(bids.participants,1)
                 if strcmpi(opt.bidschanloc, 'on')
                     channelData = [];
                     if ~isempty(channelFile)
-                        channelData = importtsv( fullfile(subjectFolder{iFold}, channelFile.name));
+                        channelData = importtsv( fullfile(subjectFolder{iFold}, channelFile(end).name));
                     end
                     elecData = [];
                     if ~isempty(elecFile)
-                        elecData = importtsv( fullfile(subjectFolder{iFold}, elecFile.name));
+                        elecData = importtsv( fullfile(subjectFolder{iFold}, elecFile(end).name));
                     end
                     chanlocs = [];
                     for iChan = 2:size(channelData,1)
@@ -271,7 +271,7 @@ for iSubject = 1:size(bids.participants,1)
                 if strcmpi(opt.bidsevent, 'on')
                     eventData = [];
                     if ~isempty(eventFile)
-                        eventData = importtsv( fullfile(subjectFolder{iFold}, eventFile.name));
+                        eventData = importtsv( fullfile(subjectFolder{iFold}, eventFile(end).name));
                     end
                     events = struct([]);
                     indTrial = strmatch( 'trial_type', lower(eventData(1,:)), 'exact');
