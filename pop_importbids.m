@@ -155,10 +155,10 @@ for iSubject = 1:size(bids.participants,1)
         end
         
         % which raw data - with folder inheritance
-        eegFile     = dir(fullfile(subjectFolder{iFold}, '*eeg.*'));
+        eegFile     = searchparent(subjectFolder{iFold}, '*eeg.*');
         channelFile = searchparent(subjectFolder{iFold}, '*_channels.tsv');
         elecFile    = searchparent(subjectFolder{iFold}, '*_electrodes.tsv');
-        eventFile   = dir(fullfile(subjectFolder{iFold}, '*_events.tsv'));
+        eventFile   = searchparent(subjectFolder{iFold}, '*_events.tsv');
 
         % raw data
         allFiles = { eegFile.name };
@@ -222,11 +222,11 @@ for iSubject = 1:size(bids.participants,1)
                 if strcmpi(opt.bidschanloc, 'on')
                     channelData = [];
                     if ~isempty(channelFile)
-                        channelData = importtsv( fullfile(subjectFolder{iFold}, channelFile(end).name));
+                        channelData = importtsv( fullfile(subjectFolder{iFold}, channelFile.name));
                     end
                     elecData = [];
                     if ~isempty(elecFile)
-                        elecData = importtsv( fullfile(subjectFolder{iFold}, elecFile(end).name));
+                        elecData = importtsv( fullfile(subjectFolder{iFold}, elecFile.name));
                     end
                     chanlocs = [];
                     for iChan = 2:size(channelData,1)
@@ -271,7 +271,7 @@ for iSubject = 1:size(bids.participants,1)
                 if strcmpi(opt.bidsevent, 'on')
                     eventData = [];
                     if ~isempty(eventFile)
-                        eventData = importtsv( fullfile(subjectFolder{iFold}, eventFile(end).name));
+                        eventData = importtsv( fullfile(subjectFolder{iFold}, eventFile.name));
                     end
                     events = struct([]);
                     indTrial = strmatch( 'trial_type', lower(eventData(1,:)), 'exact');
@@ -340,19 +340,36 @@ while ~feof(fid)
 end
 str(1) = [];
 
-% search parent folders
+% search parent folders (outward search) for the file of given fileName
 % ---------------------
 function outFile = searchparent(folder, fileName)
-outFile = dir(fullfile(folder, fileName));
-if isempty(outFile)
-    outFile = dir(fullfile(fileparts(folder), fileName));
+% search nestedly outward
+% only get exact match and filter out hidden file
+outFile = '';
+parent = folder;
+while ~any(arrayfun(@(x) strcmp(x,'README'), dir(parent))) && isempty(outFile) % README indicates root BIDS folder
+    outFile = filterHiddenFile(dir(fullfile(parent, fileName)));
+    parent = fileparts(parent);
 end
-if isempty(outFile)
-    outFile = dir(fullfile(fileparts(fileparts(folder)), fileName));
-end
-if isempty(outFile)
-    outFile = dir(fullfile(fileparts(fileparts(fileparts(folder))), fileName));
-end
+
+function fileList = filterHiddenFile(fileList)
+    isGoodFile = true(1,numel(fileList));
+    %# loop to identify hidden files 
+    for iFile = 1:numel(fileList) %'# loop only non-dirs
+       %# on OSX, hidden files start with a dot
+       isGoodFile(iFile) = logical(~strcmp(fileList(iFile).name(1),'.'));
+       if isGoodFile(iFile) && ispc
+            %# check for hidden Windows files - only works on Windows
+            [stats,~] = fileattrib(fullfile(folder,fileList(iFile).name));
+            if stats.hidden
+                isGoodFile(iFile) = false;
+            end
+       end
+    end
+
+    %# remove bad files
+    fileList = fileList(isGoodFile);
+
 
 % Import tsv file
 % ---------------
