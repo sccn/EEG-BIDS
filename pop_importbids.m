@@ -332,6 +332,9 @@ end
 
 % study name and study creation
 % -----------------------------
+if isempty(commands)
+    error('No dataset were found');
+end
 studyName = fullfile(opt.outputdir, [opt.studyName '.study']);
 [STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', task);
 if ~isempty(options)
@@ -358,19 +361,19 @@ function outFile = searchparent(folder, fileName)
 % only get exact match and filter out hidden file
 outFile = '';
 parent = folder;
-while ~any(arrayfun(@(x) strcmp(x,'README'), dir(parent))) && isempty(outFile) % README indicates root BIDS folder
+while ~any(arrayfun(@(x) strcmp(x.name,'README'), dir(parent))) && isempty(outFile) % README indicates root BIDS folder
     outFile = filterHiddenFile(dir(fullfile(parent, fileName)));
     parent = fileparts(parent);
 end
 
 function fileList = filterHiddenFile(fileList)
     isGoodFile = true(1,numel(fileList));
-    %# loop to identify hidden files 
+    % loop to identify hidden files 
     for iFile = 1:numel(fileList) %'# loop only non-dirs
-       %# on OSX, hidden files start with a dot
+       % on OSX, hidden files start with a dot
        isGoodFile(iFile) = logical(~strcmp(fileList(iFile).name(1),'.'));
        if isGoodFile(iFile) && ispc
-            %# check for hidden Windows files - only works on Windows
+            % check for hidden Windows files - only works on Windows
             [stats,~] = fileattrib(fullfile(folder,fileList(iFile).name));
             if stats.hidden
                 isGoodFile(iFile) = false;
@@ -378,7 +381,7 @@ function fileList = filterHiddenFile(fileList)
        end
     end
 
-    %# remove bad files
+    % remove bad files
     fileList = fileList(isGoodFile);
 
 
@@ -389,7 +392,7 @@ function res = importtsv( fileName)
 res = loadtxt( fileName, 'verbose', 'off', 'delim', 9);
 
 for iCol = 1:size(res,2)
-    % search for NaNs
+    % search for NaNs in numerical array
     indNaNs = cellfun(@(x)strcmpi('n/a', x), res(:,iCol));
     if ~isempty(indNaNs)
         allNonNaNVals = res(find(~indNaNs),iCol);
@@ -398,7 +401,8 @@ for iCol = 1:size(res,2)
         if all(testNumeric)
             res(find(indNaNs),iCol) = { NaN };
         elseif ~all(~testNumeric)
-            error('Mixture of numeric and non-numeric values in table');
+            % Convert numerical value back to string
+            res(:,iCol) = cellfun(@num2str, res(:,iCol), 'uniformoutput', false);
         end
     end
 end
