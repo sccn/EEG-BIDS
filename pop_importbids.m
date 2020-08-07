@@ -75,8 +75,8 @@ if nargin < 1
     if isempty(res), return; end
     
     options = { 'eventtype' type_fields{res.typefield} };
-    if res.events,    options = { options{:} 'bidsevent' 'on' }; end
-    if res.chanlocs,  options = { options{:} 'bidschanloc' 'on' }; end
+    if res.events,    options = { options{:} 'bidsevent' 'on' };   else options = { options{:} 'bidsevent' 'off' }; end
+    if res.chanlocs,  options = { options{:} 'bidschanloc' 'on' }; else options = { options{:} 'bidschanloc' 'off' }; end
     if ~isempty(res.folder),  options = { options{:} 'outputdir' res.folder }; end
     if ~isempty(res.studyName),  options = { options{:} 'studyName' res.studyName }; end
 else
