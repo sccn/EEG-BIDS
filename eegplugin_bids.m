@@ -47,7 +47,14 @@ function vers = eegplugin_bids(fig, trystrs, catchstrs)
     comsubjinfo  = '[EEG,COM] = pop_participantinfo(EEG,STUDY);';
     comeventinfo = '[EEG,COM] = pop_eventinfo(EEG);';
 %     comvalidatebids = [ trystrs.no_check 'if plugin_askinstall(''bids-validator'',''pop_validatebids'') == 1 pop_validatebids() end' catchstrs.add_to_hist ];
-    bids = uimenu( menui3, 'label', 'BIDS tools', 'separator', 'on', 'position', 5, 'userdata', 'startup:on;study:on');
+    bids = findobj(fig, 'label', 'BIDS tools');
+    if isempty(bids)
+        bids = uimenu( menui3, 'label', 'BIDS tools', 'separator', 'on', 'position', 5, 'userdata', 'startup:on;study:on');
+    end
+    children = get(bids, 'children');
+    if ~isempty(children)
+        delete(children);
+    end
     
     uimenu( bids, 'label', 'Edit BIDS task info', 'callback', comtaskinfo, 'userdata', 'study:on');
     uimenu( bids, 'label', 'Edit BIDS participant info', 'callback', comsubjinfo, 'userdata', 'study:on');
