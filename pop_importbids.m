@@ -43,6 +43,10 @@
 
 function [STUDY, ALLEEG, bids, commands] = pop_importbids(bidsFolder, varargin)
 
+STUDY = [];
+ALLEEG = [];
+bids = [];
+commands = '';
 if nargin < 1
     bidsFolder = uigetdir('Pick a BIDS folder');
     if isequal(bidsFolder,0), return; end
@@ -52,22 +56,25 @@ if nargin < 1
         '   set(findobj(gcbf, ''tag'', ''folder''), ''string'', tmpfolder);' ...
         'end;' ...
         'clear tmpfolder;' ];
+    type_fields = { 'value' 'trial_type' };
     
     promptstr    = { ...
         { 'style'  'text'       'string' 'Enter study name (default is BIDS folder name)' } ...
         { 'style'  'edit'       'string' '' 'tag' 'studyName' } ...
         { 'style'  'checkbox'  'string' 'Overwrite events with BIDS event files' 'tag' 'events' 'value' 0 } ...
         { 'style'  'checkbox'   'string' 'Overwrite channel locations with BIDS channel location files' 'tag' 'chanlocs' 'value' 0 } ...
+        { 'style'  'text'   'string' 'Use this BIDS field for EEGLAB event type' 'tag' 'chanlocs' 'value' 0 } ...
+        { 'style'  'popupmenu'  'string' type_fields 'tag' 'typefield' 'value' 1 } {} ...
         { 'style'  'text'       'string' 'Study output folder' } ...
         { 'style'  'edit'       'string' fullfile(bidsFolder, 'derivatives') 'tag' 'folder' 'HorizontalAlignment' 'left' } ...
         { 'style'  'pushbutton' 'string' '...' 'callback' cb_select } ...
         };
-    geometry = {[2 1.5], 1,1,[1 2 0.5]};
+    geometry = {[2 1.5], 1,1,[2 1 0.5],[1 2 0.5]};
     
     [~,~,~,res] = inputgui( 'geometry', geometry, 'uilist', promptstr, 'helpcom', 'pophelp(''pop_importbids'')', 'title', 'Import BIDS data -- pop_importbids()');
     if isempty(res), return; end
     
-    options = { };
+    options = { 'eventtype' type_fields{res.typefield} };
     if res.events,    options = { options{:} 'bidsevent' 'on' }; end
     if res.chanlocs,  options = { options{:} 'bidschanloc' 'on' }; end
     if ~isempty(res.folder),  options = { options{:} 'outputdir' res.folder }; end
@@ -80,6 +87,7 @@ end
 opt = finputcheck(options, { ...
     'bidsevent'      'string'    { 'on' 'off' }    'on';  ...
     'bidschanloc'    'string'    { 'on' 'off' }    'on'; ...
+    'eventtype'      'string'    { 'trial_type' 'value' }    'value'; ...
     'outputdir'      'string'    { } fullfile(bidsFolder,'derivatives'); ...
     'studyName'      'string'    { }                defaultStudyName ...
     }, 'pop_importbids');
@@ -173,9 +181,12 @@ for iSubject = 1:size(bids.participants,1)
         elseif length(allFiles) == 1
             eegFileRawAll  = allFiles;
         else
-            ind = strmatch( '.eeg', allFiles);
-            if ~isempty(ind)
-                error('No EEG data found for subject %s', bids.participants{iSubject,1});
+            ind = strmatch( '.eeg', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % BVA
+            if isempty(ind)
+                ind = strmatch( '.bdf', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % BDF
+                if isempty(ind)
+                    error('No EEG data found for subject %s', bids.participants{iSubject,1});
+                end
             end
             eegFileRawAll  = allFiles(ind);
         end
@@ -274,7 +285,7 @@ for iSubject = 1:size(bids.participants,1)
                         eventData = importtsv( fullfile(subjectFolder{iFold}, eventFile(end).name));
                     end
                     events = struct([]);
-                    indTrial = strmatch( 'trial_type', lower(eventData(1,:)), 'exact');
+                    indTrial = strmatch( 'value', lower(eventData(1,:)), 'exact');
                     for iEvent = 2:size(eventData,1)
                         events(end+1).latency  = eventData{iEvent,1}*EEG.srate+1; % convert to samples
                         events(end).duration   = eventData{iEvent,2}*EEG.srate;   % convert to samples
