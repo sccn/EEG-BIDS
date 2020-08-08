@@ -58,20 +58,22 @@ if nargin < 1
         'clear tmpfolder;' ];
     type_fields = { 'value' 'trial_type' };
     
+    cb_event = 'set(findobj(gcbf, ''userdata'', ''bidstype''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
     promptstr    = { ...
         { 'style'  'text'       'string' 'Enter study name (default is BIDS folder name)' } ...
         { 'style'  'edit'       'string' '' 'tag' 'studyName' } ...
-        { 'style'  'checkbox'  'string' 'Overwrite events with BIDS event files' 'tag' 'events' 'value' 0 } ...
+        {} ...
         { 'style'  'checkbox'   'string' 'Overwrite channel locations with BIDS channel location files' 'tag' 'chanlocs' 'value' 0 } ...
-        { 'style'  'text'   'string' 'Use this BIDS field for EEGLAB event type' 'tag' 'chanlocs' 'value' 0 } ...
-        { 'style'  'popupmenu'  'string' type_fields 'tag' 'typefield' 'value' 1 } {} ...
+        { 'style'  'checkbox'  'string' 'Overwrite events with BIDS event files and use this BIDS field for event type' 'tag' 'events' 'value' 0 'callback' cb_event } ...
+        { 'style'  'popupmenu'  'string' type_fields 'tag' 'typefield' 'value' 1 'userdata' 'bidstype'  'enable' 'off' } ...
+        {} ...
         { 'style'  'text'       'string' 'Study output folder' } ...
         { 'style'  'edit'       'string' fullfile(bidsFolder, 'derivatives') 'tag' 'folder' 'HorizontalAlignment' 'left' } ...
         { 'style'  'pushbutton' 'string' '...' 'callback' cb_select } ...
         };
-    geometry = {[2 1.5], 1,1,[2 1 0.5],[1 2 0.5]};
+    geometry = {[2 1.5], 1, 1,[1 0.25],1,[1 2 0.5]};
     
-    [~,~,~,res] = inputgui( 'geometry', geometry, 'uilist', promptstr, 'helpcom', 'pophelp(''pop_importbids'')', 'title', 'Import BIDS data -- pop_importbids()');
+    [~,~,~,res] = inputgui( 'geometry', geometry, 'geomvert', [1 0.5, 1 1 0.5 1], 'uilist', promptstr, 'helpcom', 'pophelp(''pop_importbids'')', 'title', 'Import BIDS data -- pop_importbids()');
     if isempty(res), return; end
     
     options = { 'eventtype' type_fields{res.typefield} };
@@ -362,11 +364,11 @@ function outFile = searchparent(folder, fileName)
 outFile = '';
 parent = folder;
 while ~any(arrayfun(@(x) strcmp(x.name,'README'), dir(parent))) && isempty(outFile) % README indicates root BIDS folder
-    outFile = filterHiddenFile(dir(fullfile(parent, fileName)));
+    outFile = filterHiddenFile(folder, dir(fullfile(parent, fileName)));
     parent = fileparts(parent);
 end
 
-function fileList = filterHiddenFile(fileList)
+function fileList = filterHiddenFile(folder, fileList)
     isGoodFile = true(1,numel(fileList));
     % loop to identify hidden files 
     for iFile = 1:numel(fileList) %'# loop only non-dirs
@@ -374,7 +376,7 @@ function fileList = filterHiddenFile(fileList)
        isGoodFile(iFile) = logical(~strcmp(fileList(iFile).name(1),'.'));
        if isGoodFile(iFile) && ispc
             % check for hidden Windows files - only works on Windows
-            [stats,~] = fileattrib(fullfile(folder,fileList(iFile).name));
+            [~,stats] = fileattrib(fullfile(folder,fileList(iFile).name));
             if stats.hidden
                 isGoodFile(iFile) = false;
             end
