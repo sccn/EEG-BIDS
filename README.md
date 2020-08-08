@@ -33,3 +33,5 @@ v3.0 - better export for multiple runs and allowing importing BIDS folder with m
 v3.1 - fix multiple issues at export time including subject numbering
 
 v3.2 - fix menu conflict in EEGLAB with bids validator; check channel types; add option to choose EEG event field; minor bugs
+
+v3.3 - fix issue for windows and work on GUI
