@@ -166,6 +166,9 @@
 %  'defaced'   - ['on'|'off'] indicate if the MRI image is defaced or not.
 %                Default is 'on'.
 %
+%  'createids' - ['on'|'off'] do not use Participant IDs and create new
+%                anonymized IDs instead. Default is 'off'.
+%
 %  'chanlocs'  - [struct or file name] channel location structure or file
 %                name to use when saving channel information. Note that
 %                this assumes that all the files have the same number of
@@ -250,6 +253,7 @@ opt = finputcheck(varargin, {
     'chanlocs'  ''        {}    '';
     'chanlookup' 'string' {}    '';
     'defaced'   'string'  {'on' 'off'}    'on';
+    'createids' 'string'  {'on' 'off'}    'on';
     'README'    'string'  {}    '';
     'CHANGES'   'string'  {}    '' ;
     'copydata'   'real'   [0 1] 1 }, 'bids_export');
@@ -377,8 +381,10 @@ if ~isempty(opt.pInfo)
         if strcmp('participant_id', opt.pInfo{1,1})
             if length(opt.pInfo{iSubj,1}) > 3 && isequal('sub-', opt.pInfo{iSubj,1}(1:4))
                 participants{iSubj, 1} = opt.pInfo{iSubj,1};
-            else
+            elseif strcmpi(opt.createids, 'off')
                 participants{iSubj, 1} = sprintf('sub-%s', opt.pInfo{iSubj,1});
+            else
+                participants{iSubj, 1} = sprintf('sub-%3.3d', iSubj-1);
             end
         else
             participants{iSubj, 1} = sprintf('sub-%3.3d', iSubj-1);
@@ -425,7 +431,7 @@ end
 % Write README files (README)
 % ---------------------------
 if ~isempty(opt.README)
-    if ~exist(opt.README)
+    if exist(opt.README) ~= 2
         fid = fopen(fullfile(opt.targetdir, 'README'), 'w');
         if fid == -1, error('Cannot write README file'); end
         fprintf(fid, '%s', opt.README);
@@ -854,7 +860,7 @@ if ~isempty(chanlocs)
         error(sprintf('Number of channels in channel location inconsistent with data for file %s', fileIn));
     end
 end
-if ischar(opt.chanlookup)
+if ischar(opt.chanlookup) && ~isempty(opt.chanlookup)
     EEG=pop_chanedit(EEG, 'lookup', opt.chanlookup);
 end
 
@@ -1029,7 +1035,7 @@ if fid == -1, error('Cannot write file - make sure you have writing permission')
 for iRow=1:size(matlabArray,1)
     for iCol=1:size(matlabArray,2)
         if isempty(matlabArray{iRow,iCol})
-            disp('Empty value detected, replacing by n/a');
+            %disp('Empty value detected, replacing by n/a');
             fprintf(fid, 'n/a');
         elseif ischar(matlabArray{iRow,iCol})
             fprintf(fid, '%s', matlabArray{iRow,iCol});

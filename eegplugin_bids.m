@@ -11,7 +11,7 @@
 
 function vers = eegplugin_bids(fig, trystrs, catchstrs)
 
-    vers = '3.3';
+    vers = '3.4';
     if nargin < 3
         error('eegplugin_bids requires 3 arguments');
     end
@@ -33,7 +33,7 @@ function vers = eegplugin_bids(fig, trystrs, catchstrs)
     % menu callbacks
     % --------------
     comcnt1 = [ trystrs.no_check '[STUDYTMP, ALLEEGTMP, ~, LASTCOM] = pop_importbids; '  catchstrs.load_study ];
-    comcnt2 = [ trystrs.no_check 'pop_exportbids(STUDY, EEG);' catchstrs.add_to_hist ];
+    comcnt2 = [ trystrs.no_check '[~,~,LASTCOM] = pop_exportbids(STUDY, EEG);' catchstrs.add_to_hist ];
                 
     % create menus
     % ------------
@@ -43,9 +43,9 @@ function vers = eegplugin_bids(fig, trystrs, catchstrs)
 
     % create BIDS menus
     % -----------------
-    comtaskinfo  = '[EEG,COM] = pop_taskinfo(EEG);';
-    comsubjinfo  = '[EEG,COM] = pop_participantinfo(EEG,STUDY);';
-    comeventinfo = '[EEG,COM] = pop_eventinfo(EEG);';
+    comtaskinfo  = [trystrs.no_check '[EEG,LASTCOM] = pop_taskinfo(EEG);'               catchstrs.store_and_hist ];
+    comsubjinfo  = [trystrs.no_check '[EEG,LASTCOM] = pop_participantinfo(EEG,STUDY);'  catchstrs.store_and_hist ];
+    comeventinfo = [trystrs.no_check '[EEG,LASTCOM] = pop_eventinfo(EEG);'              catchstrs.store_and_hist ];
 %     comvalidatebids = [ trystrs.no_check 'if plugin_askinstall(''bids-validator'',''pop_validatebids'') == 1 pop_validatebids() end' catchstrs.add_to_hist ];
     bids = findobj(fig, 'label', 'BIDS tools');
     if isempty(bids)
