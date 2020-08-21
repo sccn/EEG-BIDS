@@ -8,6 +8,9 @@
 %
 %   STUDY      - (optional) If provided, subject and group information in
 %                the STUDY will be used to auto-populate participant id and group info.
+% Optional input:
+%  'default'   - generate BIDS participant info using default values without
+%                popping up the GUI
 % Outputs:
 %  'EEG'       - [struct] Updated EEG structure containing event BIDS information
 %                in each EEG structure at EEG.BIDS
@@ -18,7 +21,7 @@
 %  'pInfo'     - [cell] BIDS participant information.
 %
 % Author: Dung Truong, Arnaud Delorme
-function [EEG, command] = pop_participantinfo(EEG,STUDY)
+function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     command = '[EEG, command] = pop_participantinfo(EEG);';
     
     %% check if there's already an opened window
@@ -135,9 +138,14 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY)
         clear('field');
     end
     tbl.Data = data;
-    %% wait
-    waitfor(f);
-  
+    
+    if nargin < 3
+        %% wait
+        waitfor(f);
+    elseif nargin < 4 && ischar(varargin{1}) && strcmp(varargin{1}, 'default')
+        okCB('','');
+    end
+    
     %% callback handle for cancel button
     function cancelCB(src, event)
         clear('eventBIDS');
@@ -166,7 +174,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY)
             if ~isfield(EEG(e),'BIDS')
                 EEG(e).BIDS = [];
             end
-            tInfo = [];
+            tInfo = struct([]);
             if isfield(EEG(e).BIDS,'tInfo')
                 tInfo = EEG(e).BIDS.tInfo;
             end

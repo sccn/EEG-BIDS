@@ -7,6 +7,9 @@
 % Inputs:
 %   EEG        - EEG dataset structure. May only contain one dataset.
 %
+% Optional input:
+%  'default'   - generate BIDS event info using default values without
+%                popping up the GUI
 % Outputs:
 %  'EEG'       - [struct] Updated EEG structure containing event BIDS information
 %                in each EEG structure at EEG.BIDS.eInfoDesc and EEG.BIDS.eInfo
@@ -21,7 +24,7 @@
 %                (duration in sec), "value" (EEGLAB event type)
 %
 % Author: Dung Truong, Arnaud Delorme
-function [EEG, command] = pop_eventinfo(EEG)
+function [EEG, command] = pop_eventinfo(EEG, varargin)
     command = '[EEG, command] = pop_eventinfo(EEG)';
     % perform check to make sure EEG.event is consistent across EEG
     try
@@ -34,82 +37,94 @@ function [EEG, command] = pop_eventinfo(EEG)
             warning('There is mismatch in number of fields in EEG.event structures. Using fields of EEG(%d) which has the highest number of fields (%d).', idx, num);
         end
     end
-    % default settings
-    appWidth = 800;
-    appHeight = 500;
-    bg = [0.65 0.76 1];
-    fg = [0 0 0.4];
-    levelThreshold = 20;
-    fontSize = 12;
-    eventBIDS = newEventBIDS();
-    columnDefinition.LongName = 'Long, unabbreviated name of the field';
-    columnDefinition.Description = 'Description of the field';
-    columnDefinition.Levels = 'For categorical variables: possible values and their descriptions';
-    columnDefinition.Units = 'Measurement units - format [<prefix>]<name>';
-    columnDefinition.TermURL = 'URL pointing to a formal definition of this type of data in an ontology available on the web';
-    
+        
     eInfo = {};
     eInfoDesc = [];
+    eventBIDS = newEventBIDS();
     
-    % create UI
-    
-    f = figure('MenuBar', 'None', 'ToolBar', 'None', 'Name', 'Edit BIDS event info - pop_eventinfo', 'Color', bg);
-    f.Position(3) = appWidth;
-    f.Position(4) = appHeight;
-    uicontrol(f, 'Style', 'text', 'String', 'BIDS information for EEG.event fields', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0 0.9 1 0.1]);
-    tbl = uitable(f, 'RowName', eventFields, 'ColumnName', { 'BIDS Field' 'Levels' 'LongName' 'Description' 'Unit Name' 'Unit Prefix' 'TermURL' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'bidsTable');
-    tbl.Position = [0.01 0.54 0.98 0.41];
-    tbl.CellSelectionCallback = @cellSelectedCB;
-    tbl.CellEditCallback = @cellEditCB;
-    tbl.ColumnEditable = [true false true true true true];
-    tbl.ColumnWidth = {appWidth/9,appWidth/9,appWidth*2/9,appWidth*2/9,appWidth/9,appWidth/9,appWidth/9};
-    units = {' ','ampere','becquerel','candela','coulomb','degree Celsius','farad','gray','henry','hertz','joule','katal','kelvin','kilogram','lumen','lux','metre','mole','newton','ohm','pascal','radian','second','siemens','sievert','steradian','tesla','volt','watt','weber'};
-    unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
-    tbl.ColumnFormat = {[] [] [] [] units unitPrefixes []};
-    uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0 0.1 0.05], 'Callback', @okCB); 
-    uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0 0.1 0.05], 'Callback', @cancelCB); 
-    
-    % pre-populate table
-    data = cell(length(eventFields),length(tbl.ColumnName));
-    for i=1:length(eventFields)
-        % pre-populate description
-        field = eventFields{i};
-        if isfield(eventBIDS, field)
-            if isfield(eventBIDS.(field), 'BIDSField')
-                data{i,1} = eventBIDS.(field).BIDSField;
-            end
-            if isfield(eventBIDS.(field), 'LongName')
-                data{i,find(strcmp(tbl.ColumnName, 'LongName'))} = eventBIDS.(field).LongName;
-            end
-            if isfield(eventBIDS.(field), 'Description')
-                data{i,find(strcmp(tbl.ColumnName, 'Description'))} = eventBIDS.(field).Description;
-            end
-            if isfield(eventBIDS.(field), 'Units')
-                data{i,find(strcmp(tbl.ColumnName, 'Unit Name'))} = eventBIDS.(field).Units;
-            end
-            if isfield(eventBIDS.(field), 'TermURL')
-                data{i,find(strcmp(tbl.ColumnName, 'TermURL'))} = eventBIDS.(field).TermURL;
-            end
-            if isfield(eventBIDS.(field), 'Levels') && ~isempty(eventBIDS.(field).Levels)
-                data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = strjoin(fieldnames(eventBIDS.(field).Levels),',');
-            else
-                if strcmp(field, 'latency') || strcmp(field, "usertags")
-                    data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'n/a';
+    % Use GUI
+    if nargin < 2
+        % default GUI settings
+        appWidth = 800;
+        appHeight = 500;
+        bg = [0.65 0.76 1];
+        fg = [0 0 0.4];
+        levelThreshold = 20;
+        fontSize = 12;
+        columnDefinition.LongName = 'Long, unabbreviated name of the field';
+        columnDefinition.Description = 'Description of the field';
+        columnDefinition.Levels = 'For categorical variables: possible values and their descriptions';
+        columnDefinition.Units = 'Measurement units - format [<prefix>]<name>';
+        columnDefinition.TermURL = 'URL pointing to a formal definition of this type of data in an ontology available on the web';
+
+        % create UI
+
+        f = figure('MenuBar', 'None', 'ToolBar', 'None', 'Name', 'Edit BIDS event info - pop_eventinfo', 'Color', bg);
+        f.Position(3) = appWidth;
+        f.Position(4) = appHeight;
+        uicontrol(f, 'Style', 'text', 'String', 'BIDS information for EEG.event fields', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0 0.9 1 0.1]);
+        tbl = uitable(f, 'RowName', eventFields, 'ColumnName', { 'BIDS Field' 'Levels' 'LongName' 'Description' 'Unit Name' 'Unit Prefix' 'TermURL' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'bidsTable');
+        tbl.Position = [0.01 0.54 0.98 0.41];
+        tbl.CellSelectionCallback = @cellSelectedCB;
+        tbl.CellEditCallback = @cellEditCB;
+        tbl.ColumnEditable = [true false true true true true];
+        tbl.ColumnWidth = {appWidth/9,appWidth/9,appWidth*2/9,appWidth*2/9,appWidth/9,appWidth/9,appWidth/9};
+        units = {' ','ampere','becquerel','candela','coulomb','degree Celsius','farad','gray','henry','hertz','joule','katal','kelvin','kilogram','lumen','lux','metre','mole','newton','ohm','pascal','radian','second','siemens','sievert','steradian','tesla','volt','watt','weber'};
+        unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
+        tbl.ColumnFormat = {[] [] [] [] units unitPrefixes []};
+        uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0 0.1 0.05], 'Callback', @okCB); 
+        uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0 0.1 0.05], 'Callback', @cancelCB); 
+
+        % pre-populate table
+        data = cell(length(eventFields),length(tbl.ColumnName));
+        for i=1:length(eventFields)
+            % pre-populate description
+            field = eventFields{i};
+            if isfield(eventBIDS, field)
+                if isfield(eventBIDS.(field), 'BIDSField')
+                    data{i,1} = eventBIDS.(field).BIDSField;
+                end
+                if isfield(eventBIDS.(field), 'LongName')
+                    data{i,find(strcmp(tbl.ColumnName, 'LongName'))} = eventBIDS.(field).LongName;
+                end
+                if isfield(eventBIDS.(field), 'Description')
+                    data{i,find(strcmp(tbl.ColumnName, 'Description'))} = eventBIDS.(field).Description;
+                end
+                if isfield(eventBIDS.(field), 'Units')
+                    data{i,find(strcmp(tbl.ColumnName, 'Unit Name'))} = eventBIDS.(field).Units;
+                end
+                if isfield(eventBIDS.(field), 'TermURL')
+                    data{i,find(strcmp(tbl.ColumnName, 'TermURL'))} = eventBIDS.(field).TermURL;
+                end
+                if isfield(eventBIDS.(field), 'Levels') && ~isempty(eventBIDS.(field).Levels)
+                    data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = strjoin(fieldnames(eventBIDS.(field).Levels),',');
                 else
-                    data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'Click to specify below';
+                    if strcmp(field, 'latency') || strcmp(field, "usertags")
+                        data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'n/a';
+                    else
+                        data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'Click to specify below';
+                    end
                 end
             end
+            clear('field');
         end
-        clear('field');
+        tbl.Data = data;
+        waitfor(f);
+    % Use default value - pop_eventinfo(EEG,'default') called
+    elseif nargin < 3 && ischar(varargin{1}) && strcmp(varargin{1}, 'default')
+        done();
     end
-    tbl.Data = data;
-    waitfor(f);
   
     function cancelCB(src, event)
         clear('eventBIDS');
         close(f);
     end
     function okCB(src, event)
+        done();
+        close(f);
+    end
+
+    function done()
         % duration field is automatically calculated by EEGLAB
         eInfoDesc.duration.LongName = 'Event duration';
         eInfoDesc.duration.Description = 'Duration of the event (measured from onset) in seconds';
@@ -146,14 +161,16 @@ function [EEG, command] = pop_eventinfo(EEG)
         else
             command = '[EEG, eInfoDesc, eInfo] = pop_eventinfo(EEG);';
         end
+        
+        % add info to EEG structs
         for e=1:numel(EEG)
             EEG(e).BIDS.eInfoDesc = eInfoDesc;
             EEG(e).BIDS.eInfo = eInfo;
             EEG(e).saved = 'no';
             EEG(e).history = [EEG(e).history command];
         end
+        
         clear('eventBIDS');
-        close(f);
     end
 
     function cellSelectedCB(arg1, obj) 
