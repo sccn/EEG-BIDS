@@ -287,7 +287,7 @@ for iSubject = 1:size(bids.participants,1)
                         eventData = importtsv( fullfile(subjectFolder{iFold}, eventFile.name));
                     end
                     events = struct([]);
-                    indTrial = strmatch( 'value', lower(eventData(1,:)), 'exact');
+                    indTrial = strmatch( opt.eventtype, lower(eventData(1,:)), 'exact');
                     for iEvent = 2:size(eventData,1)
                         events(end+1).latency  = eventData{iEvent,1}*EEG.srate+1; % convert to samples
                         events(end).duration   = eventData{iEvent,2}*EEG.srate;   % convert to samples
