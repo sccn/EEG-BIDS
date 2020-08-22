@@ -166,9 +166,9 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
     end
     function okCB(src,event)
         for a=1:numel(EEG)
-            bids = struct([]);
-            tInfo = struct([]);
-            gInfo = struct([]);
+            bids = [];
+            tInfo = [];
+            gInfo = [];
             % preserve current BIDS info if have
             if isfield(EEG(a), 'BIDS')
                 bids = EEG(a).BIDS;
@@ -217,6 +217,15 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
                     end
                 end
             end
+            
+            % make sure it's struct datatype when empty
+            if isempty(gInfo)
+                gInfo = struct([]);
+            end
+            if isempty(tInfo)
+                tInfo = struct([]);
+            end
+            
             % update BIDS structure
             bids.tInfo = tInfo;
             bids.gInfo = gInfo;
