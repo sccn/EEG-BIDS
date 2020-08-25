@@ -125,11 +125,20 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
     end
 
     function done()
-        % duration field is automatically calculated by EEGLAB
+        % default fields automatically calculated by EEGLAB
         eInfoDesc.duration.LongName = 'Event duration';
         eInfoDesc.duration.Description = 'Duration of the event (measured from onset) in seconds';
         eInfoDesc.duration.Units = 'second';
-        
+        eInfoDesc.sample.LongName = 'Sample';
+        eInfoDesc.sample.Description = 'Onset of the event according to the sampling scheme of the recorded modality (i.e., referring to the raw data file that the events.tsv file accompanies).';
+        eInfoDesc.trial_type.LongName = 'Event categorization';
+        eInfoDesc.trial_type.Description = 'Primary categorisation of each trial to identify them as instances of the experimental conditions.';
+        eInfoDesc.response_time.LongName = 'Response time';
+        eInfoDesc.response_time.Description = 'Response time measued in seconds.';
+        eInfoDesc.response_time.Units = 'second';
+        eInfoDesc.stim_file.LongName = 'Stimulus file location';
+        eInfoDesc.stim_file.Description = 'Represents the location of the stimulus file (image, video, sound etc.) presented at the given onset time. They should be stored in the /stimuli folder (under the root folder of the dataset; with optional subfolders). The values under the stim_file column correspond to a path relative to "/stimuli".';
+                
         % prepare return struct
         fields = fieldnames(eventBIDS);
         for idx=1:length(fields)
