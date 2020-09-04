@@ -142,7 +142,7 @@ if nargin > 1
            end
         end
     else
-        warning('second argument not recognized - skipping any options')
+        warning('ignore argument not recognized - skipping any options')
     end
 end
 
