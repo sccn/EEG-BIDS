@@ -174,6 +174,12 @@ for v=1:length(export_data.Properties.VariableNames)
     end
 end
 
+if ~exist('export_dir','var')
+    export_dir = uigetdir(fileparts(filein),'Select directory to save exported files');
+    if export_dir == 0
+        export_dir = fileparts(filein);
+    end
+end
 try
     writetable(export_data,[export_dir filesep 'participants.tsv'],'FileType','text','Delimiter','\t');
     files_out{1} = fullfile(export_dir,'participants.tsv');
