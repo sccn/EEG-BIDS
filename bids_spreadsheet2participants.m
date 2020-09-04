@@ -1,9 +1,9 @@
 function files_out = bids_spreadsheet2participants(varargin)
 
-% routine to takes an excel file as input and export as participants.tsv
+% routine to takes an spreadsheet file (e.g. excel) as input and export as participants.tsv
 % and participants.json 
 %
-% FORMAT files_out = bids_excel2participants(file_in,'ignore','field1','filed2',...)
+% FORMAT files_out = bids_spreadsheet2participants(file_in,'ignore','field1','filed2',...)
 %
 % INPUTS if empty user is prompted
 %        file_in is the excel file, with at least the 3 BIDS mandatory fields 
@@ -18,11 +18,12 @@ function files_out = bids_spreadsheet2participants(varargin)
 % OUTPUT files_out is a cell array with files_out{1} the full name of the particpiants.tsv
 %                                       files_out{2} the full name of the particpiants.json
 %
-% Example: files_out = bids_excel2participants('D:\icpsr_subset.xlsx','ignore','EEGissues_collection')
+% Example: files_out = bids_spreadsheet2participants('D:\icpsr_subset.xlsx','ignore','EEGtesttime')
 %          the spreadsheet must have worksheet 1 with data, each column has a variable name and values
+%          -- note missing values MUST be n/a or nill
 %          worksheet 2 is optional with columns variables, Description, Levels, Units to describe worksheet 1 variables
 %          similar to https://bids-specification.readthedocs.io/en/stable/03-modality-agnostic-files.html#participants-file
-%          note the order of 'Levels' names should match the order of apparition in the data to have an exact match
+%          -- note the order of 'Levels' names should match the order of apparition in the data to have an exact match
 %
 % Cyril Pernet - Septembre 2020
 % ---------------------------------
@@ -159,11 +160,25 @@ value_types = varfun(@class,Data,'OutputFormat','cell');
 for v = length(value_types):-1:1
     values{v} = unique(Data.(Data.Properties.VariableNames{v}));
 end
-    
+
+% make sure to export NaN as n/a
+export_data = Data;
+for v=1:length(export_data.Properties.VariableNames)
+    if strcmp(class(export_data.(cell2mat(export_data.Properties.VariableNames(v)))),'double')
+        export_data.(cell2mat(export_data.Properties.VariableNames(v))) = num2cell(export_data.(cell2mat(export_data.Properties.VariableNames(v))));
+        for n=1:size(export_data.(cell2mat(export_data.Properties.VariableNames(v))),1)
+            if isnan(export_data.(cell2mat(export_data.Properties.VariableNames(v))){n})
+                export_data.(cell2mat(export_data.Properties.VariableNames(v))){n} = 'n/a';
+            end
+        end
+    end
+end
+
 try
-    writetable(Data,[export_dir filesep 'participants.tsv'],'FileType','text','Delimiter','\t');
+    writetable(export_data,[export_dir filesep 'participants.tsv'],'FileType','text','Delimiter','\t');
     files_out{1} = fullfile(export_dir,'participants.tsv');
     fprintf('participants.tsv file saved in %s\n',export_dir)
+    clear export_data
 catch tsv_error
     files_out{2} = 'particpants.tsv file not created';
     error('participants.tsv not saved %s\n',tsv_error.mewsage)
