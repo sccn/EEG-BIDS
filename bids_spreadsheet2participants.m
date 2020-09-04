@@ -5,8 +5,8 @@ function files_out = bids_spreadsheet2participants(varargin)
 %
 % FORMAT files_out = bids_excel2participants(file_in,'ignore','field1','filed2',...)
 %
-% INPUTS is empty user is prompted
-%        fine_in is the excel file, with at least the 3 BIDS mandatory fields 
+% INPUTS if empty user is prompted
+%        file_in is the excel file, with at least the 3 BIDS mandatory fields 
 %                participant_id,	age, gender present in the 1st sheet
 %                A second sheet can be used to specify variables for the
 %                json file (column format: variable name (same as shhet 1),
@@ -19,7 +19,11 @@ function files_out = bids_spreadsheet2participants(varargin)
 %                                       files_out{2} the full name of the particpiants.json
 %
 % Example: files_out = bids_excel2participants('D:\icpsr_subset.xlsx','ignore','EEGissues_collection')
-% files_out = bids_excel2participants('C:\Users\cpernet\Desktop\cda_dataforicpsr_subset.xlsx','ignore','EEGtesttime','export_dir',pwd)
+%          the spreadsheet must have worksheet 1 with data, each column has a variable name and values
+%          worksheet 2 is optional with columns variables, Description, Levels, Units to describe worksheet 1 variables
+%          similar to https://bids-specification.readthedocs.io/en/stable/03-modality-agnostic-files.html#participants-file
+%          note the order of 'Levels' names should match the order of apparition in the data to have an exact match
+%
 % Cyril Pernet - Septembre 2020
 % ---------------------------------
 
