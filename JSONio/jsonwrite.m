@@ -9,42 +9,52 @@ function varargout = jsonwrite(varargin)
 % S        - serialized JSON structure (string)
 %
 % FORMAT [...] = jsonwrite(...,opts)
-% opts     - structure of optional parameters:
+% opts     - structure or list of name/value pairs of optional parameters:
 %              indent: string to use for indentation [Default: '']
 %              replacementStyle: string to control how non-alphanumeric
-%                characters are replaced [Default: 'underscore']
-%              convertinfandnan: encode NaN, Inf and -Inf as "null"
+%                characters are replaced {'underscore','hex','delete','nop'}
+%                [Default: 'underscore']
+%              convertInfAndNaN: encode NaN, Inf and -Inf as "null"
 %                [Default: true]
 % 
 % References:
-%   JSON Standard: http://www.json.org/
+%   JSON Standard: https://www.json.org/
+%   jsonencode: https://www.mathworks.com/help/matlab/ref/jsonencode.html
 
 % Guillaume Flandin
-% $Id: jsonwrite.m 7170 2017-09-21 10:59:34Z guillaume $
+% $Id: jsonwrite.m 7526 2019-02-06 14:33:18Z guillaume $
 
 
 %-Input parameters
 %--------------------------------------------------------------------------
-opts         = struct(...
+opts = struct(...
     'indent','',...
     'replacementstyle','underscore',...
     'convertinfandnan',true);
-opt          = struct([]);
-if nargin > 1
+opt  = {struct([])};
+
+if ~nargin
+    error('Not enough input arguments.');
+elseif nargin == 1
+    filename     = '';
+    json         = varargin{1};
+else
     if ischar(varargin{1})
         filename = varargin{1};
         json     = varargin{2};
+        opt      = varargin(3:end);
     else
         filename = '';
-        json = varargin{1};
-        opt  = varargin{2};
+        json     = varargin{1};
+        opt      = varargin(2:end);
     end
-    if nargin > 2
-        opt  = varargin{3};
-    end
+end
+if numel(opt) == 1 && isstruct(opt{1})
+    opt = opt{1};
+elseif mod(numel(opt),2) == 0
+    opt = cell2struct(opt(2:2:end),opt(1:2:end),2);
 else
-    filename = '';
-    json     = varargin{1};
+    error('Invalid syntax.');
 end
 fn = fieldnames(opt);
 for i=1:numel(fn)
@@ -150,9 +160,6 @@ if numel(json) == 1
                 '0x([0-9a-fA-F]{2})', '${native2unicode(hex2dec($1))}');
         end
         if isstruct(json), val = json.(fn{i}); else val = json(fn{i}); end
-        if length(key) > 1 && key(1) == 'x' && ~isnan(str2double(key(2:end)))
-            key = key(2:end);
-        end
         S = [S fmt(tab) jsonwrite_char(key) ':' fmt(' ',tab) ...
             jsonwrite_var(val,tab+1)];
         if i ~= numel(fn), S = [S ',']; end
@@ -204,7 +211,13 @@ if numel(json) == 0
 elseif numel(json) > 1
     idx = find(size(json)~=1);
     if numel(idx) == 1 % vector
-        S = jsonwrite_cell(num2cell(json),'');
+        if any(islogical(json)) || any(~isfinite(json))
+            S = jsonwrite_cell(num2cell(json),'');
+        else
+            S = ['[' sprintf('%23.16g,',json) ']']; % eq to num2str(json,16)
+            S(end-1) = ''; % remove last ","
+            S(S==' ') = [];
+        end
     else % array
         S = jsonwrite_cell(num2cell(json,setdiff(1:ndims(json),idx(1))),'');
     end

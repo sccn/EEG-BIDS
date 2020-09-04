@@ -1,7 +1,7 @@
 function tests = test_jsonread
 % Unit Tests for jsonread
 
-% $Id: test_jsonread.m 7014 2017-02-13 12:31:33Z guillaume $
+% $Id: test_jsonread.m 7077 2017-05-23 09:13:10Z guillaume $
 
 tests = functiontests(localfunctions);
 
@@ -119,9 +119,9 @@ act  = jsonread(json);
 testCase.verifyTrue(isequal(exp, act));
 
 %   Array of objects, when    | cell array of
-%    all objects have the     | scalar structures
-%     same set of names       |
-%    but different order      |
+%    all objects have the     |scalar structures
+%     same set of names        |
+%    but different order
 json = '{"structarray": [{"a":1,"b":2},{"b":3,"a":4}]}';
 exp  = struct('structarray',{{struct('a',1,'b',2);struct('b',3,'a',4)}});
 act  = jsonread(json);
