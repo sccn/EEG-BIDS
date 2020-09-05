@@ -869,13 +869,13 @@ if isempty(EEG.chanlocs)
     for iChan = 1:EEG.nbchan, fprintf(fid, 'E%d\tEEG\tmicroV\n', iChan); end
 else
     fprintf(fid, 'name\ttype\tunits\n');
-    acceptedTypes = { 'AUDIO' 'EEG' 'EOG' 'ECG' 'EMG' 'EYEGAZE' 'GSR' 'HEOG' 'MISC' 'PUPIL' 'REF' 'RESP' 'SYSCLOCK' 'TEMP' 'TRIG' 'VEOG' };
-    channelsCount = containers.Map(acceptedTypes, zeros(1, numel(acceptedTypes)));
+    acceptedChannelTypes = { 'AUDIO' 'EEG' 'EOG' 'ECG' 'EMG' 'EYEGAZE' 'GSR' 'HEOG' 'MISC' 'PUPIL' 'REF' 'RESP' 'SYSCLOCK' 'TEMP' 'TRIG' 'VEOG' };
+    channelsCount = containers.Map(acceptedChannelTypes, zeros(1, numel(acceptedChannelTypes)));
     for iChan = 1:EEG.nbchan
         % Type
         if ~isfield(EEG.chanlocs, 'type') || isempty(EEG.chanlocs(iChan).type)
             type = 'n/a';
-        elseif ismember(upper(EEG.chanlocs(iChan).type), acceptedTypes)
+        elseif ismember(upper(EEG.chanlocs(iChan).type), acceptedChannelTypes)
             type = upper(EEG.chanlocs(iChan).type);
         else
             type = 'MISC';
@@ -921,12 +921,16 @@ if ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isempty(EEG.chanlocs
 end
 
 % Write task information (eeg.json) Note: depends on channels
-requiredChannelTypes = {'EEG', 'EOG', 'ECG', 'EMG', 'Misc'};
-for i=1:numel(requiredChannelTypes)
-    if strcmp(requiredChannelTypes{i}, 'Misc')
-        tInfo.([requiredChannelTypes{i} 'ChannelCount']) = channelsCount('MISC');
+% requiredChannelTypes: 'EEG', 'EOG', 'ECG', 'EMG', 'MISC'. Other channel
+% types are currently not valid output for eeg.json.
+nonEmptyChannelTypesIndices = find(cellfun(@(x) x(1),channelsCount.values));
+channelTypes = channelsCount.keys;
+nonEmptyChannelTypes = channelTypes(nonEmptyChannelTypesIndices);
+for i=1:numel(nonEmptyChannelTypes)
+    if strcmp(nonEmptyChannelTypes{i}, 'MISC')
+        tInfo.('MiscChannelCount') = channelsCount('MISC');
     else
-        tInfo.([requiredChannelTypes{i} 'ChannelCount']) = channelsCount(requiredChannelTypes{i});
+        tInfo.([nonEmptyChannelTypes{i} 'ChannelCount']) = channelsCount(nonEmptyChannelTypes{i});
     end
 end
 
