@@ -870,8 +870,9 @@ if isempty(EEG.chanlocs)
 else
     fprintf(fid, 'name\ttype\tunits\n');
     acceptedTypes = { 'AUDIO' 'EEG' 'EOG' 'ECG' 'EMG' 'EYEGAZE' 'GSR' 'HEOG' 'MISC' 'PUPIL' 'REF' 'RESP' 'SYSCLOCK' 'TEMP' 'TRIG' 'VEOG' };
-    
+    channelsCount = containers.Map(acceptedTypes, zeros(1, numel(acceptedTypes)));
     for iChan = 1:EEG.nbchan
+        % Type
         if ~isfield(EEG.chanlocs, 'type') || isempty(EEG.chanlocs(iChan).type)
             type = 'n/a';
         elseif ismember(upper(EEG.chanlocs(iChan).type), acceptedTypes)
@@ -879,13 +880,21 @@ else
         else
             type = 'MISC';
         end
+        % Unit
         if strcmpi(type, 'eeg')
             unit = 'microV';
         else
             unit = 'n/a';
-            miscChannels = miscChannels+1;
         end
         
+        % Count channels by type (for use later in eeg.json)
+        if strcmp(type, 'n/a') || strcmp(type, 'MISC')
+            channelsCount('MISC') = channelsCount('MISC') + 1;
+        else
+            channelsCount(type) = channelsCount(type) + 1;
+        end
+        
+        %Write
         fprintf(fid, '%s\t%s\t%s\n', EEG.chanlocs(iChan).labels, type, unit);
     end
 end
@@ -912,10 +921,15 @@ if ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isempty(EEG.chanlocs
 end
 
 % Write task information (eeg.json) Note: depends on channels
-tInfo.EEGChannelCount = EEG.nbchan-miscChannels;
-if miscChannels > 0
-    tInfo.MiscChannelCount  = miscChannels;
+requiredChannelTypes = {'EEG', 'EOG', 'ECG', 'EMG', 'Misc'};
+for i=1:numel(requiredChannelTypes)
+    if strcmp(requiredChannelTypes{i}, 'Misc')
+        tInfo.([requiredChannelTypes{i} 'ChannelCount']) = channelsCount('MISC');
+    else
+        tInfo.([requiredChannelTypes{i} 'ChannelCount']) = channelsCount(requiredChannelTypes{i});
+    end
 end
+
 if ~isfield(tInfo, 'EEGReference')
     if ~ischar(EEG.ref) && numel(EEG.ref) > 1 % untested for all cases
         refChanLocs = EEG.chanlocs(EEG.ref);
