@@ -664,14 +664,16 @@ fid = fopen( [ fileOut(1:end-7) 'events.tsv' ], 'w');
 
 % -- parse eInfo
 if isempty(opt.eInfo)
+    if isfield(EEG.event, 'onset')          opt.eInfo(end+1,:) = { 'onset'    'onset' };
+        else                                opt.eInfo(end+1,:) = { 'onset'    'latency' }; end
     if isfield(EEG.event, 'trial_type')     opt.eInfo(end+1,:) = { 'trial_type'    'trial_type' };
     elseif ~isempty(opt.trialtype)          opt.eInfo(end+1,:) = { 'trial_type'    'xxxx' }; end % to be filled with event type based on opt.trialtype mapping
     if isfield(EEG.event, 'duration')       opt.eInfo(end+1,:) = { 'duration'      'duration' }; end
     if isfield(EEG.event, 'value')          opt.eInfo(end+1,:) = { 'value'         'value' };
-    else                                    opt.eInfo(end+1,:) = { 'value'         'type' }; end
+        else                                opt.eInfo(end+1,:) = { 'value'         'type' }; end
     if isfield(EEG.event, 'response_time'), opt.eInfo(end+1,:) = { 'response_time' 'response_time' }; end
     if isfield(EEG.event, 'stim_file'),     opt.eInfo(end+1,:) = { 'stim_file'     'stim_file' }; end
-    if isfield(EEG.event, 'usertags'),      opt.eInfo(end+1,:) = { 'HED'           'on' }; end
+    if isfield(EEG.event, 'usertags'),      opt.eInfo(end+1,:) = { 'HED'           'usertags' }; end
 else
     if ~isempty(opt.trialtype)              opt.eInfo(end+1,:) = { 'trial_type'    'xxxx' }; end
 end
@@ -681,9 +683,9 @@ fieldOrder = { 'onset' 'duration' 'sample' 'trial_type' 'response_time' 'stim_fi
 newOrder = [];
 for iField = 1:length(fieldOrder)
     ind = strmatch(fieldOrder{iField}, opt.eInfo(:,1)', 'exact');
-    if isempty(ind)
+    if isempty(ind) % add unfound field to opt.eInfo, skipping HED
         if ~strcmpi(fieldOrder{iField}, 'HED') % skip HED (create problem with validator)
-            opt.eInfo(end+1,1:2) = { fieldOrder{iField} 'n/a' };
+            opt.eInfo(end+1,1:2) = { fieldOrder{iField} 'n/a' }; % indicating that there's no column in eInfo matching fieldOrder{iField}
             ind = size(opt.eInfo,1);
         else
             ind = [];
