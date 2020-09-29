@@ -27,6 +27,9 @@
 function [EEG, command] = pop_eventinfo(EEG, varargin)
     command = '[EEG, command] = pop_eventinfo(EEG)';
     % perform check to make sure EEG.event is consistent across EEG
+    if isempty(EEG.event)
+        error('EEG.event is empty')
+    end
     try
        eventFields = fieldnames([EEG.event]);
     catch ME
