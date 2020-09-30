@@ -110,6 +110,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     tbl.ColumnFormat = {[] [] [] [] units unitPrefixes []};
 
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Add column', 'Units', 'normalized', 'Position', [0.4-0.1 0.074 0.1 0.05], 'Callback', {@addColumnCB,pInfoTbl,tbl}, 'Tag', 'addColumnBtn');
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Import', 'Units', 'normalized', 'Position', [0.4-0.2 0.074 0.1 0.05], 'Callback', {@importSpreadsheet}, 'Tag', 'importSpreadsheetBtn');
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0.02 0.1 0.05], 'Callback', @okCB); 
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0.02 0.1 0.05], 'Callback', @cancelCB); 
     
@@ -145,6 +146,86 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     elseif nargin < 4 && ischar(varargin{1}) && strcmp(varargin{1}, 'default')
         okCB('','');
     end
+    
+    
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+%----- Helper functions ---------------------------------------------------
+    %% import spreadshet
+    function importSpreadsheet(~, ~)
+        % Get spreadsheet
+        [~, ~, ~, structout] = inputgui( { [1 2 0.5] }, {...
+                            {'Style', 'text', 'string', 'Spreadsheet to import'} ...
+                            {'Style', 'edit', 'Tag', 'Filepath'} ...
+                            {'Style', 'pushbutton', 'string', '...', 'Callback', @browse}});
+        function browse(~,~)
+            [name, path] = uigetfile2({'*.xlsx','Excel Files(*.xlsx)'; '*.xls','Excel Files(*.xls)';'*.csv','Comma Separated Value Files(*.csv)';}, 'Choose spreadsheet file');
+            if ~isequal(name, 0)
+               set(findobj('tag', 'Filepath'), 'string', fullfile(path, name));
+            else
+                close(gcbf);
+            end
+            clear tmpfolder;
+        end
+        
+        % Load spreadsheet
+        filepath = structout.Filepath;
+        T = readtable(filepath);
+        columns = T.Properties.VariableNames;
+        pTable = findobj('Tag', 'pInfoTable');
+        guiColumns = pTable.ColumnName;
+        columnMap = containers.Map('KeyType','char','ValueType','char');
+        idColumn = '';
+        
+        % Match spreadsheet columns with GUI columns
+        [res userdata err structout] = inputgui('geometry', {[1 1] [1] [1] [1] [1 1]}, 'geomvert', [1 1 3 1 1], 'uilist', {...
+            {'Style', 'text', 'string', 'Participant ID field*', 'fontweight', 'bold'} ...
+            {'Style', 'popupmenu', 'string', columns, 'Tag', 'IDColumn', 'Callback', @idSelected} ...
+            {'Style', 'text', 'string', 'Choose a spreadsheet column...'} ...
+            {'Style', 'listbox', 'string', columns(2:end), 'Tag', 'SpreadsheetColumns', 'Callback', @columnSelected} ...
+            {'Style', 'text', 'string', '... and match with an existing column or enter new column name'} ...
+            {'Style', 'popupmenu', 'string', [' '; guiColumns], 'Tag', 'MatchNameDD', 'Callback', @nameSelected} ...
+            {'Style', 'edit', 'Tag', 'NewNameEB', 'Callback', @nameEntered}});
+        columnMap %TODO
+        
+        function idSelected(~,~)
+            dd = findobj('Tag', 'IDColumn');
+            val = dd.Value;
+            str = dd.String;
+            idColumn = str{val};
+            newColumns = setdiff(columns, idColumn);
+            set(findobj('Tag', 'SpreadsheetColumns'), 'string', newColumns);
+        end
+        function columnSelected(src,~)
+            val = src.Value;
+            str = src.String;
+            selected = str{val};
+            if columnMap.isKey(selected)
+                set(findobj('Tag', 'NewNameEB'), 'string', columnMap(selected));
+                set(findobj('Tag', 'MatchNameDD'), 'Value', 1);
+            else
+                set(findobj('Tag', 'NewNameEB'), 'string', '');
+                set(findobj('Tag', 'MatchNameDD'), 'Value', 1);
+            end
+        end
+        function nameEntered(src, ~)
+            disp('entered');
+            dd = findobj('Tag', 'SpreadsheetColumns');
+            val = dd.Value;
+            str = dd.String;
+            selected = str{val};
+            input = get(src, 'string');
+            columnMap(selected) = input;
+        end
+        function nameSelected(src, ~)
+            val = src.Value;
+            selected = src.String{val};
+            nameEB = findobj('Tag', 'NewNameEB');
+            nameEB.String = selected;
+            nameEntered(nameEB, '');
+        end
+    end
+
     
     %% callback handle for cancel button
     function cancelCB(src, event)
@@ -461,21 +542,6 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
                     pBIDS.Group.Description = 'Participant group label';
                     pBIDS.Group.Units = '';
                     pBIDS.Group.Levels = struct;
-    %             elseif strcmp(pFields{idx}, 'HeadCircumference')
-    %                 pBIDS.HeadCircumference.Description = ' Participant head circumference';
-    %                 pBIDS.HeadCircumference.Units = 'cm';
-    %                 pBIDS.HeadCircumference.Levels = 'n/a';
-    %             elseif strcmp(pFields{idx}, 'SubjectArtefactDescription')
-    %                 pBIDS.SubjectArtefactDescription.Description = 'Free-form description of the observed subject artifact and its possible cause (e.g., "Vagus Nerve Stimulator", "non-removable implant").';
-    %                 pBIDS.SubjectArtefactDescription.Units = '';
-    %                 pBIDS.SubjectArtefactDescription.Levels = 'n/a';
-    %                 else
-    %                     event.(fields{idx}).BIDSField = '';
-    %                     event.(fields{idx}).LongName = '';
-    %                     event.(fields{idx}).Description = '';
-    %                     event.(fields{idx}).Units = '';
-    %                     event.(fields{idx}).Levels = [];
-    %                     event.(fields{idx}).TermURL = '';
                 end
             end
         else
