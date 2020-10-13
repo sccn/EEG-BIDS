@@ -98,47 +98,47 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     end
     
     uicontrol(f, 'Style', 'text', 'String', 'BIDS metadata for participant fields', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0.42 0.86 1-0.42 0.1]);
-    tbl = uitable(f, 'RowName', pFields, 'ColumnName', {'Description' 'Levels' 'Units' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'bidsTable');
+    bidsTbl = uitable(f, 'RowName', pFields, 'ColumnName', {'Description' 'Levels' 'Units' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'bidsTable');
     bidsWidth = (1-0.42-0.02);
-    tbl.Position = [0.42 0.5 bidsWidth 0.41];
-    tbl.CellSelectionCallback = @bidsCellSelectedCB;
-    tbl.CellEditCallback = @bidsCellEditCB;
-    tbl.ColumnEditable = [true false true];
-    tbl.ColumnWidth = {appWidth*bidsWidth*2/5,appWidth*bidsWidth/5,appWidth*bidsWidth/5};
+    bidsTbl.Position = [0.42 0.5 bidsWidth 0.41];
+    bidsTbl.CellSelectionCallback = @bidsCellSelectedCB;
+    bidsTbl.CellEditCallback = @bidsCellEditCB;
+    bidsTbl.ColumnEditable = [true false true];
+    bidsTbl.ColumnWidth = {appWidth*bidsWidth*2/5,appWidth*bidsWidth/5,appWidth*bidsWidth/5};
     units = {' ','ampere','becquerel','candela','coulomb','degree Celsius','farad','gray','henry','hertz','joule','katal','kelvin','kilogram','lumen','lux','metre','mole','newton','ohm','pascal','radian','second','siemens','sievert','steradian','tesla','volt','watt','weber'};
     unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
-    tbl.ColumnFormat = {[] [] [] [] units unitPrefixes []};
+    bidsTbl.ColumnFormat = {[] [] [] [] units unitPrefixes []};
 
-    uicontrol(f, 'Style', 'pushbutton', 'String', 'Add column', 'Units', 'normalized', 'Position', [0.4-0.1 0.074 0.1 0.05], 'Callback', {@addColumnCB,pInfoTbl,tbl}, 'Tag', 'addColumnBtn');
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Add column', 'Units', 'normalized', 'Position', [0.4-0.1 0.074 0.1 0.05], 'Callback', @addColumnCB, 'Tag', 'addColumnBtn');
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Import', 'Units', 'normalized', 'Position', [0.4-0.2 0.074 0.1 0.05], 'Callback', {@importSpreadsheet}, 'Tag', 'importSpreadsheetBtn');
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0.02 0.1 0.05], 'Callback', @okCB); 
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0.02 0.1 0.05], 'Callback', @cancelCB); 
     
     % pre-populate BIDS table
-    data = cell(length(pFields),length(tbl.ColumnName));
+    data = cell(length(pFields),length(bidsTbl.ColumnName));
     for i=1:length(pFields)
         % pre-populate description
         field = pFields{i};
         if numel(EEG) == 1 || ~isfield(pInfoBIDS.(field),'Levels') % if previous specification of this field didn't include Levels
-            data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'n/a';
+            data{i,find(strcmp(bidsTbl.ColumnName, 'Levels'))} = 'n/a';
         elseif isstruct(pInfoBIDS.(field).Levels) && (isempty(pInfoBIDS.(field).Levels) || isempty(fieldnames(pInfoBIDS.(field).Levels)))
-            data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'Click to specify';
+            data{i,find(strcmp(bidsTbl.ColumnName, 'Levels'))} = 'Click to specify';
         else
             levelTxt = pInfoBIDS.(field).Levels;
             if isstruct(levelTxt)
                 levelTxt = strjoin(fieldnames(pInfoBIDS.(field).Levels),',');
             end
-            data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = levelTxt;
+            data{i,find(strcmp(bidsTbl.ColumnName, 'Levels'))} = levelTxt;
         end
         if isfield(pInfoBIDS.(field),'Description')
-            data{i,find(strcmp(tbl.ColumnName, 'Description'))} = pInfoBIDS.(field).Description;
+            data{i,find(strcmp(bidsTbl.ColumnName, 'Description'))} = pInfoBIDS.(field).Description;
         end
         if isfield(pInfoBIDS.(field),'Units')
-            data{i,find(strcmp(tbl.ColumnName, 'Units'))} = pInfoBIDS.(field).Units;
+            data{i,find(strcmp(bidsTbl.ColumnName, 'Units'))} = pInfoBIDS.(field).Units;
         end
         clear('field');
     end
-    tbl.Data = data;
+    bidsTbl.Data = data;
     
     if nargin < 3
         %% wait
@@ -154,10 +154,11 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     %% import spreadshet
     function importSpreadsheet(~, ~)
         % Get spreadsheet
-        [~, ~, ~, structout] = inputgui( { [1 2 0.5] }, {...
-                            {'Style', 'text', 'string', 'Spreadsheet to import'} ...
+        [~, ~, ~, structout] = inputgui( { [1 2 0.5] [1]}, {...
+                            {'Style', 'text', 'string', 'Spreadsheet to import*'} ...
                             {'Style', 'edit', 'Tag', 'Filepath'} ...
-                            {'Style', 'pushbutton', 'string', '...', 'Callback', @browse}});
+                            {'Style', 'pushbutton', 'string', '...', 'Callback', @browse} ...
+                            {'Style', 'text', 'string', '*First row must contain column headers.'}});
         function browse(~,~)
             [name, path] = uigetfile2({'*.xlsx','Excel Files(*.xlsx)'; '*.xls','Excel Files(*.xls)';'*.csv','Comma Separated Value Files(*.csv)';}, 'Choose spreadsheet file');
             if ~isequal(name, 0)
@@ -169,60 +170,95 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
         end
         
         % Load spreadsheet
-        filepath = structout.Filepath;
-        T = readtable(filepath);
-        columns = T.Properties.VariableNames;
-        pTable = findobj('Tag', 'pInfoTable');
-        guiColumns = pTable.ColumnName;
-        columnMap = containers.Map('KeyType','char','ValueType','char');
-        idColumn = '';
-        
-        % Match spreadsheet columns with GUI columns
-        [res userdata err structout] = inputgui('geometry', {[1 1] [1] [1] [1] [1 1]}, 'geomvert', [1 1 3 1 1], 'uilist', {...
-            {'Style', 'text', 'string', 'Participant ID field*', 'fontweight', 'bold'} ...
-            {'Style', 'popupmenu', 'string', columns, 'Tag', 'IDColumn', 'Callback', @idSelected} ...
-            {'Style', 'text', 'string', 'Choose a spreadsheet column...'} ...
-            {'Style', 'listbox', 'string', columns(2:end), 'Tag', 'SpreadsheetColumns', 'Callback', @columnSelected} ...
-            {'Style', 'text', 'string', '... and match with an existing column or enter new column name'} ...
-            {'Style', 'popupmenu', 'string', [' '; guiColumns], 'Tag', 'MatchNameDD', 'Callback', @nameSelected} ...
-            {'Style', 'edit', 'Tag', 'NewNameEB', 'Callback', @nameEntered}});
-        columnMap %TODO
-        
-        function idSelected(~,~)
-            dd = findobj('Tag', 'IDColumn');
-            val = dd.Value;
-            str = dd.String;
-            idColumn = str{val};
-            newColumns = setdiff(columns, idColumn);
-            set(findobj('Tag', 'SpreadsheetColumns'), 'string', newColumns);
-        end
-        function columnSelected(src,~)
-            val = src.Value;
-            str = src.String;
-            selected = str{val};
-            if columnMap.isKey(selected)
-                set(findobj('Tag', 'NewNameEB'), 'string', columnMap(selected));
-                set(findobj('Tag', 'MatchNameDD'), 'Value', 1);
-            else
-                set(findobj('Tag', 'NewNameEB'), 'string', '');
-                set(findobj('Tag', 'MatchNameDD'), 'Value', 1);
+        if ~isempty(structout)
+            filepath = structout.Filepath;
+            T = readtable(filepath);
+            columns = T.Properties.VariableNames;
+            columns = ["(none)" columns];
+            pTable = findobj('Tag', 'pInfoTable');
+            columnMap = containers.Map('KeyType','char','ValueType','char');
+            idColumn = '';
+
+            % Match spreadsheet columns with GUI columns
+            [res userdata err structout] = inputgui('geometry', {[1 1] [1 1] [1 1] [1 1] [1 1] [1 1] [1] [1] [1] [1]}, 'geomvert', [1 1 1 1 1 1 1 1 1 5], 'uilist', {...
+                {'Style', 'text', 'string', 'Participant ID column* (required)', 'fontweight', 'bold'} ...
+                {'Style', 'popupmenu', 'string', columns, 'Tag', 'ID_Column', 'Callback', @idSelected} ...
+                {'Style', 'text', 'string', 'Age column'} ...
+                {'Style', 'popupmenu', 'string', columns, 'Tag', 'Age_Column', 'Callback', @fieldSelected} ...
+                {'Style', 'text', 'string', 'Gender column'} ...
+                {'Style', 'popupmenu', 'string', columns, 'Tag', 'Gender_Column', 'Callback', @fieldSelected} ...
+                {'Style', 'text', 'string', 'Group column'} ...
+                {'Style', 'popupmenu', 'string', columns, 'Tag', 'Group_Column', 'Callback', @fieldSelected} ...
+                {'Style', 'text', 'string', 'Head circumference column'} ...
+                {'Style', 'popupmenu', 'string', columns, 'Tag', 'HeadCircumference_Column', 'Callback', @fieldSelected} ...
+                {'Style', 'text', 'string', 'Subject artefact column'} ...
+                {'Style', 'popupmenu', 'string', columns, 'Tag', 'SubjectArtefactDescription_Column', 'Callback', @fieldSelected} ...
+                {} ...
+                {'Style', 'text', 'string', 'Choose additional spreadsheet columns to import', 'fontweight', 'bold'} ...
+                {'Style', 'text', 'string', '(Hold Ctrl or Shift for multi-select)'} ...
+                {'Style', 'listbox', 'string', columns(2:end), 'Tag', 'SpreadsheetColumns', 'max', 2} ...
+                });
+            if ~isempty(structout)
+                listboxCols = columns(2:end);
+                importData(listboxCols(structout.SpreadsheetColumns)); 
             end
         end
-        function nameEntered(src, ~)
-            disp('entered');
-            dd = findobj('Tag', 'SpreadsheetColumns');
-            val = dd.Value;
-            str = dd.String;
-            selected = str{val};
-            input = get(src, 'string');
-            columnMap(selected) = input;
-        end
-        function nameSelected(src, ~)
+        
+        function idSelected(src,~)
             val = src.Value;
-            selected = src.String{val};
-            nameEB = findobj('Tag', 'NewNameEB');
-            nameEB.String = selected;
-            nameEntered(nameEB, '');
+            str = src.String;
+            column = str{val};
+            if ~strcmp(column, "(none)")
+                idColumn = column;
+            end
+        end
+        function fieldSelected(src,~)
+            fieldName = split(src.Tag, '_');
+            fieldName = fieldName{1};
+            val = src.Value;
+            str = src.String;
+            column = str{val};
+            
+            if ~strcmp(column, "(none)")
+                columnMap(fieldName) = column;
+            end
+        end
+        function importData(additionalCols)
+            pIDColIndex = strcmp(pTable.ColumnName, "participant_id");
+            
+            % participant ids
+            rows = pTable.Data(:, pIDColIndex);
+            guiRows = [];
+            matchedRows = zeros(numel(rows),1);
+            for r=1:numel(rows)
+                matchedIdx = find(strcmp(rows{r}, T.(idColumn)));
+                if ~isempty(matchedIdx)
+                    guiRows = [guiRows r];
+                    matchedRows(r) = matchedIdx;
+                end
+            end
+            matchedRows = matchedRows(matchedRows > 0);
+            
+            % process additional columns
+            for c=1:numel(additionalCols)
+                col = additionalCols{c};
+                if ~strcmp(pTable.ColumnName, col), addNewColumn(col); end
+                columnMap(col) = col; % same name
+            end
+            
+            % copy data
+            keySet = keys(columnMap);
+            for k=1:columnMap.Count
+                spreadsheetCol = columnMap(keySet{k});
+                spreadsheetColData = T.(spreadsheetCol);
+                for r=1:numel(guiRows)
+                    if isnumeric(spreadsheetColData(1))
+                        pTable.Data{guiRows(r), strcmp(pTable.ColumnName, keySet{k})} = spreadsheetColData(matchedRows(r));
+                    elseif iscell(spreadsheetColData(1))
+                       pTable.Data{guiRows(r), strcmp(pTable.ColumnName, keySet{k})} = spreadsheetColData{matchedRows(r)};
+                    end
+                end
+            end
         end
     end
 
@@ -255,7 +291,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
             if ~isfield(EEG(e),'BIDS')
                 EEG(e).BIDS = [];
             end
-            tInfo = struct([]);
+            tInfo = struct('HeadCircumference', [], 'SubjectArtefactDescription', "");
             if isfield(EEG(e).BIDS,'tInfo')
                 tInfo = EEG(e).BIDS.tInfo;
             end
@@ -295,35 +331,37 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     end
 
     %% callback handle for Add Column button
-    function addColumnCB(src, event, pInfoTbl, bidsTbl)
+    function addColumnCB(~,~)
         opts.Interpreter = 'tex';
         answer = inputdlg("\fontsize{13} Enter new column name, no space allowed:", 'New column name',1,{''}, opts);
         
         if ~isempty(answer)
-            % input validation
-            newField = checkFormat(answer{1});
-            
-            pFields = [pFields newField];
-            
-            % add to pInfoBIDS structure
-            pInfoBIDS.(newField).Description = ''; 
-            pInfoBIDS.(newField).Levels = struct([]);
-            pInfoBIDS.(newField).Units = '';
-            
-            % update Tables
-            pInfoTbl.ColumnName = [pInfoTbl.ColumnName;newField];
-            temp = pInfoTbl.Data;
-            pInfoTbl.Data = cell(size(pInfoTbl.Data,1), size(pInfoTbl.Data,2)+1);
-            pInfoTbl.Data(:,1:size(temp,2)) = temp; 
-            
-            bidsTbl.RowName = [bidsTbl.RowName;newField];
-            temp = bidsTbl.Data;
-            bidsTbl.Data = cell(size(bidsTbl.Data,1)+1, size(bidsTbl.Data,2));
-            bidsTbl.Data(1:size(temp,1),:) = temp;
-            bidsTbl.Data{end,find(strcmp(bidsTbl.ColumnName, 'Levels'))} = 'Click to specify';
+            addNewColumn(answer{1});
         end
     end
+    function addNewColumn(newColName)
+        % input validation
+        newField = checkFormat(newColName);
 
+        pFields = [pFields newField];
+
+        % add to pInfoBIDS structure
+        pInfoBIDS.(newField).Description = ''; 
+        pInfoBIDS.(newField).Levels = struct([]);
+        pInfoBIDS.(newField).Units = '';
+
+        % update Tables
+        pInfoTbl.ColumnName = [pInfoTbl.ColumnName;newField];
+        temp = pInfoTbl.Data;
+        pInfoTbl.Data = cell(size(pInfoTbl.Data,1), size(pInfoTbl.Data,2)+1);
+        pInfoTbl.Data(:,1:size(temp,2)) = temp; 
+
+        bidsTbl.RowName = [bidsTbl.RowName;newField];
+        temp = bidsTbl.Data;
+        bidsTbl.Data = cell(size(bidsTbl.Data,1)+1, size(bidsTbl.Data,2));
+        bidsTbl.Data(1:size(temp,1),:) = temp;
+        bidsTbl.Data{end,find(strcmp(bidsTbl.ColumnName, 'Levels'))} = 'Click to specify'; 
+    end
     %% callback handle for cell selection in the participant info table
     function pInfoCellSelectedCB(arg1, obj)
         removeLevelUI();
