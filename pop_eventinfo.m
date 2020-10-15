@@ -26,7 +26,7 @@
 % Author: Dung Truong, Arnaud Delorme
 function [EEG, command] = pop_eventinfo(EEG, varargin)
     command = '[EEG, command] = pop_eventinfo(EEG)';
-    % perform check to make sure EEG.event is consistent across EEG
+    % perform check to make sure EEG.event is not empty
     if isempty(EEG(1).event)
         error('EEG.event is empty')
     end
