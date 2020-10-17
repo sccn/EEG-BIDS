@@ -18,6 +18,14 @@
 %                  and ignore locations (if any) in raw binary EEG files.  
 %  'outputdir'   - [string] output folder (default is to use the BIDS
 %                  folders).
+%  'eventtype'   - [string] BIDS event column to use for EEGLAB event types.
+%                  common choices are usually 'trial_type' or 'value'. 
+%                  Default is 'value'.
+%
+% Outputs:
+%   STUDY   - EEGLAB STUDY structure
+%   ALLEEG  - EEGLAB ALLEEG structure
+%   bids    - bids structure
 %
 % Authors: Arnaud Delorme, SCCN, INC, UCSD, January, 2019
 %         Cyril Pernet, University of Edinburgh
@@ -89,7 +97,7 @@ end
 opt = finputcheck(options, { ...
     'bidsevent'      'string'    { 'on' 'off' }    'on';  ...
     'bidschanloc'    'string'    { 'on' 'off' }    'on'; ...
-    'eventtype'      'string'    { 'trial_type' 'value' }    'value'; ...
+    'eventtype'      'string'    {  }              'value'; ...
     'outputdir'      'string'    { } fullfile(bidsFolder,'derivatives'); ...
     'studyName'      'string'    { }                defaultStudyName ...
     }, 'pop_importbids');
