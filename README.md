@@ -4,7 +4,7 @@ This repository contains a collection of function to import and export BIDS-form
 
 # Use with EEGLAB
 
-Simply place the code in the plugin folder of EEGLAB and it will be automatically detected by EEGLAB. See documentation [here].
+Simply place the code in the plugin folder of EEGLAB and it will be automatically detected by EEGLAB. See documentation [https://github.com/sccn/bids-matlab-tools/wiki](here).
 
 # Version history
 
