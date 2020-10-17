@@ -619,14 +619,14 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
                     allpInfoDesc = [bids.pInfoDesc];
                     if numel(allpInfoDesc) < numel(EEG)
                         info = EEG(find(haspInfoDesc,1)).BIDS.pInfoDesc;
-                        warning('Not all EEG contains pInfoDesc structure. Using pInfoDesc of EEG(%d)...',find(haspInfoDesc,1));
+                        warning('Not all EEG contains BIDS information. Using BIDS information of EEG(%d)...',find(haspInfoDesc,1));
                     else
                         info = allpInfoDesc(1);
-                        fprintf('Using pInfoDesc of EEG(1)...\n');
+                        fprintf('Using BIDS information of the first dataset for all datasets...\n');
                     end
                 catch % field inconsistent
                     info = EEG(find(haspInfoDesc,1)).BIDS.pInfoDesc;
-                    warning('Inconsistence found in tInfo structures. Using pInfoDesc of EEG(%d)...',find(haspInfoDesc,1));
+                    warning('Inconsistence found in BIDS information across STUDY datasets. Using BIDS information of EEG(%d)...',find(haspInfoDesc,1));
                 end
             end
         end

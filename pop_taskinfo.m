@@ -294,14 +294,14 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
                     alltInfo = [bids.tInfo];
                     if numel(alltInfo) < numel(EEG)
                         tInfo = EEG(find(hastInfo,1)).BIDS.tInfo;
-                        warning('Not all EEG contains tInfo structure. Using tInfo of EEG(%d)...',find(hastInfo,1));
+                        warning('Not all EEG contains tInfo structure. Using first available tInfo of EEG(%d)...',find(hastInfo,1));
                     else
                         tInfo = alltInfo(1);
-                        fprintf('Using tInfo of EEG(1)...\n');
+                        fprintf('Using task info of the first dataset for all datasets...\n');
                     end
                 catch % field inconsistent
                     tInfo = EEG(find(hastInfo,1)).BIDS.tInfo;
-                    warning('Inconsistence found in tInfo structures. Using tInfo of EEG(%d)...',find(hastInfo,1));
+                    warning('tInfo structures are inconsistent across datasets. Using first available tInfo of EEG(%d)...',find(hastInfo,1));
                 end
             end
         end
