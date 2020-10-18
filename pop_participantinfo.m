@@ -318,7 +318,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
                 if ~isnumeric(pTable.Data{rowIdx,strcmp('HeadCircumference',pTable.ColumnName)})
                     tInfo.HeadCircumference = str2double(pTable.Data{rowIdx,strcmp('HeadCircumference',pTable.ColumnName)});
                 else
-                    tInfo.HeadCircumference = pTable.Data{rowIdxstrcmp('HeadCircumference',pTable.ColumnName)};
+                    tInfo.HeadCircumference = pTable.Data{rowIdx,strcmp('HeadCircumference',pTable.ColumnName)};
                 end
             end
             if isempty(pTable.Data{rowIdx,strcmp('SubjectArtefactDescription',pTable.ColumnName)})
