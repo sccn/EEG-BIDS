@@ -49,50 +49,60 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     if numel(EEG) == 1
         warning('This function can also be applied to multiple dataset (e.g. EEG structures).');
     end
+
+    % get subjects
+    % -------------------------
+    if ~isempty(EEG(1).subject)
+        allSubjects = { EEG.subject };
+    elseif ~isempty(STUDY.datasetinfo(1).subject)
+        allSubjects = { STUDY.datasetinfo.subject };
+    else
+        error('No subject info found in either EEG or STUDY.datasetinfo. Please add using Study > Edit STUDY info');
+    end
+    uniqueSubjects = unique(allSubjects);
     
     %% create UI
     f = figure('MenuBar', 'None', 'ToolBar', 'None', 'Name', 'Edit BIDS participant info - pop_participantinfo', 'Color', bg);
     f.Position(3) = appWidth;
     f.Position(4) = appHeight;
     uicontrol(f, 'Style', 'text', 'String', 'Participant information', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0 0.86 0.4 0.1]);
-    pInfoTbl = uitable(f, 'RowName',[],'ColumnName', ['filepath' pFields  'HeadCircumference' 'SubjectArtefactDescription'], 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'pInfoTable', 'ColumnEditable', true);
-    pInfoTbl.Data = cell(numel(EEG), 3+length(pFields));
+    pInfoTbl = uitable(f, 'RowName',[],'ColumnName', [pFields  'HeadCircumference' 'SubjectArtefactDescription'], 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'pInfoTable', 'ColumnEditable', [false true(1, numel(pFields)) true]);
+    pInfoTbl.Data = cell(numel(uniqueSubjects), 2+length(pFields));
     pInfoTbl.Position = [0.02 0.124 0.38 0.786];
     pInfoTbl.CellSelectionCallback = @pInfoCellSelectedCB;
     pInfoTbl.CellEditCallback = @pInfoCellEditCB;
+    
     % pre-populate pInfo table
-    for i=1:length(EEG)
-        curEEG = EEG(i);
-        pInfoTbl.Data{i,1} = fullfile(curEEG.filepath, curEEG.filename);
-        % if EEG has BIDS.pInfo
-        % pInfo is in format
-        % Participant_ID  Gender
-        %     S02           M       % one row only
+    for iSubj = 1:length(uniqueSubjects)
+        indS = strmatch( uniqueSubjects{iSubj}, allSubjects, 'exact' );
+        curEEG = EEG(indS(1));
+        % if curEEG has BIDS.pInfo
+        % pInfo is in format:
+        % First row    participant_id  | Gender   |    ...
+        % Second row   <value>         | <value>  |
         if isfield(curEEG, 'BIDS') && isfield(curEEG.BIDS,'pInfo')
             fnames = curEEG.BIDS.pInfo(1,:); % fields of EEG.BIDS.pInfo
             for j=1:numel(pFields)
                 % if EEG.BIDS.pInfo has pFields{j}
                 if any(strcmp(pFields{j}, fnames))
-                    pInfoTbl.Data{i,strcmp(pInfoTbl.ColumnName,pFields{j})} = curEEG.BIDS.pInfo{2,strcmp(fnames,pFields{j})};
-                                    
+                    pInfoTbl.Data{iSubj,strcmp(pInfoTbl.ColumnName,pFields{j})} = curEEG.BIDS.pInfo{2,strcmp(fnames,pFields{j})};                 
                 end
             end
         else
             if isfield(curEEG,'subject')
-                pInfoTbl.Data{i,strcmp(pInfoTbl.ColumnName, 'participant_id')} = curEEG.subject;
+                pInfoTbl.Data{iSubj,strcmp(pInfoTbl.ColumnName, 'participant_id')} = curEEG.subject;
             end
             if isfield(curEEG,'group') && ~isempty(curEEG.group)
-                pInfoTbl.Data{i,strcmp(pInfoTbl.ColumnName, 'Group')} = curEEG.group;
+                pInfoTbl.Data{iSubj,strcmp(pInfoTbl.ColumnName, 'Group')} = curEEG.group;
             end
         end
-        
         % update HeadCircumference and SubjectArtefactDescription from tInfo
         if isfield(curEEG, 'BIDS') && isfield(curEEG.BIDS,'tInfo')
             if isfield(curEEG.BIDS.tInfo,'HeadCircumference')
-                pInfoTbl.Data{i,strcmp(pInfoTbl.ColumnName,'HeadCircumference')} = curEEG.BIDS.tInfo.HeadCircumference;
+                pInfoTbl.Data{iSubj,strcmp(pInfoTbl.ColumnName,'HeadCircumference')} = curEEG.BIDS.tInfo.HeadCircumference;
             end
             if isfield(curEEG.BIDS.tInfo,'SubjectArtefactDescription')
-                pInfoTbl.Data{i,strcmp(pInfoTbl.ColumnName,'SubjectArtefactDescription')} = curEEG.BIDS.tInfo.SubjectArtefactDescription;
+                pInfoTbl.Data{iSubj,strcmp(pInfoTbl.ColumnName,'SubjectArtefactDescription')} = curEEG.BIDS.tInfo.SubjectArtefactDescription;
             end
         end
     end
@@ -295,33 +305,40 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
             if isfield(EEG(e).BIDS,'tInfo')
                 tInfo = EEG(e).BIDS.tInfo;
             end
-            if isempty(pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)})
+            if ~isempty(EEG(e).subject)
+                rowIdx = strcmp(EEG(e).subject, pTable.Data(:, strcmp('participant_id', pTable.ColumnName)));
+            elseif ~isempty(STUDY.datasetinfo(1).subject) % assuming order of STUDY.datasetinfo matches with EEG
+                rowIdx = strcmp(STUDY.datasetinfo(e).subject, pTable.Data(:, strcmp('participant_id', pTable.ColumnName)));
+            end
+            if isempty(pTable.Data{rowIdx,strcmp('HeadCircumference',pTable.ColumnName)})
                 if isfield(tInfo, 'HeadCircumference')
                     tInfo = rmfield(tInfo, 'HeadCircumference');
                 end
             else
-                if ~isnumeric(pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)})
-                    tInfo.HeadCircumference = str2double(pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)});
+                if ~isnumeric(pTable.Data{rowIdx,strcmp('HeadCircumference',pTable.ColumnName)})
+                    tInfo.HeadCircumference = str2double(pTable.Data{rowIdx,strcmp('HeadCircumference',pTable.ColumnName)});
                 else
-                    tInfo.HeadCircumference = pTable.Data{e,strcmp('HeadCircumference',pTable.ColumnName)};
+                    tInfo.HeadCircumference = pTable.Data{rowIdxstrcmp('HeadCircumference',pTable.ColumnName)};
                 end
             end
-            if isempty(pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)})
+            if isempty(pTable.Data{rowIdx,strcmp('SubjectArtefactDescription',pTable.ColumnName)})
                 if isfield(tInfo, 'SubjectArtefactDescription')
                     tInfo = rmfield(tInfo,'SubjectArtefactDescription');
                 end
             else
-                if ~ischar(pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)})
-                    tInfo.SubjectArtefactDescription = char(pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)});
+                if ~ischar(pTable.Data{rowIdx, strcmp('SubjectArtefactDescription',pTable.ColumnName)})
+                    tInfo.SubjectArtefactDescription = char(pTable.Data{rowIdx,strcmp('SubjectArtefactDescription',pTable.ColumnName)});
                 else
-                    tInfo.SubjectArtefactDescription = pTable.Data{e,strcmp('SubjectArtefactDescription',pTable.ColumnName)};
+                    tInfo.SubjectArtefactDescription = pTable.Data{rowIdx,strcmp('SubjectArtefactDescription',pTable.ColumnName)};
                 end
             end
             EEG(e).BIDS.tInfo = tInfo;
             EEG(e).BIDS.pInfoDesc = pInfoDesc;
             colIdx = 1:numel(pTable.ColumnName);
             colIdx = colIdx(~strcmp('HeadCircumference',pTable.ColumnName) & ~strcmp('SubjectArtefactDescription',pTable.ColumnName)); % these are not pInfo fields
-            EEG(e).BIDS.pInfo = [pFields; pTable.Data(e,colIdx(2:end))];
+            
+            
+            EEG(e).BIDS.pInfo = [pFields; pTable.Data(rowIdx,colIdx)];
             EEG(e).saved = 'no';
             EEG(e).history = [EEG(e).history command];
         end       
@@ -380,7 +397,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
         row = obj.Indices(1);
         col = obj.Indices(2);
         pTbl = obj.Source;
-        if ~isempty(pTbl.Data{row, 2})
+        if ~isempty(pTbl.Data{row, strcmp('participant_id', pTbl.ColumnName)})
             if exist('input','var') % called from edit box for artefact description
                 entered = input;
             else
@@ -601,32 +618,33 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
                 end
             end
         end 
-    end
-    function info = getpInfoDesc()
-        hasBIDS = arrayfun(@(x) isfield(x,'BIDS') && ~isempty(x.BIDS),EEG);
-        if sum(hasBIDS) == 0 %if no BIDS found for any EEG
-            info = [];
-        else % at least one EEG has BIDS
-            if sum(hasBIDS) < numel(EEG) % not all have BIDS
-                warning('Not all EEG contains BIDS information.');
-            end
-            haspInfoDesc = arrayfun(@(x) isfield(x,'BIDS') && isfield(x.BIDS,'pInfoDesc') && ~isempty(x.BIDS.pInfoDesc),EEG);
-            if sum(haspInfoDesc) == 0
+        % Get BIDS information
+        function info = getpInfoDesc()
+            hasBIDS = arrayfun(@(x) isfield(x,'BIDS') && ~isempty(x.BIDS),EEG);
+            if sum(hasBIDS) == 0 %if no BIDS found for any EEG
                 info = [];
-            else % at least one EEG has BIDS.pInfoDesc
-                try
-                    bids = [EEG(haspInfoDesc).BIDS];
-                    allpInfoDesc = [bids.pInfoDesc];
-                    if numel(allpInfoDesc) < numel(EEG)
+            else % at least one EEG has BIDS
+                if sum(hasBIDS) < numel(EEG) % not all have BIDS
+                    warning('Not all EEG contains BIDS information.');
+                end
+                haspInfoDesc = arrayfun(@(x) isfield(x,'BIDS') && isfield(x.BIDS,'pInfoDesc') && ~isempty(x.BIDS.pInfoDesc),EEG);
+                if sum(haspInfoDesc) == 0
+                    info = [];
+                else % at least one EEG has BIDS.pInfoDesc
+                    try
+                        bids = [EEG(haspInfoDesc).BIDS];
+                        allpInfoDesc = [bids.pInfoDesc];
+                        if numel(allpInfoDesc) < numel(EEG)
+                            info = EEG(find(haspInfoDesc,1)).BIDS.pInfoDesc;
+                            warning('Not all EEG contains BIDS information. Using BIDS information of EEG(%d)...',find(haspInfoDesc,1));
+                        else
+                            info = allpInfoDesc(1);
+                            fprintf('Using BIDS information of the first dataset for all datasets...\n');
+                        end
+                    catch % field inconsistent
                         info = EEG(find(haspInfoDesc,1)).BIDS.pInfoDesc;
-                        warning('Not all EEG contains BIDS information. Using BIDS information of EEG(%d)...',find(haspInfoDesc,1));
-                    else
-                        info = allpInfoDesc(1);
-                        fprintf('Using BIDS information of the first dataset for all datasets...\n');
+                        warning('Inconsistence found in BIDS information across STUDY datasets. Using BIDS information of EEG(%d)...',find(haspInfoDesc,1));
                     end
-                catch % field inconsistent
-                    info = EEG(find(haspInfoDesc,1)).BIDS.pInfoDesc;
-                    warning('Inconsistence found in BIDS information across STUDY datasets. Using BIDS information of EEG(%d)...',find(haspInfoDesc,1));
                 end
             end
         end
