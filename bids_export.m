@@ -1018,7 +1018,8 @@ function s = checkfields(s, f, structName)
 fields = fieldnames(s);
 diffFields = setdiff(fields, f(:,1)');
 if ~isempty(diffFields)
-    error(sprintf('Invalid field name(s) %sfor structure %s', sprintf('%s ',diffFields{:}), structName));
+    fprintf('Warning: Ignoring invalid field name(s) "%s" for structure %s\n', sprintf('%s ',diffFields{:}), structName);
+    s = rmfield(s, diffFields);
 end
 for iRow = 1:size(f,1)
     if isempty(s) || ~isfield(s, f{iRow,1})
