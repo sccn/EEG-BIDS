@@ -68,12 +68,12 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         f.Position(3) = appWidth;
         f.Position(4) = appHeight;
         uicontrol(f, 'Style', 'text', 'String', 'BIDS information for EEG.event fields', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0 0.9 1 0.1]);
-        tbl = uitable(f, 'RowName', bidsFields, 'ColumnName', { 'EEGLAB Field' 'Levels' 'LongName' 'Description' 'Unit Name' 'Unit Prefix' 'TermURL' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'bidsTable');
+        tbl = uitable(f, 'RowName',[],'ColumnName', { 'BIDS Field' 'EEGLAB Field' 'Levels' 'LongName' 'Description' 'Unit Name' 'Unit Prefix' 'TermURL' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'bidsTable');
         tbl.Position = [0.01 0.54 0.98 0.41];
         tbl.CellSelectionCallback = @cellSelectedCB;
         tbl.CellEditCallback = @cellEditCB;
-        tbl.ColumnEditable = [true false true true true true];
-        tbl.ColumnWidth = {appWidth/9,appWidth/9,appWidth*2/9,appWidth*2/9,appWidth/9,appWidth/9,appWidth/9};
+        tbl.ColumnEditable = [false true false true true true true];
+        tbl.ColumnWidth = {appWidth/9, appWidth/9,appWidth/9,appWidth*2/9,appWidth*2/9,appWidth/9,appWidth/9,appWidth/9};
         units = {' ','ampere','becquerel','candela','coulomb','degree Celsius','farad','gray','henry','hertz','joule','katal','kelvin','kilogram','lumen','lux','metre','mole','newton','ohm','pascal','radian','second','siemens','sievert','steradian','tesla','volt','watt','weber'};
         unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
         tbl.ColumnFormat = {[] [] [] [] units unitPrefixes []};
@@ -86,29 +86,32 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         for i=1:length(bidsFields)
             % pre-populate description
             field = bidsFields{i};
-            if isfield(eventBIDS, field)
+            
+            data{i, strcmp(tbl.ColumnName,'BIDS Field')} = ['<body bgcolor="##D5DBDB">' field '</body>'];
+            
+            if isfield(eventBIDS, field)    
                 if isfield(eventBIDS.(field), 'EEGField')
-                    data{i,1} = eventBIDS.(field).EEGField;
+                    data{i,strcmp(tbl.ColumnName, 'EEGLAB Field')} = eventBIDS.(field).EEGField;
                 end
                 if isfield(eventBIDS.(field), 'LongName')
-                    data{i,find(strcmp(tbl.ColumnName, 'LongName'))} = eventBIDS.(field).LongName;
+                    data{i,strcmp(tbl.ColumnName, 'LongName')} = eventBIDS.(field).LongName;
                 end
                 if isfield(eventBIDS.(field), 'Description')
-                    data{i,find(strcmp(tbl.ColumnName, 'Description'))} = eventBIDS.(field).Description;
+                    data{i,strcmp(tbl.ColumnName, 'Description')} = eventBIDS.(field).Description;
                 end
                 if isfield(eventBIDS.(field), 'Units')
-                    data{i,find(strcmp(tbl.ColumnName, 'Unit Name'))} = eventBIDS.(field).Units;
+                    data{i,strcmp(tbl.ColumnName, 'Unit Name')} = eventBIDS.(field).Units;
                 end
                 if isfield(eventBIDS.(field), 'TermURL')
-                    data{i,find(strcmp(tbl.ColumnName, 'TermURL'))} = eventBIDS.(field).TermURL;
+                    data{i,strcmp(tbl.ColumnName, 'TermURL')} = eventBIDS.(field).TermURL;
                 end
                 if isfield(eventBIDS.(field), 'Levels') && ~isempty(eventBIDS.(field).Levels)
-                    data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = strjoin(fieldnames(eventBIDS.(field).Levels),',');
+                    data{i,strcmp(tbl.ColumnName, 'Levels')} = strjoin(fieldnames(eventBIDS.(field).Levels),',');
                 else
                     if strcmp(field, 'onset') || strcmp(field, "sample") || strcmp(field, "duration") || strcmp(field, "HED")
-                        data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'n/a';
+                        data{i,strcmp(tbl.ColumnName, 'Levels')} = 'n/a';
                     else
-                        data{i,find(strcmp(tbl.ColumnName, 'Levels'))} = 'Click to specify below';
+                        data{i,strcmp(tbl.ColumnName, 'Levels')} = 'Click to specify below';
                     end
                 end
             end
@@ -130,7 +133,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         close(f);
     end
     function editFieldCB(~, ~, bidsTable)
-        [res, userdata, ~, structout] = inputgui('geometry', {[1 1] [1] [1 1]}, 'geomvert', [1 1 1], 'uilist', {...
+        [~, ~, ~, structout] = inputgui('geometry', {[1 1] 1 [1 1]}, 'geomvert', [1 1 1], 'uilist', {...
                 {'Style', 'text', 'string', 'New field name (no space):'} ...
                 {'Style', 'edit', 'Tag', 'new_name'} ...
                 {} ...
