@@ -40,8 +40,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
             warning('There is mismatch in number of fields in EEG.event structures. Using fields of EEG(%d) which has the highest number of fields (%d).', index, num);
         end
     end
-    eventFields = strrep(eventFields, 'latency', 'latency (converted to s)');
-    eventFields = [eventFields; 'latency (sample)'];
+    eventFields = setdiff(eventFields, 'latency');
     bidsFields = {'onset', 'duration', 'trial_type','value','stim_file','sample','response_time','HED'};    
     
     % define global variables
@@ -237,15 +236,17 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                     c6.HorizontalAlignment = 'Left';
             else
                 if strcmp(columnName, 'EEGLAB Field')
-                    c6 = uicontrol(f, 'Style', 'text', 'String', sprintf('Choose the matching EEGLAB field:'), 'Units', 'normalized', 'FontAngle','italic','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'selectBIDSMsg');
-                    c6.Position = [0.01 0.44 1 0.05];
-                    c6.HorizontalAlignment = 'left';
-                    c = uicontrol(f,'Style','popupmenu', 'Units', 'normalized', 'Tag', 'selectBIDSDD');
-                    c.Position = [0.01 0.34 0.3 0.1];
-                    curEEGFields = obj.Source.Data(:,col);
-                    unset_eventFields = setdiff(eventFields, curEEGFields(~cellfun(@isempty, curEEGFields)));
-                    c.String = ['Choose EEGLAB field' unset_eventFields'];
-                    c.Callback = {@eegFieldSelected, obj.Source, row, col};
+                    if ~strcmp(field, 'onset') && ~strcmp(field, 'sample') % calculated automatically, can't be changed
+                        c6 = uicontrol(f, 'Style', 'text', 'String', sprintf('Choose the matching EEGLAB field:'), 'Units', 'normalized', 'FontAngle','italic','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'selectBIDSMsg');
+                        c6.Position = [0.01 0.44 1 0.05];
+                        c6.HorizontalAlignment = 'left';
+                        c = uicontrol(f,'Style','popupmenu', 'Units', 'normalized', 'Tag', 'selectBIDSDD');
+                        c.Position = [0.01 0.34 0.3 0.1];
+                        curEEGFields = obj.Source.Data(:,col);
+                        unset_eventFields = setdiff(eventFields, curEEGFields(~cellfun(@isempty, curEEGFields)));
+                        c.String = ['Choose EEGLAB field' unset_eventFields'];
+                        c.Callback = {@eegFieldSelected, obj.Source, row, col};
+                    end
                 else % any other column selected
                     columnDefinition.LongName = 'Long, unabbreviated name of the field';
                     columnDefinition.Description = 'Description of the field';
@@ -300,12 +301,16 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         else
             if ~strcmp(column, 'Levels')
                 if strcmp(column, 'EEGLAB Field')
-                    indicesOfOtherFields = setdiff(1:size(obj.Source.Data,1),obj.Indices(1));
-                    otherFields = obj.Source.Data(indicesOfOtherFields,obj.Indices(2));
-                    if ~isempty(strcmp(obj.EditData)) && any(strcmp(obj.EditData, otherFields)) % check for duplication of field name, ignoring empty name. BIDS <-> EEGLAB field mapping is one-to-one
-                        obj.Source.Data{obj.Indices(1),obj.Indices(2)} = obj.PreviousData; % reset if found
+                    if strcmp(field, 'onset') || strcmp(field, 'sample') % default EEGLAB calculation, can't be changed
+                        obj.Source.Data{obj.Indices(1),obj.Indices(2)} = obj.PreviousData;
                     else
-                        eventBIDS.(field).EEGField = obj.EditData;
+                        indicesOfOtherFields = setdiff(1:size(obj.Source.Data,1),obj.Indices(1));
+                        otherFields = obj.Source.Data(indicesOfOtherFields,obj.Indices(2));
+                        if ~isempty(strcmp(obj.EditData)) && any(strcmp(obj.EditData, otherFields)) % check for duplication of field name, ignoring empty name. BIDS <-> EEGLAB field mapping is one-to-one
+                            obj.Source.Data{obj.Indices(1),obj.Indices(2)} = obj.PreviousData; % reset if found
+                        else
+                            eventBIDS.(field).EEGField = obj.EditData;
+                        end
                     end
                 elseif strcmp(column, 'Unit Name') || strcmp(column, 'Unit Prefix')
                     unit = [obj.Source.Data{obj.Indices(1),strcmp(obj.Source.ColumnName, 'Unit Prefix')} obj.Source.Data{obj.Indices(1),strcmp(obj.Source.ColumnName, 'Unit Name')}];
@@ -329,7 +334,6 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         else
             % retrieve all unique values from EEG.event.(field). 
             eegField = eventBIDS.(field).EEGField;
-            
             levels = getAllUniqueFieldValues(EEG, eegField)';
             if strcmp(levelCellText,'Click to specify below') && length(levels) > levelThreshold 
                 msg = sprintf('\tThere are more than %d unique levels for field %s.\nAre you sure you want to specify levels for it?', levelThreshold, eegField);
@@ -433,18 +437,18 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         end
     end
 
-    % get unique event value for all EEG
-    function uniqueValues = getAllUniqueFieldValues(EEG, field)
-        if isnumeric(EEG(1).event(1).(field))
+    % get unique event value for all EEG.event.eegField
+    function uniqueValues = getAllUniqueFieldValues(EEG, eegField)
+        if isnumeric(EEG(1).event(1).(eegField))
         uniqueValues = [];
-        elseif ischar(EEG(1).event(1).(field))
+        elseif ischar(EEG(1).event(1).(eegField))
             uniqueValues = {};
         end
         for e=1:numel(EEG)
-            if ischar(EEG(e).event(1).(field))
-                uniqueValues = [uniqueValues{:} {EEG(e).event.(field)}];
+            if ischar(EEG(e).event(1).(eegField))
+                uniqueValues = [uniqueValues{:} {EEG(e).event.(eegField)}];
             else
-                uniqueValues = [uniqueValues EEG(e).event.(field)];
+                uniqueValues = [uniqueValues EEG(e).event.(eegField)];
             end
             uniqueValues = unique(uniqueValues);
         end 
@@ -527,14 +531,14 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                     event.HED.Units = '';
                     event.HED.TermURL = '';
                 elseif strcmp(fields{idx}, 'onset')
-                    event.onset.EEGField = 'latency (converted to s)';
+                    event.onset.EEGField = 'From sample';
                     event.onset.LongName = 'Event onset';
                     event.onset.Description = 'Onset (in seconds) of the event measured from the beginning of the acquisition of the first volume in the corresponding task imaging data file';
                     event.onset.Units = 'second';
                     event.onset.Levels = [];
                     event.onset.TermURL = '';
                 elseif strcmp(fields{idx}, 'sample')
-                    event.sample.EEGField = 'latency (sample)';
+                    event.sample.EEGField = 'latency';
                     event.sample.LongName = 'Sample';
                     event.sample.Description = 'Onset of the event according to the sampling scheme of the recorded modality';
                     event.sample.Units = '';
