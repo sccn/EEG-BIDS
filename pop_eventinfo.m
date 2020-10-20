@@ -306,7 +306,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                     else
                         indicesOfOtherFields = setdiff(1:size(obj.Source.Data,1),obj.Indices(1));
                         otherFields = obj.Source.Data(indicesOfOtherFields,obj.Indices(2));
-                        if ~isempty(strcmp(obj.EditData)) && any(strcmp(obj.EditData, otherFields)) % check for duplication of field name, ignoring empty name. BIDS <-> EEGLAB field mapping is one-to-one
+                        if ~isempty(obj.EditData) && any(strcmp(obj.EditData, otherFields)) % check for duplication of field name, ignoring empty name. BIDS <-> EEGLAB field mapping is one-to-one
                             obj.Source.Data{obj.Indices(1),obj.Indices(2)} = obj.PreviousData; % reset if found
                         else
                             eventBIDS.(field).EEGField = obj.EditData;
@@ -364,7 +364,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
     % Callback for when user chose to ignore threshold of maximum number of
     % unique values when specifying categorical levels
     function ignoreThresholdCB(~,~,table, bidsField)
-        matchedRow = strcmp(table.Source.Data(:, strcmp(table.ColumnName, 'BIDS Field')), field);
+        matchedRow = strcmp(table.Source.Data(:, strcmp(table.Source.ColumnName, 'BIDS Field')), field);
         table.Source.Data{matchedRow, strcmp(table.Source.ColumnName, 'Levels')} = 'Click to specify below (ignore max number of levels threshold)';
         createLevelUI('','',table,bidsField);
     end
