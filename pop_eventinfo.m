@@ -42,7 +42,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
     end
     eventFields = strrep(eventFields, 'latency', 'latency (converted to s)');
     eventFields = [eventFields; 'latency (sample)'];
-    bidsFields = {'onset', 'duration', 'trial_type','value','stim_file','sample','HED','response_time'};    
+    bidsFields = {'onset', 'duration', 'trial_type','value','stim_file','sample','response_time','HED'};    
     eInfo = {};
     eInfoDesc = [];
     eventBIDS = newEventBIDS();
