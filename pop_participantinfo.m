@@ -119,8 +119,8 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
     bidsTbl.ColumnFormat = {[] [] [] [] units unitPrefixes []};
 
-    uicontrol(f, 'Style', 'pushbutton', 'String', 'Edit column', 'Units', 'normalized', 'Position', [0.4-0.1 0.074 0.1 0.05], 'Callback', {@editColumnCB, pInfoTbl}, 'Tag', 'addColumnBtn');
-    uicontrol(f, 'Style', 'pushbutton', 'String', 'Import', 'Units', 'normalized', 'Position', [0.4-0.2 0.074 0.1 0.05], 'Callback', {@importSpreadsheet}, 'Tag', 'importSpreadsheetBtn');
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Add/Edit column', 'Units', 'normalized', 'Position', [0.4-0.14 0.074 0.14 0.05], 'Callback', @addColumnCB, 'Tag', 'addColumnBtn');
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Import column(s)', 'Units', 'normalized', 'Position', [0.4-0.28 0.074 0.14 0.05], 'Callback', {@importSpreadsheet}, 'Tag', 'importSpreadsheetBtn');
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0.02 0.1 0.05], 'Callback', @okCB); 
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0.02 0.1 0.05], 'Callback', @cancelCB); 
     
