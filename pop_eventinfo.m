@@ -40,13 +40,12 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
             warning('There is mismatch in number of fields in EEG.event structures. Using fields of EEG(%d) which has the highest number of fields (%d).', index, num);
         end
     end
-    eventFields = setdiff(eventFields, 'latency');
     bidsFields = {'onset', 'duration', 'trial_type','value','stim_file','sample','response_time','HED'};    
-    
+    eventFields = setdiff(eventFields, 'latency');
     % define global variables
     % -----------------------
     % main data structure containing event info to be updated by events in GUI
-    eventBIDS = newEventBIDS(eventFields, bidsFields); 
+    eventBIDS = newEventBIDS(EEG, eventFields, bidsFields); 
     % default GUI settings
     appWidth = 800;
     appHeight = 500;
@@ -80,7 +79,6 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         for i=1:length(bidsFields)
             % pre-populate description
             field = bidsFields{i};
-            
             data{i, strcmp(tbl.ColumnName,'BIDS Field')} = field;
             
             if isfield(eventBIDS, field)    
@@ -117,7 +115,10 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
     elseif nargin < 3 && ischar(varargin{1}) && strcmp(varargin{1}, 'default')
         done();
     end
-  
+    
+    
+    %% --Helper functions---
+    %---------------------
     function cancelCB(~, ~)
         clear('eventBIDS');
         close(f);
@@ -126,6 +127,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         done();
         close(f);
     end
+    % Callback for Edit field button
     function editFieldCB(~, ~, bidsTable)
         [~, ~, ~, structout] = inputgui('geometry', {[1 1] 1 [1 1]}, 'geomvert', [1 1 1], 'uilist', {...
                 {'Style', 'text', 'string', 'New field name (no space):'} ...
@@ -160,7 +162,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                 end
             end
     end
-
+    
     function done()
         eInfoDesc = [];
         eInfo = {};
@@ -459,8 +461,16 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         end
     end
 
-    % generate 
-    function event = newEventBIDS(eventFields, bidsFields)
+    % generate main event data structure that holds information
+    % to be updated through GUI events
+    % event structure:
+    % event.(bidsField).EEGField
+    %                  .LongName
+    %                  .Description
+    %                  .Units
+    %                  .Levels
+    %                  .TermURL
+    function event = newEventBIDS(EEG, eventFields, bidsFields)
         event = [];
         bidsEEG = [];
         if isfield(EEG,'BIDS') % return true if any of EEG structure has BIDS
@@ -469,17 +479,38 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                 if numel(EEG) ~= numel(bidsIdx)
                     fprintf(['EEG.BIDS is found in ' num2str(numel(bidsIdx)) ' out of ' num2str(numel(EEG)) ' EEG structure(s). ']);
                 end
-                fprintf(['Using BIDS info of EEG(' num2str(bidsIdx(1)) ')...\n']);
+                if bidsIdx(1) == 1
+                    fprintf('Using BIDS info of first dataset...\n');
+                else % user-friendly message
+                    fprintf(['Using BIDS info of EEG(' num2str(bidsIdx(1)) ')...\n']);
+                end
                 bidsEEG = EEG(bidsIdx(1));
             end
         end
         
         % if resume editing
         if ~isempty(bidsEEG) && isfield(bidsEEG.BIDS,'eInfoDesc') && isfield(bidsEEG.BIDS,'eInfo')
-            for idx=1:size(bidsEEG.BIDS.eInfo,1)
-                eeg_field = bidsEEG.BIDS.eInfo{idx,2}; % EEGLAB field
-                bids_field = bidsEEG.BIDS.eInfo{idx,1}; % bids field - keys of eInfoDesc
-                event.(bids_field).EEGField = eeg_field;
+            prev_bids_fields = fieldnames(bidsEEG.BIDS.eInfoDesc);
+            for idx=1:numel(prev_bids_fields)
+                bids_field = prev_bids_fields{idx}; % to be keys of event struct
+                
+                % add matching EEGLAB field
+                % eInfo: bidsField | eeglabField
+                hasMatchingEEGField = strcmp(bidsEEG.BIDS.eInfo(:,1),bids_field);
+                if any(hasMatchingEEGField)
+                    eeg_field = bidsEEG.BIDS.eInfo{hasMatchingEEGField,2};
+                else
+                    eeg_field = '';
+                end             
+                if strcmp(bids_field, 'onset')
+                    event.(bids_field).EEGField = 'From sample';
+                elseif strcmp(bids_field, 'sample')
+                    event.(bids_field).EEGField = 'latency';
+                else
+                    event.(bids_field).EEGField = eeg_field;
+                end
+                
+                % copy BIDS info
                 if isfield(bidsEEG.BIDS.eInfoDesc,bids_field) && isfield(bidsEEG.BIDS.eInfoDesc.(bids_field), 'LongName')
                     event.(bids_field).LongName = bidsEEG.BIDS.eInfoDesc.(bids_field).LongName;
                 else
@@ -506,7 +537,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                     event.(bids_field).TermURL = '';
                 end
             end
-            fields = setdiff(bidsFields, bidsEEG.BIDS.eInfo(:,1)); % add unset fields to the structure
+            fields = setdiff(bidsFields, fieldnames(bidsEEG.BIDS.eInfoDesc)); % add any unset bids fields to the structure
             for idx=1:length(fields)
                 event.(fields{idx}).EEGField = '';
                 event.(fields{idx}).LongName = '';
@@ -518,21 +549,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         else % start fresh
             fields = bidsFields; 
             for idx=1:length(fields)
-                if strcmp(fields{idx}, 'value')
-                    event.value.EEGField = 'type';
-                    event.value.LongName = 'Event marker';
-                    event.value.Description = 'Marker value associated with the event';
-                    event.value.Units = '';
-                    event.value.Levels = [];
-                    event.value.TermURL = '';
-                elseif strcmp(fields{idx}, 'HED') && any(strcmp(eventFields, 'usertags'))
-                    event.HED.EEGField = 'usertags';
-                    event.HED.LongName = 'Hierarchical Event Descriptor';
-                    event.HED.Description = 'Tags describing the nature of the event';      
-                    event.HED.Levels = [];
-                    event.HED.Units = '';
-                    event.HED.TermURL = '';
-                elseif strcmp(fields{idx}, 'onset')
+                if strcmp(fields{idx}, 'onset')
                     event.onset.EEGField = 'From sample';
                     event.onset.LongName = 'Event onset';
                     event.onset.Description = 'Onset (in seconds) of the event measured from the beginning of the acquisition of the first volume in the corresponding task imaging data file';
@@ -546,6 +563,20 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                     event.sample.Units = '';
                     event.sample.Levels = [];
                     event.sample.TermURL = '';
+                elseif strcmp(fields{idx}, 'value')
+                    event.value.EEGField = 'type';
+                    event.value.LongName = 'Event marker';
+                    event.value.Description = 'Marker value associated with the event';
+                    event.value.Units = '';
+                    event.value.Levels = [];
+                    event.value.TermURL = '';
+                elseif strcmp(fields{idx}, 'HED') && any(strcmp(eventFields, 'usertags'))
+                    event.HED.EEGField = 'usertags';
+                    event.HED.LongName = 'Hierarchical Event Descriptor';
+                    event.HED.Description = 'Tags describing the nature of the event';      
+                    event.HED.Levels = [];
+                    event.HED.Units = '';
+                    event.HED.TermURL = '';
                 elseif strcmp(fields{idx}, 'duration')
                     event.duration.EEGField = 'duration';
                     event.duration.LongName = 'Event duration';
