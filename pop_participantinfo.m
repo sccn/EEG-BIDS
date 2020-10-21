@@ -206,7 +206,17 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
             
             % Load spreadsheet
             if ~isempty(filepath)
-                T = readtable(filepath);
+                try
+                    T = readtable(filepath);
+                catch ME
+                    supergui( 'geomhoriz', { 1 1 1 }, 'uilist', { ...
+                         { 'style', 'text', 'string', 'Error importing data.'},... 
+                         { }, ...
+                         { 'style', 'pushbutton' , 'string', 'Ok', 'callback', 'close(gcbf)'  } ...
+                         } );
+                     error(ME);
+                     return
+                end
                 if isTSV
                     delete(filepath)
                 end
