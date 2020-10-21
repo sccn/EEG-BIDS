@@ -173,7 +173,6 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
             close(gcbf); % close column header warning dialog
             [name, path] = uigetfile2({'*'}, 'Choose spreadsheet file');
             filepath = '';
-            isTSV = false;
             allowedFormats = {'.txt', '.csv', '.tsv', '.xlsx', '.xls'};
             if ~isequal(name, 0)
                filepath = fullfile(path, name);
@@ -185,20 +184,6 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
                          } );
                    filepath = '';
                end
-               if endsWith(filepath, '.tsv')
-                    isTSV = true;
-                    curr = filepath;
-                    filepath = strrep(filepath, 'tsv', 'txt');
-                    success = copyfile(curr, filepath); 
-                    if ~success
-                        supergui( 'geomhoriz', { 1 1 1 1 }, 'uilist', { ...
-                         { 'style', 'text', 'string', 'Problem reading tsv file. Please try using a different format.'},... 
-                         { 'style', 'text', 'string', '(.txt, .csv, .xlsx, .xls)' }, { }, ...
-                         { 'style', 'pushbutton' , 'string', 'Ok', 'callback', 'close(gcbf)'  } ...
-                         } );
-                        filepath = '';
-                    end
-                end
             else
                 close(gcbf);
             end
@@ -207,7 +192,11 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
             % Load spreadsheet
             if ~isempty(filepath)
                 try
-                    T = readtable(filepath);
+                    if endsWith(filepath,'.tsv')
+                        T = readtable(filepath, 'filetype', 'text');
+                    else
+                        T = readtable(filepath);
+                    end
                 catch ME
                     supergui( 'geomhoriz', { 1 1 1 }, 'uilist', { ...
                          { 'style', 'text', 'string', 'Error importing data.'},... 
@@ -217,9 +206,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
                      error(ME);
                      return
                 end
-                if isTSV
-                    delete(filepath)
-                end
+
                 columns = T.Properties.VariableNames;
                 columns = ["(none)" columns];
                 pTable = findobj('Tag', 'pInfoTable');
