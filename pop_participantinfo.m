@@ -164,16 +164,41 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     %% import spreadshet
     function importSpreadsheet(~, ~)
         % Get spreadsheet
-         supergui( 'geomhoriz', { 1 1 [1 1] }, 'uilist', { ...
-         { 'style', 'text', 'string', 'Warning: First row must contains column headers!', 'fontweight', 'bold' }, { }, ...
+         supergui( 'geomhoriz', { 1 1 1 [1 1] }, 'uilist', { ...
+         { 'style', 'text', 'string', 'Warning: First row must contains column headers!', 'fontweight', 'bold' },...
+         { 'style', 'text', 'string', 'Supported file formats: .txt, .csv, .tsv, .xlsx, .xls' }, { }, ...
          { 'style', 'pushbutton' , 'string', 'Cancel', 'callback', 'close(gcbf)'  } ...
          { 'style', 'pushbutton' , 'string', 'OK', 'callback', @proceed } } );
         function proceed(~,~)
             close(gcbf); % close column header warning dialog
-            [name, path] = uigetfile2({'*.xlsx','Excel Files(*.xlsx)'; '*.xls','Excel Files(*.xls)';'*.tsv','Tab Separated Value Files(*.tsv)';'*.csv','Comma Separated Value Files(*.csv)';}, 'Choose spreadsheet file');
+            [name, path] = uigetfile2({'*'}, 'Choose spreadsheet file');
             filepath = '';
+            isTSV = false;
+            allowedFormats = {'.txt', '.csv', '.tsv', '.xlsx', '.xls'};
             if ~isequal(name, 0)
                filepath = fullfile(path, name);
+               if ~any(endsWith(filepath, allowedFormats))
+                   supergui( 'geomhoriz', { 1 1 1 1 }, 'uilist', { ...
+                         { 'style', 'text', 'string', 'Selected file format is NOT among those supported'},... 
+                         { 'style', 'text', 'string', '(.txt, .csv, .tsv, .xlsx, .xls)' }, { }, ...
+                         { 'style', 'pushbutton' , 'string', 'Ok', 'callback', 'close(gcbf)'  } ...
+                         } );
+                   filepath = '';
+               end
+               if endsWith(filepath, '.tsv')
+                    isTSV = true;
+                    curr = filepath;
+                    filepath = strrep(filepath, 'tsv', 'txt');
+                    success = copyfile(curr, filepath); 
+                    if ~success
+                        supergui( 'geomhoriz', { 1 1 1 1 }, 'uilist', { ...
+                         { 'style', 'text', 'string', 'Problem reading tsv file. Please try using a different format.'},... 
+                         { 'style', 'text', 'string', '(.txt, .csv, .xlsx, .xls)' }, { }, ...
+                         { 'style', 'pushbutton' , 'string', 'Ok', 'callback', 'close(gcbf)'  } ...
+                         } );
+                        filepath = '';
+                    end
+                end
             else
                 close(gcbf);
             end
@@ -182,6 +207,9 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
             % Load spreadsheet
             if ~isempty(filepath)
                 T = readtable(filepath);
+                if isTSV
+                    delete(filepath)
+                end
                 columns = T.Properties.VariableNames;
                 columns = ["(none)" columns];
                 pTable = findobj('Tag', 'pInfoTable');
