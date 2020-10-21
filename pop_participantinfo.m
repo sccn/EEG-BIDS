@@ -130,21 +130,21 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
         % pre-populate description
         field = pFields{i};
         if numel(EEG) == 1 || ~isfield(pInfoBIDS.(field),'Levels') % if previous specification of this field didn't include Levels
-            data{i,find(strcmp(bidsTbl.ColumnName, 'Levels'))} = 'n/a';
+            data{i,strcmp(bidsTbl.ColumnName, 'Levels')} = 'n/a';
         elseif isstruct(pInfoBIDS.(field).Levels) && (isempty(pInfoBIDS.(field).Levels) || isempty(fieldnames(pInfoBIDS.(field).Levels)))
-            data{i,find(strcmp(bidsTbl.ColumnName, 'Levels'))} = 'Click to specify';
+            data{i,strcmp(bidsTbl.ColumnName, 'Levels')} = 'Click to specify';
         else
             levelTxt = pInfoBIDS.(field).Levels;
             if isstruct(levelTxt)
                 levelTxt = strjoin(fieldnames(pInfoBIDS.(field).Levels),',');
             end
-            data{i,find(strcmp(bidsTbl.ColumnName, 'Levels'))} = levelTxt;
+            data{i,strcmp(bidsTbl.ColumnName, 'Levels')} = levelTxt;
         end
         if isfield(pInfoBIDS.(field),'Description')
-            data{i,find(strcmp(bidsTbl.ColumnName, 'Description'))} = pInfoBIDS.(field).Description;
+            data{i,strcmp(bidsTbl.ColumnName, 'Description')} = pInfoBIDS.(field).Description;
         end
         if isfield(pInfoBIDS.(field),'Units')
-            data{i,find(strcmp(bidsTbl.ColumnName, 'Units'))} = pInfoBIDS.(field).Units;
+            data{i,strcmp(bidsTbl.ColumnName, 'Units')} = pInfoBIDS.(field).Units;
         end
         clear('field');
     end
@@ -217,7 +217,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
                 idColumn = '';
 
                 % Match spreadsheet columns with GUI columns
-                [~, ~, ~, structout] = inputgui('geometry', {[1 1] [1 1] [1 1] [1 1] [1 1] [1 1] [1] [1] [1] [1]}, 'geomvert', [1 1 1 1 1 1 1 1 1 5], 'uilist', {...
+                [~, ~, ~, structout] = inputgui('geometry', {[1 1] [1 1] [1 1] [1 1] [1 1] [1 1] 1 1 1 1}, 'geomvert', [1 1 1 1 1 1 1 1 1 5], 'uilist', {...
                     {'Style', 'text', 'string', 'Participant ID column* (required)', 'fontweight', 'bold', 'fontsize', 14} ...
                     {'Style', 'popupmenu', 'string', columns, 'Tag', 'ID_Column', 'Callback', @idSelected} ...
                     {'Style', 'text', 'string', 'Age column'} ...
@@ -309,13 +309,13 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
 
     
     %% callback handle for cancel button
-    function cancelCB(src, event)
+    function cancelCB(~, ~)
         clear('eventBIDS');
         close(f);
     end
 
     %% callback handle for ok button
-    function okCB(src, event)        
+    function okCB(~, ~)        
         % prepare return struct
         pTable = findobj('Tag', 'pInfoTable');
                 
@@ -427,7 +427,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
             temp = bidsTbl.Data;
             bidsTbl.Data = cell(size(bidsTbl.Data,1)+1, size(bidsTbl.Data,2));
             bidsTbl.Data(1:size(temp,1),:) = temp;
-            bidsTbl.Data{end,find(strcmp(bidsTbl.ColumnName, 'Levels'))} = 'Click to specify'; 
+            bidsTbl.Data{end,strcmp(bidsTbl.ColumnName, 'Levels')} = 'Click to specify'; 
         end
         function removeColumn(colName)
             pFields(strcmp(pFields, colName)) = [];
@@ -471,7 +471,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     end
 
     %% callback handle for cell selection in the participant info table
-    function pInfoCellSelectedCB(arg1, obj)
+    function pInfoCellSelectedCB(~, obj)
         removeLevelUI();
         tbl = obj.Source;
         if ~isempty(obj.Indices)
@@ -484,7 +484,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     end
 
     %% callback handle for cell edit in pInfo table
-    function pInfoCellEditCB(arg1, obj, input)
+    function pInfoCellEditCB(~, obj, input)
         row = obj.Indices(1);
         col = obj.Indices(2);
         pTbl = obj.Source;
@@ -506,7 +506,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     end
 
     %% callback handle for cell selection in the BIDS table
-    function bidsCellSelectedCB(arg1, obj) 
+    function bidsCellSelectedCB(~, obj) 
         if size(obj.Indices,1) == 1
             removeLevelUI();
             row = obj.Indices(1);
@@ -525,7 +525,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     
     
     %% callback handle for cell edit in BIDS table
-    function bidsCellEditCB(arg1, obj)
+    function bidsCellEditCB(~, obj)
         field = obj.Source.RowName{obj.Indices(1)};
         column = obj.Source.ColumnName{obj.Indices(2)};
         if ~strcmp(column, 'Levels')
@@ -533,17 +533,17 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
         end
     end
     
-    function descriptionCB(src,event,obj,field) 
+    function descriptionCB(src,~,obj,field) 
         obj.Source.Data{obj.Indices(1),obj.Indices(2)} = src.String;
         pInfoBIDS.(field).Description = src.String;
     end
 
-    function artefactCB(src,event,obj) 
+    function artefactCB(src,~,obj) 
         obj.Source.Data{obj.Indices(1),obj.Indices(2)} = src.String;
         pInfoCellEditCB(src, obj, src.String);
     end
 
-    function createLevelUI(src,event,table,field)
+    function createLevelUI(~,~,table,field)
         removeLevelUI();
         lvlHeight = 0.43;
         if numel(EEG) == 1
@@ -555,17 +555,13 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
             if numel(pTable) > 1
                 pTable = pTable(1);
             end
-            colIdx = find(strcmp(pTable.ColumnName, field));
-            levelCellText = table.Source.Data{find(strcmp(table.Source.RowName, field)), find(strcmp(table.Source.ColumnName, 'Levels'))}; % text (fieldName-Levels) cell. if 'n/a' then no action, 'Click to..' then conditional action, '<value>,...' then get levels
+            colIdx = strcmp(pTable.ColumnName, field);
+            levelCellText = table.Source.Data{strcmp(table.Source.RowName, field), strcmp(table.Source.ColumnName, 'Levels')}; % text (fieldName-Levels) cell. if 'n/a' then no action, 'Click to..' then conditional action, '<value>,...' then get levels
             % retrieve all unique values
-%             if isnumeric(pTable.Data{1,colIdx}) % values already in string format
-%                 values = arrayfun(@(x) num2str(x), [pTable.Data{:,colIdx}], 'UniformOutput', false);
-%                 levels = unique(values)';
-%             else
-                values = {pTable.Data{:,colIdx}};
-                idx = cellfun(@isempty, values);
-                levels = unique(values(~idx))';
-%             end
+            values = pTable.Data(:,colIdx);
+            idx = cellfun(@isempty, values);
+            levels = unique(values(~idx))';
+            
             if strcmp(levelCellText,'n/a')
                 uicontrol(f, 'Style', 'text', 'String', 'Levels editing does not apply to this field.', 'Units', 'normalized', 'Position', [0.42 lvlHeight bidsWidth 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
             elseif isempty(levels)
@@ -595,11 +591,11 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
             end
         end
     end
-    function ignoreThresholdCB(src,event,table, field)
-        table.Source.Data{find(strcmp(table.Source.RowName, field)), find(strcmp(table.Source.ColumnName, 'Levels'))} = 'Click to specify below (ignore max number of levels threshold)';
+    function ignoreThresholdCB(~,~,table, field)
+        table.Source.Data{strcmp(table.Source.RowName, field), strcmp(table.Source.ColumnName, 'Levels')} = 'Click to specify below (ignore max number of levels threshold)';
         createLevelUI('','',table,field);
     end
-    function levelEditCB(arg1, obj, field)
+    function levelEditCB(~, obj, field)
         level = checkFormat(obj.Source.RowName{obj.Indices(1)});
         description = obj.EditData;
         if isempty(pInfoBIDS.(field).Levels)
@@ -612,10 +608,10 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
         specified_levels = fieldnames(pInfoBIDS.(field).Levels);
         % Update main table
         mainTable = findobj('Tag','bidsTable');
-        mainTable.Data{find(strcmp(field,mainTable.RowName)),find(strcmp('Levels',mainTable.ColumnName))} = strjoin(specified_levels, ',');
+        mainTable.Data{strcmp(field,mainTable.RowName),strcmp('Levels',mainTable.ColumnName)} = strjoin(specified_levels, ',');
     end
     
-    function bidsFieldSelected(src, event, table, row, col) 
+    function bidsFieldSelected(src, ~, table, row, col) 
         val = src.Value;
         str = src.String;
         selected = str{val};
