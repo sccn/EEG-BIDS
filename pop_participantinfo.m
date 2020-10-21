@@ -119,7 +119,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
     bidsTbl.ColumnFormat = {[] [] [] [] units unitPrefixes []};
 
-    uicontrol(f, 'Style', 'pushbutton', 'String', 'Add/Edit column', 'Units', 'normalized', 'Position', [0.4-0.14 0.074 0.14 0.05], 'Callback', @addColumnCB, 'Tag', 'addColumnBtn');
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Add/Edit column', 'Units', 'normalized', 'Position', [0.4-0.14 0.074 0.14 0.05], 'Callback', {@editColumnCB, pInfoTbl}, 'Tag', 'addColumnBtn');
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Import column(s)', 'Units', 'normalized', 'Position', [0.4-0.28 0.074 0.14 0.05], 'Callback', {@importSpreadsheet}, 'Tag', 'importSpreadsheetBtn');
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0.02 0.1 0.05], 'Callback', @okCB); 
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0.02 0.1 0.05], 'Callback', @cancelCB); 
@@ -164,112 +164,119 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     %% import spreadshet
     function importSpreadsheet(~, ~)
         % Get spreadsheet
-        [~, ~, ~, structout] = inputgui( { [1 2 0.5] [1]}, {...
-                            {'Style', 'text', 'string', 'Spreadsheet to import*'} ...
-                            {'Style', 'edit', 'Tag', 'Filepath'} ...
-                            {'Style', 'pushbutton', 'string', '...', 'Callback', @browse} ...
-                            {'Style', 'text', 'string', '*First row must contain column headers.'}});
-        function browse(~,~)
-            [name, path] = uigetfile2({'*.xlsx','Excel Files(*.xlsx)'; '*.xls','Excel Files(*.xls)';'*.csv','Comma Separated Value Files(*.csv)';}, 'Choose spreadsheet file');
+         supergui( 'geomhoriz', { 1 1 [1 1] }, 'uilist', { ...
+         { 'style', 'text', 'string', 'Warning: First row must contains column headers!', 'fontweight', 'bold' }, { }, ...
+         { 'style', 'pushbutton' , 'string', 'Cancel', 'callback', 'close(gcbf)'  } ...
+         { 'style', 'pushbutton' , 'string', 'OK', 'callback', @proceed } } );
+        function proceed(~,~)
+            close(gcbf); % close column header warning dialog
+            [name, path] = uigetfile2({'*.xlsx','Excel Files(*.xlsx)'; '*.xls','Excel Files(*.xls)';'*.tsv','Tab Separated Value Files(*.tsv)';'*.csv','Comma Separated Value Files(*.csv)';}, 'Choose spreadsheet file');
+            filepath = '';
             if ~isequal(name, 0)
-               set(findobj('tag', 'Filepath'), 'string', fullfile(path, name));
+               filepath = fullfile(path, name);
             else
                 close(gcbf);
             end
             clear tmpfolder;
-        end
-        
-        % Load spreadsheet
-        if ~isempty(structout)
-            filepath = structout.Filepath;
-            T = readtable(filepath);
-            columns = T.Properties.VariableNames;
-            columns = ["(none)" columns];
-            pTable = findobj('Tag', 'pInfoTable');
-            columnMap = containers.Map('KeyType','char','ValueType','char');
-            idColumn = '';
+            
+            % Load spreadsheet
+            if ~isempty(filepath)
+                T = readtable(filepath);
+                columns = T.Properties.VariableNames;
+                columns = ["(none)" columns];
+                pTable = findobj('Tag', 'pInfoTable');
+                columnMap = containers.Map('KeyType','char','ValueType','char');
+                idColumn = '';
 
-            % Match spreadsheet columns with GUI columns
-            [res userdata err structout] = inputgui('geometry', {[1 1] [1 1] [1 1] [1 1] [1 1] [1 1] [1] [1] [1] [1]}, 'geomvert', [1 1 1 1 1 1 1 1 1 5], 'uilist', {...
-                {'Style', 'text', 'string', 'Participant ID column* (required)', 'fontweight', 'bold'} ...
-                {'Style', 'popupmenu', 'string', columns, 'Tag', 'ID_Column', 'Callback', @idSelected} ...
-                {'Style', 'text', 'string', 'Age column'} ...
-                {'Style', 'popupmenu', 'string', columns, 'Tag', 'Age_Column', 'Callback', @fieldSelected} ...
-                {'Style', 'text', 'string', 'Gender column'} ...
-                {'Style', 'popupmenu', 'string', columns, 'Tag', 'Gender_Column', 'Callback', @fieldSelected} ...
-                {'Style', 'text', 'string', 'Group column'} ...
-                {'Style', 'popupmenu', 'string', columns, 'Tag', 'Group_Column', 'Callback', @fieldSelected} ...
-                {'Style', 'text', 'string', 'Head circumference column'} ...
-                {'Style', 'popupmenu', 'string', columns, 'Tag', 'HeadCircumference_Column', 'Callback', @fieldSelected} ...
-                {'Style', 'text', 'string', 'Subject artefact column'} ...
-                {'Style', 'popupmenu', 'string', columns, 'Tag', 'SubjectArtefactDescription_Column', 'Callback', @fieldSelected} ...
-                {} ...
-                {'Style', 'text', 'string', 'Choose additional spreadsheet columns to import', 'fontweight', 'bold'} ...
-                {'Style', 'text', 'string', '(Hold Ctrl or Shift for multi-select)'} ...
-                {'Style', 'listbox', 'string', columns(2:end), 'Tag', 'SpreadsheetColumns', 'max', 2} ...
-                });
-            if ~isempty(structout)
-                listboxCols = columns(2:end);
-                importData(listboxCols(structout.SpreadsheetColumns)); 
-            end
-        end
-        
-        function idSelected(src,~)
-            val = src.Value;
-            str = src.String;
-            column = str{val};
-            if ~strcmp(column, "(none)")
-                idColumn = column;
-            end
-        end
-        function fieldSelected(src,~)
-            fieldName = split(src.Tag, '_');
-            fieldName = fieldName{1};
-            val = src.Value;
-            str = src.String;
-            column = str{val};
-            
-            if ~strcmp(column, "(none)")
-                columnMap(fieldName) = column;
-            end
-        end
-        function importData(additionalCols)
-            pIDColIndex = strcmp(pTable.ColumnName, "participant_id");
-            
-            % participant ids
-            rows = pTable.Data(:, pIDColIndex);
-            guiRows = [];
-            matchedRows = zeros(numel(rows),1);
-            for r=1:numel(rows)
-                matchedIdx = find(strcmp(rows{r}, T.(idColumn)));
-                if ~isempty(matchedIdx)
-                    guiRows = [guiRows r];
-                    matchedRows(r) = matchedIdx;
-                end
-            end
-            matchedRows = matchedRows(matchedRows > 0);
-            
-            % process additional columns
-            for c=1:numel(additionalCols)
-                col = additionalCols{c};
-                if ~strcmp(pTable.ColumnName, col), addNewColumn(col); end
-                columnMap(col) = col; % same name
-            end
-            
-            % copy data
-            keySet = keys(columnMap);
-            for k=1:columnMap.Count
-                spreadsheetCol = columnMap(keySet{k});
-                spreadsheetColData = T.(spreadsheetCol);
-                for r=1:numel(guiRows)
-                    if isnumeric(spreadsheetColData(1))
-                        pTable.Data{guiRows(r), strcmp(pTable.ColumnName, keySet{k})} = spreadsheetColData(matchedRows(r));
-                    elseif iscell(spreadsheetColData(1))
-                       pTable.Data{guiRows(r), strcmp(pTable.ColumnName, keySet{k})} = spreadsheetColData{matchedRows(r)};
+                % Match spreadsheet columns with GUI columns
+                [~, ~, ~, structout] = inputgui('geometry', {[1 1] [1 1] [1 1] [1 1] [1 1] [1 1] [1] [1] [1] [1]}, 'geomvert', [1 1 1 1 1 1 1 1 1 5], 'uilist', {...
+                    {'Style', 'text', 'string', 'Participant ID column* (required)', 'fontweight', 'bold', 'fontsize', 14} ...
+                    {'Style', 'popupmenu', 'string', columns, 'Tag', 'ID_Column', 'Callback', @idSelected} ...
+                    {'Style', 'text', 'string', 'Age column'} ...
+                    {'Style', 'popupmenu', 'string', columns, 'Tag', 'Age_Column', 'Callback', @fieldSelected} ...
+                    {'Style', 'text', 'string', 'Gender column'} ...
+                    {'Style', 'popupmenu', 'string', columns, 'Tag', 'Gender_Column', 'Callback', @fieldSelected} ...
+                    {'Style', 'text', 'string', 'Group column'} ...
+                    {'Style', 'popupmenu', 'string', columns, 'Tag', 'Group_Column', 'Callback', @fieldSelected} ...
+                    {'Style', 'text', 'string', 'Head circumference column'} ...
+                    {'Style', 'popupmenu', 'string', columns, 'Tag', 'HeadCircumference_Column', 'Callback', @fieldSelected} ...
+                    {'Style', 'text', 'string', 'Subject artefact column'} ...
+                    {'Style', 'popupmenu', 'string', columns, 'Tag', 'SubjectArtefactDescription_Column', 'Callback', @fieldSelected} ...
+                    {} ...
+                    {'Style', 'text', 'string', 'Choose additional spreadsheet columns to import', 'fontweight', 'bold'} ...
+                    {'Style', 'text', 'string', '(Hold Ctrl or Shift for multi-select)'} ...
+                    {'Style', 'listbox', 'string', columns(2:end), 'Tag', 'SpreadsheetColumns', 'max', 2} ...
+                    });
+                if ~isempty(structout)
+                    if isempty(idColumn) || strcmp(idColumn, '(none)')
+                        supergui( 'geomhoriz', { 1 1 1 }, 'uilist', { ...
+                         { 'style', 'text', 'string', 'Participant ID column was not set. Abort.' }, { }, ...
+                         { 'style', 'pushbutton' , 'string', 'Ok', 'callback', 'close(gcbf)'  } ...
+                         } );
+                    else
+                        listboxCols = columns(2:end);
+                        importData(listboxCols(structout.SpreadsheetColumns)); 
                     end
                 end
             end
-        end
+        
+            function idSelected(src,~)
+                val = src.Value;
+                str = src.String;
+                column = str{val};
+                if ~strcmp(column, "(none)")
+                    idColumn = column;
+                end
+            end
+            function fieldSelected(src,~)
+                fieldName = split(src.Tag, '_');
+                fieldName = fieldName{1};
+                val = src.Value;
+                str = src.String;
+                column = str{val};
+
+                if ~strcmp(column, "(none)")
+                    columnMap(fieldName) = column;
+                end
+            end
+            function importData(additionalCols)
+                pIDColIndex = strcmp(pTable.ColumnName, "participant_id");
+
+                % participant ids
+                rows = pTable.Data(:, pIDColIndex);
+                guiRows = [];
+                matchedRows = zeros(numel(rows),1);
+                for r=1:numel(rows)
+                    matchedIdx = find(strcmp(rows{r}, T.(idColumn)));
+                    if ~isempty(matchedIdx)
+                        guiRows = [guiRows r];
+                        matchedRows(r) = matchedIdx;
+                    end
+                end
+                matchedRows = matchedRows(matchedRows > 0);
+
+                % process additional columns
+                for c=1:numel(additionalCols)
+                    col = additionalCols{c};
+                    if ~strcmp(pTable.ColumnName, col), addNewColumn(col); end
+                    columnMap(col) = col; % same name
+                end
+
+                % copy data
+                keySet = keys(columnMap);
+                for k=1:columnMap.Count
+                    spreadsheetCol = columnMap(keySet{k});
+                    spreadsheetColData = T.(spreadsheetCol);
+                    for r=1:numel(guiRows)
+                        if isnumeric(spreadsheetColData(1))
+                            pTable.Data{guiRows(r), strcmp(pTable.ColumnName, keySet{k})} = spreadsheetColData(matchedRows(r));
+                        elseif iscell(spreadsheetColData(1))
+                           pTable.Data{guiRows(r), strcmp(pTable.ColumnName, keySet{k})} = spreadsheetColData{matchedRows(r)};
+                        end
+                    end
+                end
+            end
+        end 
     end
 
     
