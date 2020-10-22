@@ -25,6 +25,11 @@
 %
 % Author: Dung Truong, Arnaud Delorme
 function [EEG, command] = pop_eventinfo(EEG, varargin)
+    %% check if there's already an opened window
+    if ~isempty(findobj('Tag','eventBidsTable'))
+        error('A window is already openened for pop_eventinfo');
+    end
+    
     command = '[EEG, command] = pop_eventinfo(EEG)';
     % perform check to make sure EEG.event is consistent across EEG
     if isempty(EEG(1).event)
@@ -61,7 +66,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         f.Position(3) = appWidth;
         f.Position(4) = appHeight;
         uicontrol(f, 'Style', 'text', 'String', 'BIDS information for EEG.event fields', 'Units', 'normalized','FontWeight','bold','ForegroundColor', fg,'BackgroundColor', bg, 'Position', [0 0.9 1 0.1]);
-        tbl = uitable(f, 'RowName',[],'ColumnName', { 'BIDS Field' 'EEGLAB Field' 'Levels' 'LongName' 'Description' 'Unit Name' 'Unit Prefix' 'TermURL' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'bidsTable');
+        tbl = uitable(f, 'RowName',[],'ColumnName', { 'BIDS Field' 'EEGLAB Field' 'Levels' 'LongName' 'Description' 'Unit Name' 'Unit Prefix' 'TermURL' }, 'Units', 'normalized', 'FontSize', fontSize, 'Tag', 'eventBidsTable');
         tbl.Position = [0.01 0.54 0.98 0.41];
         tbl.CellSelectionCallback = {@cellSelectedCB, eventFields};
         tbl.CellEditCallback = @cellEditCB;
@@ -381,7 +386,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         eventBIDS.(field).Levels.(level) = description;
         specified_levels = fieldnames(eventBIDS.(field).Levels);
         % Update main table
-        mainTable = findobj('Tag','bidsTable');
+        mainTable = findobj('Tag','eventBidsTable');
         mainTable.Data{strcmp(mainTable.Data(:, strcmp(mainTable.ColumnName, 'BIDS Field')), field), strcmp('Levels',mainTable.ColumnName)} = strjoin(specified_levels, ',');
     end
     
