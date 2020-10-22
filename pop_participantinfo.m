@@ -196,6 +196,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
             % Load spreadsheet
             if ~isempty(filepath)
                 try
+                    warning('OFF', 'MATLAB:table:ModifiedAndSavedVarnames')
                     if endsWith(filepath,'.tsv')
                         T = readtable(filepath, 'filetype', 'text');
                     else
@@ -393,6 +394,32 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
         clear('pInfoBIDS');
         close(f);
     end
+
+    %% add new column to pInfo GUI table
+    % used by both import and editColumn button
+    function addNewColumn(newColName)
+        % input validation
+        newField = checkFormat(newColName);
+        pFields = [pFields newField];
+
+        % add to pInfoBIDS structure
+        pInfoBIDS.(newField).Description = ''; 
+        pInfoBIDS.(newField).Levels = struct([]);
+        pInfoBIDS.(newField).Units = '';
+        % update Tables
+        pInfoTbl.ColumnName = [pInfoTbl.ColumnName;newField];
+        temp = pInfoTbl.Data;
+        pInfoTbl.Data = cell(size(pInfoTbl.Data,1), size(pInfoTbl.Data,2)+1);
+        pInfoTbl.Data(:,1:size(temp,2)) = temp; 
+        pInfoTbl.ColumnEditable = [pInfoTbl.ColumnEditable true];
+
+        bidsTbl.RowName = [bidsTbl.RowName;newField];
+        temp = bidsTbl.Data;
+        bidsTbl.Data = cell(size(bidsTbl.Data,1)+1, size(bidsTbl.Data,2));
+        bidsTbl.Data(1:size(temp,1),:) = temp;
+        bidsTbl.Data{end,strcmp(bidsTbl.ColumnName, 'Levels')} = 'Click to specify'; 
+    end
+
     %% callback handle for Add/Remove Column button
     function editColumnCB(~, ~, table)
         [~, ~, ~, structout] = inputgui('geometry', {[1 1] [1 1] [1 1 1 1]}, 'geomvert', [1 1 1], 'uilist', {...
@@ -421,28 +448,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
             end            
         end
         
-        function addNewColumn(newColName)
-            % input validation
-            newField = checkFormat(newColName);
-            pFields = [pFields newField];
 
-            % add to pInfoBIDS structure
-            pInfoBIDS.(newField).Description = ''; 
-            pInfoBIDS.(newField).Levels = struct([]);
-            pInfoBIDS.(newField).Units = '';
-            % update Tables
-            pInfoTbl.ColumnName = [pInfoTbl.ColumnName;newField];
-            temp = pInfoTbl.Data;
-            pInfoTbl.Data = cell(size(pInfoTbl.Data,1), size(pInfoTbl.Data,2)+1);
-            pInfoTbl.Data(:,1:size(temp,2)) = temp; 
-            pInfoTbl.ColumnEditable = [pInfoTbl.ColumnEditable true];
-            
-            bidsTbl.RowName = [bidsTbl.RowName;newField];
-            temp = bidsTbl.Data;
-            bidsTbl.Data = cell(size(bidsTbl.Data,1)+1, size(bidsTbl.Data,2));
-            bidsTbl.Data(1:size(temp,1),:) = temp;
-            bidsTbl.Data{end,strcmp(bidsTbl.ColumnName, 'Levels')} = 'Click to specify'; 
-        end
         function removeColumn(colName)
             pFields(strcmp(pFields, colName)) = [];
 
