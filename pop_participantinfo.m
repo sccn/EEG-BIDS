@@ -268,22 +268,35 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
                     columnMap(fieldName) = column;
                 end
             end
+            % import subject data from spreadsheet to GUI
             function importData(additionalCols)
                 pIDColIndex = strcmp(pTable.ColumnName, "participant_id");
 
                 % participant ids
-                rows = pTable.Data(:, pIDColIndex);
-                guiRows = [];
-                matchedRows = zeros(numel(rows),1);
-                for r=1:numel(rows)
-                    matchedIdx = find(strcmp(rows{r}, T.(idColumn)));
+                allGUIRows = pTable.Data(:, pIDColIndex); % all participants in GUI
+                matchedGUIRows = []; % 
+                matchedSpreadsheetRows = zeros(numel(allGUIRows),1); % index of row in spreadsheet that matches GUI row
+                for r=1:numel(allGUIRows)
+                    matchedIdx = find(strcmp(allGUIRows{r}, T.(idColumn)));
                     if ~isempty(matchedIdx)
-                        guiRows = [guiRows r];
-                        matchedRows(r) = matchedIdx;
+                        matchedGUIRows = [matchedGUIRows r];
+                        matchedSpreadsheetRows(r) = matchedIdx;
                     end
                 end
-                matchedRows = matchedRows(matchedRows > 0);
-
+                if numel(matchedGUIRows) < numel(allGUIRows)
+                    unmatchedSubjs = setdiff(1:numel(allGUIRows),matchedGUIRows);
+                    if numel(unmatchedSubjs) == numel(allGUIRows)
+                        error('No matched subject between dataset and spreadsheet');
+                    else
+                        error('%d subjects (%s) not found in spreadsheet', numel(unmatchedSubjs), strjoin(allGUIRows(unmatchedSubjs), ','));
+                    end
+                end
+                
+                matchedSpreadsheetRows = matchedSpreadsheetRows(matchedSpreadsheetRows > 0); % only keep those that match
+                if numel(matchedSpreadsheetRows) < numel(T.(idColumn))
+                    warning('There are more subjects in spreadsheet than in the dataset. Importing data only for those in dataset...');
+                end
+                
                 % process additional columns
                 for c=1:numel(additionalCols)
                     col = additionalCols{c};
@@ -296,11 +309,11 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
                 for k=1:columnMap.Count
                     spreadsheetCol = columnMap(keySet{k});
                     spreadsheetColData = T.(spreadsheetCol);
-                    for r=1:numel(guiRows)
+                    for r=1:numel(matchedGUIRows)
                         if isnumeric(spreadsheetColData(1))
-                            pTable.Data{guiRows(r), strcmp(pTable.ColumnName, keySet{k})} = spreadsheetColData(matchedRows(r));
+                            pTable.Data{matchedGUIRows(r), strcmp(pTable.ColumnName, keySet{k})} = spreadsheetColData(matchedSpreadsheetRows(r));
                         elseif iscell(spreadsheetColData(1))
-                           pTable.Data{guiRows(r), strcmp(pTable.ColumnName, keySet{k})} = spreadsheetColData{matchedRows(r)};
+                           pTable.Data{matchedGUIRows(r), strcmp(pTable.ColumnName, keySet{k})} = spreadsheetColData{matchedSpreadsheetRows(r)};
                         end
                     end
                 end
