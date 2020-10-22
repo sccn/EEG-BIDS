@@ -59,8 +59,12 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     else
         error('No subject info found in either EEG or STUDY.datasetinfo. Please add using Study > Edit STUDY info');
     end
-    uniqueSubjects = unique(allSubjects);
-    
+    emptySubjs = cellfun(@isempty, allSubjects);
+    if any(emptySubjs)
+        error('No subject ID found for dataset at index: %s', mat2str(find(emptySubjs)));
+    else
+        uniqueSubjects = unique(allSubjects);
+    end
     %% create UI
     f = figure('MenuBar', 'None', 'ToolBar', 'None', 'Name', 'Edit BIDS participant info - pop_participantinfo', 'Color', bg);
     f.Position(3) = appWidth;
