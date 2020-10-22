@@ -233,9 +233,9 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
                     {'Style', 'text', 'string', 'Subject artefact column'} ...
                     {'Style', 'popupmenu', 'string', columns, 'Tag', 'SubjectArtefactDescription_Column', 'Callback', @fieldSelected} ...
                     {} ...
-                    {'Style', 'text', 'string', 'Choose additional spreadsheet columns to import', 'fontweight', 'bold'} ...
+                    {'Style', 'checkbox', 'string', 'Choose additional spreadsheet columns to import', 'Tag', 'HasAdditionalCols', 'fontweight', 'bold', 'callback', @chooseColumnSelected} ...
                     {'Style', 'text', 'string', '(Hold Ctrl or Shift for multi-select)'} ...
-                    {'Style', 'listbox', 'string', columns(2:end), 'Tag', 'SpreadsheetColumns', 'max', 2} ...
+                    {'Style', 'listbox', 'string', columns(2:end), 'Tag', 'SpreadsheetColumns', 'max', 2, 'Enable', 'off'} ...
                     });
                 if ~isempty(structout)
                     if isempty(idColumn) || strcmp(idColumn, '(none)')
@@ -245,7 +245,11 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
                          } );
                     else
                         listboxCols = columns(2:end);
-                        importData(listboxCols(structout.SpreadsheetColumns)); 
+                        if structout.HasAdditionalCols == 1
+                            importData(listboxCols(structout.SpreadsheetColumns)); 
+                        else
+                            importData([]);
+                        end
                     end
                 end
             end
@@ -267,6 +271,13 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
 
                 if ~strcmp(column, "(none)")
                     columnMap(fieldName) = column;
+                end
+            end
+            function chooseColumnSelected(src,~)
+                if src.Value == 1
+                    set(findobj('Tag', 'SpreadsheetColumns'), 'Enable', 'on');
+                else
+                    set(findobj('Tag', 'SpreadsheetColumns'), 'Enable', 'off');
                 end
             end
             % import subject data from spreadsheet to GUI
