@@ -73,7 +73,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         tbl.Position = [0.01 0.54 0.98 0.41];
         tbl.CellSelectionCallback = {@cellSelectedCB, eventFields};
         tbl.CellEditCallback = @cellEditCB;
-        tbl.ColumnEditable = [false true false true true true true true];
+        tbl.ColumnEditable = [false false false true true true true true];
         tbl.ColumnWidth = {appWidth/9, appWidth/9,appWidth/9,appWidth*2/9,appWidth*2/9,appWidth/9,appWidth/9,appWidth/9};
         units = {' ','ampere','becquerel','candela','coulomb','degree Celsius','farad','gray','henry','hertz','joule','katal','kelvin','kilogram','lumen','lux','metre','mole','newton','ohm','pascal','radian','second','siemens','sievert','steradian','tesla','volt','watt','weber'};
         unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
@@ -257,7 +257,11 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                         c.Position = [0.01 0.34 0.3 0.1];
                         curEEGFields = obj.Source.Data(:,col);
                         unset_eventFields = setdiff(eventFields, curEEGFields(~cellfun(@isempty, curEEGFields)));
-                        c.String = ['Choose EEGLAB field' unset_eventFields'];
+                        c.String = ['None' unset_eventFields'];
+                        % display existing selection
+                        if ~isempty(eegfield)
+                            c.String = [eegfield c.String'];
+                        end
                         c.Callback = {@eegFieldSelected, obj.Source, row, col};
                     end
                 else % any other column selected
@@ -293,6 +297,9 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         val = src.Value;
         str = src.String;
         selected = str{val};
+        if strcmp('None', selected)
+            selected = '';
+        end
         table.Data{row,col} = selected;
         field = table.Data{row, strcmp(table.ColumnName, 'BIDS Field')};
         eventBIDS.(field).EEGField = selected;
