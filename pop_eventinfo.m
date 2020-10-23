@@ -158,6 +158,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                     eventBIDS.(structout.new_name).Description = '';
                     eventBIDS.(structout.new_name).Levels = [];
                     eventBIDS.(structout.new_name).Units = '';
+                    eventBIDS.(structout.new_name).TermURL = '';
                 end
                 if ~isempty(structout.removed_field) && structout.removed_field > 1
                     currBidsFields = bidsTable.Data(:, strcmp(bidsTable.ColumnName, 'BIDS Field'));
@@ -211,7 +212,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                 if isfield(eventBIDS.(bidsField),'Levels') && ~isempty(eventBIDS.(bidsField).Levels) && ~strcmp(eventBIDS.(bidsField).Levels,'n/a')
                     eInfoDesc.(bidsField).Levels = eventBIDS.(bidsField).Levels;
                 end
-                if ~isempty(eventBIDS.(bidsField).TermURL)
+                if isfield(eventBIDS.(bidsField), 'TermURL') && ~isempty(eventBIDS.(bidsField).TermURL)
                     eInfoDesc.(bidsField).TermURL = eventBIDS.(bidsField).TermURL;
                 end
             end
