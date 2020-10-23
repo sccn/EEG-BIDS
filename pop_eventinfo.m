@@ -27,13 +27,16 @@
 function [EEG, command] = pop_eventinfo(EEG, varargin)
     %% check if there's already an opened window
     if ~isempty(findobj('Tag','eventBidsTable'))
-        error('A window is already openened for pop_eventinfo');
+        errordlg2('A window is already openened for pop_eventinfo');
+        return
     end
     
     command = '[EEG, command] = pop_eventinfo(EEG)';
     % perform check to make sure EEG.event is consistent across EEG
     if isempty(EEG(1).event)
-        error('EEG.event is empty for first dataset')
+        errordlg2('EEG.event is empty for first dataset');
+        return
+        
     end
     try
        eventFields = fieldnames([EEG.event]);

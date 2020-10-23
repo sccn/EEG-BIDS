@@ -26,7 +26,8 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     
     %% check if there's already an opened window
     if ~isempty(findobj('Tag','pInfoTable'))
-        error('A window is already openened for pop_participantinfo');
+        errordlg2('A window is already openened for pop_participantinfo');
+        return
     end
     
     %% if STUDY is provided, check for consistency
@@ -57,11 +58,13 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     elseif ~isempty(STUDY.datasetinfo(1).subject)
         allSubjects = { STUDY.datasetinfo.subject };
     else
-        error('No subject info found in either EEG or STUDY.datasetinfo. Please add using Study > Edit STUDY info');
+        errordlg2('No subject info found in either EEG or STUDY.datasetinfo. Please add using Study > Edit STUDY info');
+        return
     end
     emptySubjs = cellfun(@isempty, allSubjects);
     if any(emptySubjs)
-        error('No subject ID found for dataset at index: %s', mat2str(find(emptySubjs)));
+        errordlg2(sprintf('No subject ID found for dataset at index: %s. Please add and resume.', mat2str(find(emptySubjs))));
+        return
     else
         uniqueSubjects = unique(allSubjects);
     end
@@ -202,14 +205,9 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
                     else
                         T = readtable(filepath);
                     end
-                catch ME
-                    supergui( 'geomhoriz', { 1 1 1 }, 'uilist', { ...
-                         { 'style', 'text', 'string', 'Error importing data.'},... 
-                         { }, ...
-                         { 'style', 'pushbutton' , 'string', 'Ok', 'callback', 'close(gcbf)'  } ...
-                         } );
-                     error(ME);
-                     return
+                catch
+                    errordlg2('Error importing data.');
+                    return
                 end
 
                 columns = T.Properties.VariableNames;
@@ -298,15 +296,17 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
                 if numel(matchedGUIRows) < numel(allGUIRows)
                     unmatchedSubjs = setdiff(1:numel(allGUIRows),matchedGUIRows);
                     if numel(unmatchedSubjs) == numel(allGUIRows)
-                        error('No matched subject between dataset and spreadsheet');
+                        errordlg2('No matched subject between dataset and spreadsheet found.');
+                        return
                     else
-                        error('%d subjects (%s) not found in spreadsheet', numel(unmatchedSubjs), strjoin(allGUIRows(unmatchedSubjs), ','));
+                        errordlg2(sprintf('%d subjects (%s) not found in spreadsheet.', numel(unmatchedSubjs), strjoin(allGUIRows(unmatchedSubjs), ',')));
+                        return
                     end
                 end
                 
                 matchedSpreadsheetRows = matchedSpreadsheetRows(matchedSpreadsheetRows > 0); % only keep those that match
                 if numel(matchedSpreadsheetRows) < numel(T.(idColumn))
-                    warning('There are more subjects in spreadsheet than in the dataset. Importing data only for those in dataset...');
+                    warndlg2('There are more subjects in spreadsheet than in the dataset. Importing data only for those in dataset...');
                 end
                 
                 % process additional columns
