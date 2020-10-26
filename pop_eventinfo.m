@@ -78,11 +78,12 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         units = {' ','ampere','becquerel','candela','coulomb','degree Celsius','farad','gray','henry','hertz','joule','katal','kelvin','kilogram','lumen','lux','metre','mole','newton','ohm','pascal','radian','second','siemens','sievert','steradian','tesla','volt','watt','weber'};
         unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
         tbl.ColumnFormat = {[] [] [] [] [] units unitPrefixes []};
-        uicontrol(f, 'Style', 'pushbutton', 'String', 'Add/Remove BIDS field', 'Units', 'normalized', 'Position', [0.01 0.49 0.22 0.05], 'Callback', {@editFieldCB, tbl}); 
+        uicontrol(f, 'Style', 'pushbutton', 'String', 'Add/Remove BIDS field', 'Units', 'normalized', 'Position', [0.01 0.49 0.22 0.05], 'Callback', {@editFieldCB, tbl, bidsFields}); 
         uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0 0.1 0.05], 'Callback', @okCB); 
         uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0 0.1 0.05], 'Callback', @cancelCB); 
 
         % pre-populate table
+        bidsFields = fieldnames(eventBIDS);
         data = cell(length(bidsFields),length(tbl.ColumnName));
         for i=1:length(bidsFields)
             % pre-populate description
@@ -136,13 +137,14 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         close(f);
     end
     % Callback for Edit field button
-    function editFieldCB(~, ~, bidsTable)
+    function editFieldCB(~, ~, bidsTable, bidsFields)
+        fieldsToRemove = ['(none)' setdiff(bidsTable.Data(:, strcmp(bidsTable.ColumnName,'BIDS Field'))', bidsFields)]; % only allow removing added custom fields
         [~, ~, ~, structout] = inputgui('geometry', {[1 1] 1 [1 1]}, 'geomvert', [1 1 1], 'uilist', {...
                 {'Style', 'text', 'string', 'New field name (no space):'} ...
                 {'Style', 'edit', 'Tag', 'new_name'} ...
                 {} ...
                 {'Style', 'text', 'string', 'Field to remove:'} ...
-                {'Style', 'popupmenu', 'string', ['(none)' bidsTable.Data(:, strcmp(bidsTable.ColumnName,'BIDS Field'))'], 'Tag', 'removed_field'} ...
+                {'Style', 'popupmenu', 'string', fieldsToRemove, 'Tag', 'removed_field'} ...
                 });
             if ~isempty(structout)
                 if ~isempty(structout.new_name)
@@ -161,12 +163,15 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                     eventBIDS.(structout.new_name).TermURL = '';
                 end
                 if ~isempty(structout.removed_field) && structout.removed_field > 1
-                    currBidsFields = bidsTable.Data(:, strcmp(bidsTable.ColumnName, 'BIDS Field'));
-                    removedField = currBidsFields{structout.removed_field-1};
-                    rowIdx = strcmp(currBidsFields, removedField);
-                    bidsTable.Data(rowIdx,:) = [];
-                    if isfield(eventBIDS, removedField)
-                        eventBIDS = rmfield(eventBIDS, removedField);
+                    selectedField = fieldsToRemove{structout.removed_field};
+                    if ~strcmp(selectedField, '(none)')
+                        currBidsFields = bidsTable.Data(:, strcmp(bidsTable.ColumnName, 'BIDS Field'));
+%                         removedField = currBidsFields{structout.removed_field-1};
+                        rowIdx = strcmp(currBidsFields, selectedField);
+                        bidsTable.Data(rowIdx,:) = [];
+                        if isfield(eventBIDS, selectedField)
+                            eventBIDS = rmfield(eventBIDS, selectedField);
+                        end
                     end
                 end
             end
@@ -198,8 +203,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                 if ~strcmp(bidsField, 'onset') && ~strcmp(bidsField, 'sample') % calculated by default using latency
                     eInfo = [eInfo; {bidsField eegField}]; 
                 end
-                
-%                 eInfoDesc.(bidsField).EEGField = eegField;
+
                 if ~isempty(eventBIDS.(bidsField).LongName)
                     eInfoDesc.(bidsField).LongName = eventBIDS.(bidsField).LongName;
                 end
@@ -553,7 +557,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                     event.(bids_field).TermURL = '';
                 end
             end
-            fields = setdiff(bidsFields, fieldnames(bidsEEG.BIDS.eInfoDesc)); % add any unset bids fields to the structure
+            fields = setdiff(bidsFields, fieldnames(bidsEEG.BIDS.eInfoDesc)); % add any unset default bids fields to the structure (in case prev session forgot to add these)
             for idx=1:length(fields)
                 event.(fields{idx}).EEGField = '';
                 event.(fields{idx}).LongName = '';
