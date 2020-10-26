@@ -78,7 +78,8 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         units = {' ','ampere','becquerel','candela','coulomb','degree Celsius','farad','gray','henry','hertz','joule','katal','kelvin','kilogram','lumen','lux','metre','mole','newton','ohm','pascal','radian','second','siemens','sievert','steradian','tesla','volt','watt','weber'};
         unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
         tbl.ColumnFormat = {[] [] [] [] [] units unitPrefixes []};
-        uicontrol(f, 'Style', 'pushbutton', 'String', 'Add/Remove BIDS field', 'Units', 'normalized', 'Position', [0.01 0.49 0.22 0.05], 'Callback', {@editFieldCB, tbl, bidsFields}); 
+        uicontrol(f, 'Style', 'pushbutton', 'String', 'Add BIDS field', 'Units', 'normalized', 'Position', [0.01 0.49 0.22 0.05], 'Callback', {@addFieldCB, tbl});
+        uicontrol(f, 'Style', 'pushbutton', 'String', 'Remove BIDS field', 'Units', 'normalized', 'Position', [0.24 0.49 0.22 0.05], 'Callback', {@removeFieldCB, tbl, bidsFields});
         uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0 0.1 0.05], 'Callback', @okCB); 
         uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0 0.1 0.05], 'Callback', @cancelCB); 
 
@@ -136,15 +137,11 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         done();
         close(f);
     end
-    % Callback for Edit field button
-    function editFieldCB(~, ~, bidsTable, bidsFields)
-        fieldsToRemove = ['(none)' setdiff(bidsTable.Data(:, strcmp(bidsTable.ColumnName,'BIDS Field'))', bidsFields)]; % only allow removing added custom fields
-        [~, ~, ~, structout] = inputgui('geometry', {[1 1] 1 [1 1]}, 'geomvert', [1 1 1], 'uilist', {...
+    % Callback for Add BIDS field button
+    function addFieldCB(~, ~, bidsTable)
+        [~, ~, ~, structout] = inputgui('geometry', {[1 1]}, 'geomvert', 1, 'uilist', {...
                 {'Style', 'text', 'string', 'New field name (no space):'} ...
                 {'Style', 'edit', 'Tag', 'new_name'} ...
-                {} ...
-                {'Style', 'text', 'string', 'Field to remove:'} ...
-                {'Style', 'popupmenu', 'string', fieldsToRemove, 'Tag', 'removed_field'} ...
                 });
             if ~isempty(structout)
                 if ~isempty(structout.new_name)
@@ -162,11 +159,20 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                     eventBIDS.(structout.new_name).Units = '';
                     eventBIDS.(structout.new_name).TermURL = '';
                 end
+            end
+    end
+    % Callback for Remove BIDS field button
+    function removeFieldCB(~, ~, bidsTable, bidsFields)
+        fieldsToRemove = ['(none)' setdiff(bidsTable.Data(:, strcmp(bidsTable.ColumnName,'BIDS Field'))', bidsFields)]; % only allow removing added custom fields
+        [~, ~, ~, structout] = inputgui('geometry', {[1 1]}, 'geomvert', 1, 'uilist', {...
+                {'Style', 'text', 'string', 'Custom field to remove:'} ...
+                {'Style', 'popupmenu', 'string', fieldsToRemove, 'Tag', 'removed_field'} ...
+                });
+            if ~isempty(structout)
                 if ~isempty(structout.removed_field) && structout.removed_field > 1
                     selectedField = fieldsToRemove{structout.removed_field};
                     if ~strcmp(selectedField, '(none)')
                         currBidsFields = bidsTable.Data(:, strcmp(bidsTable.ColumnName, 'BIDS Field'));
-%                         removedField = currBidsFields{structout.removed_field-1};
                         rowIdx = strcmp(currBidsFields, selectedField);
                         bidsTable.Data(rowIdx,:) = [];
                         if isfield(eventBIDS, selectedField)
@@ -176,7 +182,6 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                 end
             end
     end
-    
     function done()
         eInfoDesc = [];
         eInfo = {};

@@ -126,8 +126,10 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     unitPrefixes = {' ','deci','centi','milli','micro','nano','pico','femto','atto','zepto','yocto','deca','hecto','kilo','mega','giga','tera','peta','exa','zetta','yotta'};
     bidsTbl.ColumnFormat = {[] [] [] [] units unitPrefixes []};
 
-    uicontrol(f, 'Style', 'pushbutton', 'String', 'Add/Edit column', 'Units', 'normalized', 'Position', [0.4-0.14 0.074 0.14 0.05], 'Callback', {@editColumnCB, pInfoTbl}, 'Tag', 'addColumnBtn');
-    uicontrol(f, 'Style', 'pushbutton', 'String', 'Import column(s)', 'Units', 'normalized', 'Position', [0.4-0.28 0.074 0.14 0.05], 'Callback', {@importSpreadsheet}, 'Tag', 'importSpreadsheetBtn');
+    defaultFields = {'participant_id' 'Gender' 'Age' 'Group' 'HeadCircumference' 'SubjectArtefactDescription'};
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Remove column', 'Units', 'normalized', 'Position', [0.4-0.1 0.074 0.1 0.05], 'Callback', {@removeColumnCB, pInfoTbl, defaultFields}, 'Tag', 'removeColumnBtn');
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Add/Edit column', 'Units', 'normalized', 'Position', [0.4-0.2 0.074 0.1 0.05], 'Callback', {@editColumnCB, pInfoTbl, defaultFields}, 'Tag', 'addColumnBtn');
+    uicontrol(f, 'Style', 'pushbutton', 'String', 'Import column(s)', 'Units', 'normalized', 'Position', [0.4-0.3 0.074 0.1 0.05], 'Callback', {@importSpreadsheet}, 'Tag', 'importSpreadsheetBtn');
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0.02 0.1 0.05], 'Callback', @okCB); 
     uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0.02 0.1 0.05], 'Callback', @cancelCB); 
     
@@ -431,15 +433,15 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
         bidsTbl.Data{end,strcmp(bidsTbl.ColumnName, 'Levels')} = 'Click to specify'; 
     end
 
-    %% callback handle for Add/Remove Column button
-    function editColumnCB(~, ~, table)
-        [~, ~, ~, structout] = inputgui('geometry', {[1 1] [1 1] [1 1 1 1]}, 'geomvert', [1 1 1], 'uilist', {...
+    %% callback handle for Add/Edit Column button
+    function editColumnCB(~, ~, table, defaultBIDSFields)
+        allowedFields = ['(none)' setdiff(table.ColumnName', defaultBIDSFields)];
+        [~, ~, ~, structout] = inputgui('geometry', {[1 1] 1 [1 1 1 1]}, 'geomvert', [1 1 1], 'uilist', {...
                 {'Style', 'text', 'string', 'New column name (no space):'} ...
                 {'Style', 'edit', 'Tag', 'new_name'} ...
-                {'Style', 'text', 'string', 'Column to remove (*cannot be undone):'} ...
-                {'Style', 'popupmenu', 'string', ['(none)' table.ColumnName'], 'Tag', 'removed_column'} ...
+                {} ...
                 {'Style', 'text', 'string', 'Rename column'} ...
-                {'Style', 'popupmenu', 'string', ['(none)' table.ColumnName'], 'Tag', 'renamed_column_target'} ...
+                {'Style', 'popupmenu', 'string', allowedFields, 'Tag', 'renamed_column_target'} ...
                 {'Style', 'text', 'string', 'to:'} ...
                 {'Style', 'edit', 'Tag', 'renamed_column_dest'} ...
                 });
@@ -447,37 +449,12 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
             if ~isempty(structout.new_name)
                 addNewColumn(structout.new_name);
             end
-            if ~isempty(structout.removed_column) && structout.removed_column > 1
-                removedColumn = table.ColumnName{structout.removed_column-1};
-                removeColumn(removedColumn);
-            end
             if ~isempty(structout.renamed_column_target) && structout.renamed_column_target > 1
-                targetColumn = table.ColumnName{structout.renamed_column_target-1};
+                targetColumn = allowedFields{structout.renamed_column_target};
                 if ~isempty(structout.renamed_column_dest)
                     renameColumn(targetColumn, structout.renamed_column_dest);
                 end
             end            
-        end
-        
-
-        function removeColumn(colName)
-            pFields(strcmp(pFields, colName)) = [];
-
-            % remove from pInfoBIDS structure
-            if isfield(pInfoBIDS, colName)
-                pInfoBIDS = rmfield(pInfoBIDS, colName);
-            end
-            % update Tables
-            colIdx = strcmp(pInfoTbl.ColumnName,colName);
-            if any(colIdx)
-                pInfoTbl.Data(:, colIdx) = [];
-                pInfoTbl.ColumnName(colIdx) = [];
-            end
-            rowIdx = strcmp(bidsTbl.RowName, colName);
-            if any(rowIdx)
-                bidsTbl.Data(rowIdx,:) = [];
-                bidsTbl.RowName(rowIdx) = [];
-            end
         end
         function renameColumn(target, destination)
             % input validation
@@ -498,6 +475,40 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
             if any(rowIdx)
                 bidsTbl.RowName{rowIdx} = colName;
             end  
+        end
+    end
+
+    %% callback handle for Add/Edit Column button
+    function removeColumnCB(~, ~, table, defaultBIDSFields)
+        allowedFields = ['(none)' setdiff(table.ColumnName', defaultBIDSFields)];
+        [~, ~, ~, structout] = inputgui('geometry', {[1 1]}, 'geomvert', 1, 'uilist', {...
+                {'Style', 'text', 'string', 'Column to remove (*cannot be undone):'} ...
+                {'Style', 'popupmenu', 'string', allowedFields, 'Tag', 'removed_column'} ...
+                });
+        if ~isempty(structout)
+            if ~isempty(structout.removed_column) && structout.removed_column > 1
+                removedColumn = allowedFields{structout.removed_column};
+                removeColumn(removedColumn);
+            end
+        end
+        function removeColumn(colName)
+            pFields(strcmp(pFields, colName)) = [];
+
+            % remove from pInfoBIDS structure
+            if isfield(pInfoBIDS, colName)
+                pInfoBIDS = rmfield(pInfoBIDS, colName);
+            end
+            % update Tables
+            colIdx = strcmp(pInfoTbl.ColumnName,colName);
+            if any(colIdx)
+                pInfoTbl.Data(:, colIdx) = [];
+                pInfoTbl.ColumnName(colIdx) = [];
+            end
+            rowIdx = strcmp(bidsTbl.RowName, colName);
+            if any(rowIdx)
+                bidsTbl.Data(rowIdx,:) = [];
+                bidsTbl.RowName(rowIdx) = [];
+            end
         end
     end
 
