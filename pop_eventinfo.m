@@ -203,7 +203,11 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         fields = fieldnames(eventBIDS);
         for k=1:length(fields)
             bidsField = fields{k};
-            eegField = eventBIDS.(bidsField).EEGField;
+            if ~isfield(eventBIDS.(bidsField), 'EEGField')
+                eegField = [];
+            else
+                eegField = eventBIDS.(bidsField).EEGField;
+            end
             if ~isempty(eegField)
                 if ~strcmp(bidsField, 'onset') && ~strcmp(bidsField, 'sample') % calculated by default using latency
                     eInfo = [eInfo; {bidsField eegField}]; 
