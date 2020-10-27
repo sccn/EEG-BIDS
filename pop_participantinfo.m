@@ -53,9 +53,9 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
 
     % get subjects
     % -------------------------
-    if ~isempty(EEG(1).subject)
+    if isfield(EEG(1), 'subject') && ~isempty(EEG(1).subject)
         allSubjects = { EEG.subject };
-    elseif ~isempty(STUDY.datasetinfo(1).subject)
+    elseif isfield(STUDY.datasetinfo(1), 'subject') && ~isempty(STUDY.datasetinfo(1).subject)
         allSubjects = { STUDY.datasetinfo.subject };
     else
         errordlg2('No subject info found in either EEG or STUDY.datasetinfo. Please add using Study > Edit STUDY info');
