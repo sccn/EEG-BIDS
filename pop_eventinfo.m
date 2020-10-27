@@ -596,14 +596,22 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                     event.value.Levels = [];
                     event.value.TermURL = '';
                 elseif strcmp(fields{idx}, 'HED') && any(strcmp(eventFields, 'usertags'))
-                    event.HED.EEGField = 'usertags';
+                    if isfield(EEG(1).event, 'usertags')
+                        event.HED.EEGField = 'usertags';
+                    else
+                        event.HED.EEGField = '';
+                    end
                     event.HED.LongName = 'Hierarchical Event Descriptor';
                     event.HED.Description = 'Tags describing the nature of the event';      
                     event.HED.Levels = [];
                     event.HED.Units = '';
                     event.HED.TermURL = '';
                 elseif strcmp(fields{idx}, 'duration')
-                    event.duration.EEGField = 'duration';
+                    if isfield(EEG(1).event, 'duration')
+                        event.HED.EEGField = 'duration';
+                    else
+                        event.HED.EEGField = '';
+                    end
                     event.duration.LongName = 'Event duration';
                     event.duration.Description = 'Duration of the event (measured from onset) in seconds. Must always be either zero or positive. A "duration" value of zero implies that the delta function or event is so short as to be effectively modeled as an impulse.';
                     event.duration.Units = 'second';
