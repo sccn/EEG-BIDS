@@ -11,7 +11,7 @@
 
 function vers = eegplugin_bids(fig, trystrs, catchstrs)
 
-    vers = '4.0';
+    vers = '4.1';
     if nargin < 3
         error('eegplugin_bids requires 3 arguments');
     end
