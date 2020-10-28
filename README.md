@@ -22,4 +22,6 @@ v3.3 - fix issue for Windows and work on GUI
 
 v3.4 - fix issue with saving datasets in memory. Allowing to anonymize participant ID or not. Fixed issue with looking up channel locations.
 
-v3.5 - fix issue with choosing event type in graphic interface; various fixes for GUI edit of BIDS info.
+v3.5 - fix issue with choosing event type in graphic interface; various fixes for GUI edit of BIDS info
+
+v4.0 - fix GUI and many minor export issues
