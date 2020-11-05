@@ -233,7 +233,7 @@ for iSubject = 1:size(bids.participants,1)
                     case {'.bdf','.edf'}
                         EEG = pop_biosig( eegFileRaw );
                     case '.eeg'
-                        EEG = pop_loadbva( eegFileRaw );
+                        EEG = pop_loadbv( eegFileRaw );
                     otherwise
                         error('No EEG data found for subject %s', bids.participants{iSubject,1});
                 end
