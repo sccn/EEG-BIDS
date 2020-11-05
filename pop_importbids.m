@@ -233,7 +233,12 @@ for iSubject = 1:size(bids.participants,1)
                     case {'.bdf','.edf'}
                         EEG = pop_biosig( eegFileRaw );
                     case '.eeg'
-                        EEG = pop_loadbv( eegFileRaw );
+			[tmpPath,tmpFileName,tmpFileExt] = fileparts(eegFileRaw);
+			if exist(fullfile(tmpPath, [tmpFileName '.vhdr'], 'file')
+                       	    EEG = pop_loadbv( tmpPath, [tmpFileName '.vhdr'] );
+		        else
+                            EEG = pop_loadbv( tmpPath, [tmpFileName '.VMRK'] );
+			end
                     otherwise
                         error('No EEG data found for subject %s', bids.participants{iSubject,1});
                 end
