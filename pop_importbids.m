@@ -234,7 +234,7 @@ for iSubject = 1:size(bids.participants,1)
                         EEG = pop_biosig( eegFileRaw );
                     case '.eeg'
 			[tmpPath,tmpFileName,tmpFileExt] = fileparts(eegFileRaw);
-			if exist(fullfile(tmpPath, [tmpFileName '.vhdr'], 'file')
+			if exist(fullfile(tmpPath, [tmpFileName '.vhdr']), 'file')
                        	    EEG = pop_loadbv( tmpPath, [tmpFileName '.vhdr'] );
 		        else
                             EEG = pop_loadbv( tmpPath, [tmpFileName '.VMRK'] );
