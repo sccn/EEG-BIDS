@@ -193,10 +193,13 @@ for iSubject = 1:size(bids.participants,1)
         else
             ind = strmatch( '.eeg', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % BVA
             if isempty(ind)
-                ind = strmatch( '.bdf', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % BDF
+                ind = strmatch( '.edf', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % BDF
                 if isempty(ind)
-                    error('No EEG data found for subject %s', bids.participants{iSubject,1});
-                end
+	            ind = strmatch( '.bdf', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % BDF
+		    if isempty(ind)	
+                    	error('No EEG data found for subject %s', bids.participants{iSubject,1});
+                    end
+		end
             end
             eegFileRawAll  = allFiles(ind);
         end
@@ -376,7 +379,7 @@ function outFile = searchparent(folder, fileName)
 % only get exact match and filter out hidden file
 outFile = '';
 parent = folder;
-while ~any(arrayfun(@(x) strcmp(x.name,'README'), dir(parent))) && isempty(outFile) % README indicates root BIDS folder
+while ~any(arrayfun(@(x) strcmp(lower(x.name),'dataset_description.json'), dir(parent))) && isempty(outFile) % README indicates root BIDS folder
     outFile = filterHiddenFile(folder, dir(fullfile(parent, fileName)));
     parent = fileparts(parent);
 end
