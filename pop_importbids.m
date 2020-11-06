@@ -185,7 +185,7 @@ for iSubject = 1:size(bids.participants,1)
             eegFileJSON = allFiles(ind);
             allFiles(ind) = [];
         end
-        ind = strmatch( '.set', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) );
+        ind = strmatch( '.set', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % EEGLAB
         if ~isempty(ind)
             eegFileRawAll  = allFiles(ind);
         elseif length(allFiles) == 1
@@ -193,11 +193,14 @@ for iSubject = 1:size(bids.participants,1)
         else
             ind = strmatch( '.eeg', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % BVA
             if isempty(ind)
-                ind = strmatch( '.edf', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % BDF
+                ind = strmatch( '.edf', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % EDF
                 if isempty(ind)
                     ind = strmatch( '.bdf', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % BDF
                     if isempty(ind)
-                        error('No EEG data found for subject %s', bids.participants{iSubject,1});
+                        ind = strmatch( '.gz', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % FIF
+                        if isempty(ind)
+                            error('No EEG data found for subject %s', bids.participants{iSubject,1});
+                        end
                     end
                 end
             end
@@ -243,6 +246,9 @@ for iSubject = 1:size(bids.participants,1)
                         else
                             EEG = pop_loadbv( tmpPath, [tmpFileName '.VMRK'] );
                         end
+                    case '.gz'
+                        gunzip(eegFileRaw);
+                        EEG = pop_fileio(eegFileRaw(1:end-3)); % fif folder
                     otherwise
                         error('No EEG data found for subject %s', bids.participants{iSubject,1});
                 end
