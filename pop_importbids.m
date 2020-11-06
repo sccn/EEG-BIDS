@@ -195,11 +195,11 @@ for iSubject = 1:size(bids.participants,1)
             if isempty(ind)
                 ind = strmatch( '.edf', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % BDF
                 if isempty(ind)
-	            ind = strmatch( '.bdf', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % BDF
-		    if isempty(ind)	
-                    	error('No EEG data found for subject %s', bids.participants{iSubject,1});
+                    ind = strmatch( '.bdf', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % BDF
+                    if isempty(ind)
+                        error('No EEG data found for subject %s', bids.participants{iSubject,1});
                     end
-		end
+                end
             end
             eegFileRawAll  = allFiles(ind);
         end
@@ -236,12 +236,12 @@ for iSubject = 1:size(bids.participants,1)
                     case {'.bdf','.edf'}
                         EEG = pop_biosig( eegFileRaw );
                     case '.eeg'
-			[tmpPath,tmpFileName,tmpFileExt] = fileparts(eegFileRaw);
-			if exist(fullfile(tmpPath, [tmpFileName '.vhdr']), 'file')
-                       	    EEG = pop_loadbv( tmpPath, [tmpFileName '.vhdr'] );
-		        else
+                        [tmpPath,tmpFileName,tmpFileExt] = fileparts(eegFileRaw);
+                        if exist(fullfile(tmpPath, [tmpFileName '.vhdr']), 'file')
+                            EEG = pop_loadbv( tmpPath, [tmpFileName '.vhdr'] );
+                        else
                             EEG = pop_loadbv( tmpPath, [tmpFileName '.VMRK'] );
-			end
+                        end
                     otherwise
                         error('No EEG data found for subject %s', bids.participants{iSubject,1});
                 end
@@ -249,14 +249,24 @@ for iSubject = 1:size(bids.participants,1)
                 % channel location data
                 % ---------------------
                 if strcmpi(opt.bidschanloc, 'on')
+                    % channel data
                     channelData = [];
-                    if ~isempty(channelFile)
-                        channelData = importtsv( fullfile(subjectFolder{iFold}, channelFile.name));
+                    localChannelFile = dir( [ eegFileRaw(1:end-8) '_channels.tsv' ] );
+                    if ~isempty(localChannelFile)
+                        channelData = importtsv( fullfile(localChannelFile(1).folder, localChannelFile(1).name));
+                    elseif ~isempty(channelFile)
+                        channelData = importtsv( fullfile(channelFile(1).folder, channelFile(1).name));
                     end
+                    
+                    % electrode data
                     elecData = [];
-                    if ~isempty(elecFile)
-                        elecData = importtsv( fullfile(subjectFolder{iFold}, elecFile.name));
+                    localElectFile = dir( [ eegFileRaw(1:end-8) '_electrodes.tsv' ] );
+                    if ~isempty(localElectFile)
+                        channelData = importtsv( fullfile(localElectFile(1).folder, localElectFile(1).name));
+                    elseif ~isempty(elecFile)
+                        elecData = importtsv( fullfile(elecFile(1).folder, elecFile(1).name));
                     end
+                    
                     chanlocs = [];
                     for iChan = 2:size(channelData,1)
                         % the fields below are all required
@@ -299,9 +309,13 @@ for iSubject = 1:size(bids.participants,1)
                 % ----------
                 if strcmpi(opt.bidsevent, 'on')
                     eventData = [];
-                    if ~isempty(eventFile)
-                        eventData = importtsv( fullfile(subjectFolder{iFold}, eventFile.name));
+                    localEventFile = dir( [ eegFileRaw(1:end-8) '_events.tsv' ] );
+                    if ~isempty(localEventFile)
+                        eventData = importtsv( fullfile(localEventFile(1).folder, localEventFile(1).name));
+                    elseif ~isempty(eventFile)
+                        eventData = importtsv( fullfile(eventFile(1).folder, eventFile(1).name));
                     end
+                    
                     events = struct([]);
                     indTrial = strmatch( opt.eventtype, lower(eventData(1,:)), 'exact');
                     for iEvent = 2:size(eventData,1)
