@@ -163,17 +163,24 @@ for iSubject = 1:size(bids.participants,1)
         for iFold = 1:length(subFolders)
             subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders(iFold).name, 'eeg');
             subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders(iFold).name, 'eeg');
-        end
+            if ~exist(subjectFolder{iFold},'dir')
+                subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders(iFold).name, 'meg');
+                subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders(iFold).name, 'meg');
+            end
+	    end
     end
     
     % import data
     for iFold = 1:length(subjectFolder)
         if ~exist(subjectFolder{iFold},'dir')
-            error('No EEG data found for subject %s', bids.participants{iSubject,1});
+            error('No EEG data folder for subject %s', bids.participants{iSubject,1});
         end
         
         % which raw data - with folder inheritance
         eegFile     = searchparent(subjectFolder{iFold}, '*eeg.*');
+        if isempty(eegFile)
+            eegFile     = searchparent(subjectFolder{iFold}, '*_meg.*');
+        end
         channelFile = searchparent(subjectFolder{iFold}, '*_channels.tsv');
         elecFile    = searchparent(subjectFolder{iFold}, '*_electrodes.tsv');
         eventFile   = searchparent(subjectFolder{iFold}, '*_events.tsv');
@@ -197,9 +204,12 @@ for iSubject = 1:size(bids.participants,1)
                 if isempty(ind)
                     ind = strmatch( '.bdf', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % BDF
                     if isempty(ind)
-                        ind = strmatch( '.gz', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % FIF
+                        ind = strmatch( '.fif', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % FIF
                         if isempty(ind)
-                            error('No EEG data found for subject %s', bids.participants{iSubject,1});
+                            ind = strmatch( '.gz', cellfun(@(x)x(end-2:end), allFiles, 'uniformoutput', false) ); % FIF
+                            if isempty(ind)
+                                error('No EEG file found for subject %s', bids.participants{iSubject,1});
+                            end
                         end
                     end
                 end
@@ -226,7 +236,11 @@ for iSubject = 1:size(bids.participants,1)
             % extract task name
             underScores = find(tmpFileName == '_');
             if ~strcmpi(tmpFileName(underScores(end)+1:end), 'eeg')
-                error('EEG file name does not contain eeg'); % theoretically impossible
+                if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg.fif')
+                    if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg')
+                        error('Data file name does not contain eeg or meg'); % theoretically impossible
+                    end 
+                end
             end
             if isempty(findstr('ses', tmpFileName(underScores(end-1)+1:underScores(end)-1)))
                 task = tmpFileName(underScores(end-1)+1:underScores(end)-1);
@@ -246,11 +260,13 @@ for iSubject = 1:size(bids.participants,1)
                         else
                             EEG = pop_loadbv( tmpPath, [tmpFileName '.VMRK'] );
                         end
+                    case '.fif'
+                        EEG = pop_fileio(eegFileRaw); % fif folder
                     case '.gz'
                         gunzip(eegFileRaw);
                         EEG = pop_fileio(eegFileRaw(1:end-3)); % fif folder
                     otherwise
-                        error('No EEG data found for subject %s', bids.participants{iSubject,1});
+                        error('No EEG data found for subject/session %s', subjectFolder{iFold});
                 end
                 
                 % channel location data
