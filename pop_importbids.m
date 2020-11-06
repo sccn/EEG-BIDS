@@ -230,6 +230,7 @@ for iSubject = 1:size(bids.participants,1)
             end
             
             if ~strcmpi(fileExt, '.set') || strcmpi(opt.bidsevent, 'on') || strcmpi(opt.bidschanloc, 'on') || ~strcmpi(opt.outputdir, bidsFolder)
+                fprintf('Importing file: %s\n', eegFileRaw);
                 switch lower(fileExt)
                     case '.set' % do nothing
                         EEG = pop_loadset( eegFileRaw );
@@ -295,7 +296,7 @@ for iSubject = 1:size(bids.participants,1)
                     end
                     
                     if length(chanlocs) ~= EEG.nbchan
-                        error('channel location file and EEG file have non matching channel types and numbers');
+                        error('channel location file and EEG file do not have the same number of channels');
                     end
                     
                     if isfield(chanlocs, 'X')
