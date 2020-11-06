@@ -173,7 +173,7 @@ for iSubject = 1:size(bids.participants,1)
     % import data
     for iFold = 1:length(subjectFolder)
         if ~exist(subjectFolder{iFold},'dir')
-            fprintf(2, 'No EEG data folder for subject/session %s', subjectFolder{iFold});
+            fprintf(2, 'No EEG data folder for subject %s session %s\n', bids.participants{iSubject,1}, subFolders(iFold).name);
         else
             % which raw data - with folder inheritance
             eegFile     = searchparent(subjectFolder{iFold}, '*eeg.*');
