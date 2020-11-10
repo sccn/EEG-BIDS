@@ -142,6 +142,11 @@ if exist(participantsJSONFile,'File')
     bids.participantsJSON = jsondecode(importalltxt( participantsJSONFile ));
 end
 
+if isempty(bids.participants)
+    participantFolders = dir(fullfile(bidsFolder, 'sub-*'));
+    bids.participants = { participantFolders.name }';
+end
+
 % scan participants
 count = 1;
 commands = {};
@@ -207,7 +212,7 @@ for iSubject = 1:size(bids.participants,1)
                             if isempty(ind)
                                 ind = strmatch( '.gz', cellfun(@(x)x(end-2:end), allFiles, 'uniformoutput', false) ); % FIF
                                 if isempty(ind)
-                                    error('No EEG file found for subject %s', bids.participants{iSubject,1});
+                                    fprintf(2, 'No EEG file found for subject %s\n', bids.participants{iSubject,1});
                                 end
                             end
                         end
@@ -228,8 +233,15 @@ for iSubject = 1:size(bids.participants,1)
                 iRun = 1;
                 ind = strfind(eegFileRaw, '_run-');
                 if ~isempty(ind)
-                    iRun = str2double(eegFileRaw(ind(1)+5:ind(1)+6));
-                    if isnan(iRun) || iRun == 0, error('Problem converting run information'); end
+                    tmpEegFileRaw = eegFileRaw(ind(1)+5:end);
+                    indUnder = find(tmpEegFileRaw == '_');
+                    iRun = str2double(tmpEegFileRaw(1:indUnder(1)-1));
+                    if isnan(iRun) || iRun == 0, 
+                        iRun = str2double(tmpEegFileRaw(1:indUnder(1)-2)); % rare case run 5H in ds003190/sub-01/ses-01/eeg/sub-01_ses-01_task-ctos_run-5H_eeg.eeg
+                        if isnan(iRun) || iRun == 0, 
+                            error('Problem converting run information'); 
+                        end
+                    end
                 end
                 
                 % extract task name
@@ -264,6 +276,8 @@ for iSubject = 1:size(bids.participants,1)
                         case '.gz'
                             gunzip(eegFileRaw);
                             EEG = pop_fileio(eegFileRaw(1:end-3)); % fif folder
+                        case '.ds'
+                            EEG = pop_fileio(eegFileRaw); % fif folder
                         otherwise
                             error('No EEG data found for subject/session %s', subjectFolder{iFold});
                     end
