@@ -298,7 +298,7 @@ for iSubject = 1:size(bids.participants,1)
                         elecData = [];
                         localElectFile = dir( [ eegFileRaw(1:end-8) '_electrodes.tsv' ] );
                         if ~isempty(localElectFile)
-                            channelData = importtsv( fullfile(localElectFile(1).folder, localElectFile(1).name));
+                            elecData = importtsv( fullfile(localElectFile(1).folder, localElectFile(1).name));
                         elseif ~isempty(elecFile)
                             elecData = importtsv( fullfile(elecFile(1).folder, elecFile(1).name));
                         end
@@ -312,11 +312,11 @@ for iSubject = 1:size(bids.participants,1)
                             if size(channelData,2) > 3
                                 chanlocs(iChan-1).status = channelData{iChan,4};
                             end
-                            if ~isempty(elecData)
-                                indElec = strmatch(chanlocs(iChan-1).labels, elecData(:,1), 'exact');
-                                chanlocs(iChan-1).X = elecData{indElec,2};
-                                chanlocs(iChan-1).Y = elecData{indElec,3};
-                                chanlocs(iChan-1).Z = elecData{indElec,4};
+                            if ~isempty(elecData) && iChan <= size(elecData,1)
+                                chanlocs(iChan-1).labels = elecData{iChan,1};
+                                chanlocs(iChan-1).X = elecData{iChan,2};
+                                chanlocs(iChan-1).Y = elecData{iChan,3};
+                                chanlocs(iChan-1).Z = elecData{iChan,4};
                             end
                         end
                         
