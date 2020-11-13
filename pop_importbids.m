@@ -434,6 +434,9 @@ while ~any(arrayfun(@(x) strcmp(lower(x.name),'dataset_description.json'), dir(p
     outFile = filterHiddenFile(folder, dir(fullfile(parent, fileName)));
     parent = fileparts(parent);
 end
+if isempty(outFile)
+    outFile = filterHiddenFile(folder, dir(fullfile(parent, fileName)));
+end
 
 function fileList = filterHiddenFile(folder, fileList)
 isGoodFile = true(1,numel(fileList));
