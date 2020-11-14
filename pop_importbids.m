@@ -49,7 +49,7 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-function [STUDY, ALLEEG, bids, commands] = pop_importbids(bidsFolder, varargin)
+function [STUDY, ALLEEG, bids, stats, commands] = pop_importbids(bidsFolder, varargin)
 
 STUDY = [];
 ALLEEG = [];
@@ -97,6 +97,7 @@ end
 opt = finputcheck(options, { ...
     'bidsevent'      'string'    { 'on' 'off' }    'on';  ...
     'bidschanloc'    'string'    { 'on' 'off' }    'on'; ...
+    'metadata'       'string'    { 'on' 'off' }    'off'; ...
     'eventtype'      'string'    {  }              'value'; ...
     'outputdir'      'string'    { } fullfile(bidsFolder,'derivatives'); ...
     'studyName'      'string'    { }                defaultStudyName ...
@@ -147,11 +148,19 @@ if isempty(bids.participants)
     bids.participants = { participantFolders.name }';
 end
 
+% compute basic statistics
+stats.score = 0;
+if ~isempty(bids.README), stats.score = stats.score + 0.1; end
+if ismember('age'   , bids.participants(1,:)) && ismember('gender', bids.participants(1,:)), stats.score = stats.score + 0.1; end
+
 % scan participants
 count = 1;
 commands = {};
 task = [ 'task-' bidsFolder ];
-for iSubject = 1:size(bids.participants,1)
+bids.data = [];
+stats.inconsistentChannels = 0;
+stats.inconsistentEvents   = 0;
+for iSubject = 2:size(bids.participants,1)
     
     parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,1});
     outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,1});
@@ -176,7 +185,7 @@ for iSubject = 1:size(bids.participants,1)
     end
     
     % import data
-    for iFold = 1:length(subjectFolder)
+    for iFold = 1:length(subjectFolder) % scan sessions
         if ~exist(subjectFolder{iFold},'dir')
             fprintf(2, 'No EEG data folder for subject %s session %s\n', bids.participants{iSubject,1}, subFolders(iFold).name);
         else
@@ -188,6 +197,7 @@ for iSubject = 1:size(bids.participants,1)
             channelFile = searchparent(subjectFolder{iFold}, '*_channels.tsv');
             elecFile    = searchparent(subjectFolder{iFold}, '*_electrodes.tsv');
             eventFile   = searchparent(subjectFolder{iFold}, '*_events.tsv');
+            infoFile    = searchparent(subjectFolder{iFold}, '*_eeg.json');
             
             % raw data
             allFiles = { eegFile.name };
@@ -236,14 +246,18 @@ for iSubject = 1:size(bids.participants,1)
                     tmpEegFileRaw = eegFileRaw(ind(1)+5:end);
                     indUnder = find(tmpEegFileRaw == '_');
                     iRun = str2double(tmpEegFileRaw(1:indUnder(1)-1));
-                    if isnan(iRun) || iRun == 0, 
+                    if isnan(iRun) || iRun == 0
                         iRun = str2double(tmpEegFileRaw(1:indUnder(1)-2)); % rare case run 5H in ds003190/sub-01/ses-01/eeg/sub-01_ses-01_task-ctos_run-5H_eeg.eeg
-                        if isnan(iRun) || iRun == 0, 
+                        if isnan(iRun) || iRun == 0
                             error('Problem converting run information'); 
                         end
                     end
                 end
                 
+                % JSON information file
+                infoData = loadfile([ eegFileRaw(1:end-8) '_eeg.json' ], infoFile);
+                bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], infoData);
+                    
                 % extract task name
                 underScores = find(tmpFileName == '_');
                 if ~strcmpi(tmpFileName(underScores(end)+1:end), 'eeg')
@@ -261,15 +275,20 @@ for iSubject = 1:size(bids.participants,1)
                     fprintf('Importing file: %s\n', eegFileRaw);
                     switch lower(fileExt)
                         case '.set' % do nothing
-                            EEG = pop_loadset( eegFileRaw );
-                        case {'.bdf','.edf'}
-                            EEG = pop_biosig( eegFileRaw );
-                        case '.eeg'
-                            [tmpPath,tmpFileName,tmpFileExt] = fileparts(eegFileRaw);
-                            if exist(fullfile(tmpPath, [tmpFileName '.vhdr']), 'file')
-                                EEG = pop_loadbv( tmpPath, [tmpFileName '.vhdr'] );
+                            if strcmpi(opt.metadata, 'on')
+                                EEG = pop_loadset( 'filename', eegFileRaw, 'loadmode', 'info' );
                             else
-                                EEG = pop_loadbv( tmpPath, [tmpFileName '.VMRK'] );
+                                EEG = pop_loadset( 'filename', eegFileRaw );
+                            end
+                        case {'.bdf','.edf'}
+                            EEG = pop_biosig( eegFileRaw ); % no way to read meta data only (because events in channel)
+                        case '.eeg'
+                            [tmpPath,tmpFileName,~] = fileparts(eegFileRaw);
+                            if exist(fullfile(tmpPath, [tmpFileName '.vhdr']), 'file'), ext = '.vhdr'; else ext = '.VMRK'; end
+                            if strcmpi(opt.metadata, 'on')
+                                EEG = pop_loadbv( tmpPath, [tmpFileName ext], [], [], true );
+                            else
+                                EEG = pop_loadbv( tmpPath, [tmpFileName ext] );
                             end
                         case '.fif'
                             EEG = pop_fileio(eegFileRaw); % fif folder
@@ -281,28 +300,17 @@ for iSubject = 1:size(bids.participants,1)
                         otherwise
                             error('No EEG data found for subject/session %s', subjectFolder{iFold});
                     end
+                    EEGnodata = EEG;
+                    EEGnodata.data = [];
+                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('EEG', EEGnodata));
                     
                     % channel location data
                     % ---------------------
+                    channelData = loadfile([ eegFileRaw(1:end-8) '_channels.tsv' ], channelFile);
+                    elecData    = loadfile([ eegFileRaw(1:end-8) '_electrodes.tsv' ], elecFile);
+                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('chaninfo', { channelData }));
+                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('elecinfo', { elecData }));
                     if strcmpi(opt.bidschanloc, 'on')
-                        % channel data
-                        channelData = [];
-                        localChannelFile = dir( [ eegFileRaw(1:end-8) '_channels.tsv' ] );
-                        if ~isempty(localChannelFile)
-                            channelData = importtsv( fullfile(localChannelFile(1).folder, localChannelFile(1).name));
-                        elseif ~isempty(channelFile)
-                            channelData = importtsv( fullfile(channelFile(1).folder, channelFile(1).name));
-                        end
-                        
-                        % electrode data
-                        elecData = [];
-                        localElectFile = dir( [ eegFileRaw(1:end-8) '_electrodes.tsv' ] );
-                        if ~isempty(localElectFile)
-                            elecData = importtsv( fullfile(localElectFile(1).folder, localElectFile(1).name));
-                        elseif ~isempty(elecFile)
-                            elecData = importtsv( fullfile(elecFile(1).folder, elecFile(1).name));
-                        end
-                        
                         chanlocs = [];
                         for iChan = 2:size(channelData,1)
                             % the fields below are all required
@@ -312,6 +320,7 @@ for iSubject = 1:size(bids.participants,1)
                             if size(channelData,2) > 3
                                 chanlocs(iChan-1).status = channelData{iChan,4};
                             end
+                            
                             if ~isempty(elecData) && iChan <= size(elecData,1)
                                 chanlocs(iChan-1).labels = elecData{iChan,1};
                                 chanlocs(iChan-1).X = elecData{iChan,2};
@@ -343,15 +352,9 @@ for iSubject = 1:size(bids.participants,1)
                     
                     % event data
                     % ----------
-                    if strcmpi(opt.bidsevent, 'on')
-                        eventData = [];
-                        localEventFile = dir( [ eegFileRaw(1:end-8) '_events.tsv' ] );
-                        if ~isempty(localEventFile)
-                            eventData = importtsv( fullfile(localEventFile(1).folder, localEventFile(1).name));
-                        elseif ~isempty(eventFile)
-                            eventData = importtsv( fullfile(eventFile(1).folder, eventFile(1).name));
-                        end
-                        
+                    eventData = loadfile( [ eegFileRaw(1:end-8) '_events.tsv' ], eventFile);
+                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
+                    if strcmpi(opt.bidsevent, 'on')                        
                         events = struct([]);
                         indTrial = strmatch( opt.eventtype, lower(eventData(1,:)), 'exact');
                         for iEvent = 2:size(eventData,1)
@@ -379,10 +382,12 @@ for iSubject = 1:size(bids.participants,1)
                     EEG.subject = bids.participants{iSubject,1};
                     EEG.session = iFold;
                     
-                    if exist(subjectFolderOut{iFold},'dir') ~= 7
-                        mkdir(subjectFolderOut{iFold});
+                    if strcmpi(opt.metadata, 'off')
+                        if exist(subjectFolderOut{iFold},'dir') ~= 7
+                            mkdir(subjectFolderOut{iFold});
+                        end
+                        EEG = pop_saveset( EEG, eegFileNameOut);
                     end
-                    EEG = pop_saveset( EEG, eegFileNameOut);
                 end
                 
                 % building study command
@@ -394,22 +399,67 @@ for iSubject = 1:size(bids.participants,1)
                 end
                 
                 count = count+1;
+                
+                % check dataset consistency
+                bData = bids.data(iSubject-1,iFold,iFile);
+                if ~isempty(bData.chaninfo)
+                    if size(bData.chaninfo,1)-1 ~= bData.EEG.nbchan
+                        fprintf(2, 'Warning: inconsistency detected, %d channels in BIDS file vs %d in EEG file for %s\n', size(bData.chaninfo,1)-1, bData.EEG.nbchan, [tmpFileName,fileExt]);
+                        stats.inconsistentChannels = stats.inconsistentChannels+1;
+                    end
+                end
+                if ~isempty(bData.eventinfo)
+                    if size(bData.eventinfo,1)-1 ~= length(bData.EEG.event)
+                        fprintf(2, 'Warning: inconsistency detected, %d events in BIDS file vs %d in EEG file for %s\n', size(bData.eventinfo,1)-1, length(bData.EEG.event), [tmpFileName,fileExt]);
+                        stats.inconsistentEvents = stats.inconsistentEvents+1;
+                    end
+                end
+                
             end % end for eegFileRaw
         end
     end
 end
 
+% update statistics
+% -----------------
+if isfield(bids.data, 'TaskDescription')
+    taskDescription = { bids.data.TaskDescription };
+    taskDescription(cellfun(@isempty, taskDescription)) = [];
+    stats.taskDescriptionLen = mean(cellfun(@length, taskDescription));
+    if stats.taskDescriptionLen > 400,  stats.score = stats.score+0.1; end
+    if stats.taskDescriptionLen > 800,  stats.score = stats.score+0.1; end
+    if stats.taskDescriptionLen > 1600, stats.score = stats.score+0.1; end
+end
+if isfield(bids.data, 'Instructions')
+    instructions = { bids.data.Instructions };
+    instructions(cellfun(@isempty, instructions)) = [];
+    stats.instructionsLen = mean(cellfun(@length, instructions));
+    if stats.instructionsLen > 400, stats.score = stats.score+0.1; end
+end
+if isfield(bids.data, 'EEGReference')
+    eegReference = { bids.data.EEGReference };
+    eegReference(cellfun(@isempty, eegReference)) = [];
+    if ~isempty(eegReference), stats.score = stats.score+0.1; end
+end
+if isfield(bids.data, 'PowerLineFrequency')
+    powerLineFrequency = { bids.data.PowerLineFrequency };
+    powerLineFrequency(cellfun(@isempty, powerLineFrequency)) = [];
+    if ~isempty(powerLineFrequency), stats.score = stats.score+0.1; end
+end
+
 % study name and study creation
 % -----------------------------
-if isempty(commands)
-    error('No dataset were found');
-end
-studyName = fullfile(opt.outputdir, [opt.studyName '.study']);
-[STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', task);
-if ~isempty(options)
-    commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'', %s);', bidsFolder, vararg2str(options));
-else
-    commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'');', bidsFolder);
+if strcmpi(opt.metadata, 'off')
+    if isempty(commands)
+        error('No dataset were found');
+    end
+    studyName = fullfile(opt.outputdir, [opt.studyName '.study']);
+    [STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', task);
+    if ~isempty(options)
+        commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'', %s);', bidsFolder, vararg2str(options));
+    else
+        commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'');', bidsFolder);
+    end
 end
 
 % Import full text file
@@ -456,6 +506,34 @@ end
 % remove bad files
 fileList = fileList(isGoodFile);
 
+% import JSON or TSV file
+function data = loadfile(localFile, globalFile)
+[~,~,ext] = fileparts(localFile);
+data = [];
+localFile = dir(localFile);
+if ~isempty(localFile)
+    if strcmpi(ext, '.tsv')
+        data = importtsv( fullfile(localFile(1).folder, localFile(1).name));
+    else
+        data = jsondecode( importalltxt( fullfile(localFile(1).folder, localFile(1).name) ));
+    end        
+elseif ~isempty(globalFile)
+    if strcmpi(ext, '.tsv')
+        data = importtsv( fullfile(globalFile(1).folder, globalFile(1).name));
+    else
+        data = jsondecode( importalltxt( fullfile(globalFile(1).folder, globalFile(1).name) ));
+    end
+end
+
+% set structure
+function sdata = setallfields(sdata, indices, newdata)
+if isempty(newdata), return; end
+if ~isstruct(newdata), error('Can only assign structures'); end
+if length(indices) < 3, error('Must have 3 indices'); end
+allFields = fieldnames(newdata);
+for iField = 1:length(allFields)
+    sdata(indices(1), indices(2), indices(3)).(allFields{iField}) = newdata.(allFields{iField});
+end
 
 % Import tsv file
 % ---------------
