@@ -425,13 +425,13 @@ stats.TaskDescription    = 0;
 stats.Instructions       = 0;
 stats.EEGReference       = 0;
 stats.PowerLineFrequency = 0;
-stats.EventDescription    = 0;
 stats.ChannelTypes       = 0;
 stats.ElectrodePositions = 0;
 stats.ParticipantsAgeAndGender = 0;
 stats.SubjectArtefactDescription = 0;
 stats.eventConsistency   = 0;
 stats.channelConsistency = 0;
+stats.EventDescription    = 0;
 if ~isempty(bids.README), stats.README = 1; end
 if ismember('age'   , bids.participants(1,:)) && ismember('gender', bids.participants(1,:))
     stats.ParticipantsAgeAndGender = 1; 
