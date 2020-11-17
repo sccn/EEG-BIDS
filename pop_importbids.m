@@ -46,7 +46,7 @@
 % GNU General Public License for more details.
 %
 % You should have received a copy of the GNU General Public License
-% along with this program; if not, write to the Free Software
+% along with this program; if not, to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 function [STUDY, ALLEEG, bids, stats, commands] = pop_importbids(bidsFolder, varargin)
@@ -148,18 +148,13 @@ if isempty(bids.participants)
     bids.participants = { participantFolders.name }';
 end
 
-% compute basic statistics
-stats.score = 0;
-if ~isempty(bids.README), stats.score = stats.score + 0.1; end
-if ismember('age'   , bids.participants(1,:)) && ismember('gender', bids.participants(1,:)), stats.score = stats.score + 0.1; end
-
 % scan participants
 count = 1;
 commands = {};
 task = [ 'task-' bidsFolder ];
 bids.data = [];
-stats.inconsistentChannels = 0;
-stats.inconsistentEvents   = 0;
+inconsistentChannels = 0;
+inconsistentEvents   = 0;
 for iSubject = 2:size(bids.participants,1)
     
     parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,1});
@@ -194,11 +189,11 @@ for iSubject = 2:size(bids.participants,1)
             if isempty(eegFile)
                 eegFile     = searchparent(subjectFolder{iFold}, '*_meg.*');
             end
-            channelFile = searchparent(subjectFolder{iFold}, '*_channels.tsv');
-            elecFile    = searchparent(subjectFolder{iFold}, '*_electrodes.tsv');
-            eventFile   = searchparent(subjectFolder{iFold}, '*_events.tsv');
-            infoFile    = searchparent(subjectFolder{iFold}, '*_eeg.json');
-            
+            infoFile      = searchparent(subjectFolder{iFold}, '*_eeg.json');
+            channelFile   = searchparent(subjectFolder{iFold}, '*_channels.tsv');
+            elecFile      = searchparent(subjectFolder{iFold}, '*_electrodes.tsv');
+            eventFile     = searchparent(subjectFolder{iFold}, '*_events.tsv');
+            eventDescFile = searchparent(subjectFolder{iFold}, '*_events.json');
             % raw data
             allFiles = { eegFile.name };
             ind = strmatch( 'json', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) );
@@ -354,6 +349,8 @@ for iSubject = 2:size(bids.participants,1)
                     % ----------
                     eventData = loadfile( [ eegFileRaw(1:end-8) '_events.tsv' ], eventFile);
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
+                    eventDesc = loadfile( [ eegFileRaw(1:end-8) '_events.json' ], eventDescFile);
+                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
                     if strcmpi(opt.bidsevent, 'on')                        
                         events = struct([]);
                         indTrial = strmatch( opt.eventtype, lower(eventData(1,:)), 'exact');
@@ -405,13 +402,13 @@ for iSubject = 2:size(bids.participants,1)
                 if ~isempty(bData.chaninfo)
                     if size(bData.chaninfo,1)-1 ~= bData.EEG.nbchan
                         fprintf(2, 'Warning: inconsistency detected, %d channels in BIDS file vs %d in EEG file for %s\n', size(bData.chaninfo,1)-1, bData.EEG.nbchan, [tmpFileName,fileExt]);
-                        stats.inconsistentChannels = stats.inconsistentChannels+1;
+                        inconsistentChannels = inconsistentChannels+1;
                     end
                 end
                 if ~isempty(bData.eventinfo)
                     if size(bData.eventinfo,1)-1 ~= length(bData.EEG.event)
                         fprintf(2, 'Warning: inconsistency detected, %d events in BIDS file vs %d in EEG file for %s\n', size(bData.eventinfo,1)-1, length(bData.EEG.event), [tmpFileName,fileExt]);
-                        stats.inconsistentEvents = stats.inconsistentEvents+1;
+                        inconsistentEvents = inconsistentEvents+1;
                     end
                 end
                 
@@ -422,30 +419,37 @@ end
 
 % update statistics
 % -----------------
-if isfield(bids.data, 'TaskDescription')
-    taskDescription = { bids.data.TaskDescription };
-    taskDescription(cellfun(@isempty, taskDescription)) = [];
-    stats.taskDescriptionLen = mean(cellfun(@length, taskDescription));
-    if stats.taskDescriptionLen > 400,  stats.score = stats.score+0.1; end
-    if stats.taskDescriptionLen > 800,  stats.score = stats.score+0.1; end
-    if stats.taskDescriptionLen > 1600, stats.score = stats.score+0.1; end
+% compute basic statistics
+stats.README             = 0;
+stats.TaskDescription    = 0;
+stats.Instructions       = 0;
+stats.EEGReference       = 0;
+stats.PowerLineFrequency = 0;
+stats.ChannelTypes       = 0;
+stats.ElectrodePositions = 0;
+stats.ParticipantsAgeAndGender = 0;
+stats.SubjectArtefactDescription = 0;
+stats.eventConsistency   = 0;
+stats.channelConsistency = 0;
+if ~isempty(bids.README), stats.README = 1; end
+if ismember('age'   , bids.participants(1,:)) && ismember('gender', bids.participants(1,:))
+    stats.ParticipantsAgeAndGender = 1; 
 end
-if isfield(bids.data, 'Instructions')
-    instructions = { bids.data.Instructions };
-    instructions(cellfun(@isempty, instructions)) = [];
-    stats.instructionsLen = mean(cellfun(@length, instructions));
-    if stats.instructionsLen > 400, stats.score = stats.score+0.1; end
+if checkBIDSfield(bids, 'TaskDescription'),            stats.TaskDescription = 1; end
+if checkBIDSfield(bids, 'Instructions'),               stats.Instructions = 1; end
+if checkBIDSfield(bids, 'EEGReference'),               stats.EEGReference = 1; end
+if checkBIDSfield(bids, 'PowerLineFrequency'),         stats.PowerLineFrequency = 1; end
+if checkBIDSfield(bids, 'elecinfo'),                   stats.ElectrodePositions = 1; end
+if checkBIDSfield(bids, 'eventdesc'),                  stats.EventDescription   = 1; end
+if checkBIDSfield(bids, 'SubjectArtefactDescription'), stats.SubjectArtefactDescription   = 1; end
+if isfield(bids.data, 'chaninfo') && ~isempty(bids.data(1).chaninfo) && ~isempty(strmatch('type', lower(bids.data(1).chaninfo(1,:)), 'exact'))
+    stats.ChannelTypes = 1;
 end
-if isfield(bids.data, 'EEGReference')
-    eegReference = { bids.data.EEGReference };
-    eegReference(cellfun(@isempty, eegReference)) = [];
-    if ~isempty(eegReference), stats.score = stats.score+0.1; end
+if isfield(bids.data, 'elecinfo') && ~isempty(bids.data(1).elecinfo)
+    stats.ElectrodePositions = 1;
 end
-if isfield(bids.data, 'PowerLineFrequency')
-    powerLineFrequency = { bids.data.PowerLineFrequency };
-    powerLineFrequency(cellfun(@isempty, powerLineFrequency)) = [];
-    if ~isempty(powerLineFrequency), stats.score = stats.score+0.1; end
-end
+stats.channelConsistency = fastif(inconsistentChannels > 0, 0, 1);
+stats.eventConsistency   = fastif(inconsistentEvents   > 0, 0, 1);
 
 % study name and study creation
 % -----------------------------
@@ -460,6 +464,16 @@ if strcmpi(opt.metadata, 'off')
     else
         commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'');', bidsFolder);
     end
+end
+
+% check BIDS data field present
+% -----------------------------
+function res = checkBIDSfield(bids, fieldName)
+res = false;
+if isfield(bids.data, fieldName)
+    fieldContent = { bids.data.(fieldName) };
+    fieldContent(cellfun(@isempty, fieldContent)) = [];
+    if ~isempty(fieldContent), res = true; end
 end
 
 % Import full text file
