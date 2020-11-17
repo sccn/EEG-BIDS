@@ -425,6 +425,7 @@ stats.TaskDescription    = 0;
 stats.Instructions       = 0;
 stats.EEGReference       = 0;
 stats.PowerLineFrequency = 0;
+stats.EventDescription    = 0;
 stats.ChannelTypes       = 0;
 stats.ElectrodePositions = 0;
 stats.ParticipantsAgeAndGender = 0;
@@ -444,9 +445,6 @@ if checkBIDSfield(bids, 'eventdesc'),                  stats.EventDescription   
 if checkBIDSfield(bids, 'SubjectArtefactDescription'), stats.SubjectArtefactDescription   = 1; end
 if isfield(bids.data, 'chaninfo') && ~isempty(bids.data(1).chaninfo) && ~isempty(strmatch('type', lower(bids.data(1).chaninfo(1,:)), 'exact'))
     stats.ChannelTypes = 1;
-end
-if isfield(bids.data, 'elecinfo') && ~isempty(bids.data(1).elecinfo)
-    stats.ElectrodePositions = 1;
 end
 stats.channelConsistency = fastif(inconsistentChannels > 0, 0, 1);
 stats.eventConsistency   = fastif(inconsistentEvents   > 0, 0, 1);
