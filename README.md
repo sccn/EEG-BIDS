@@ -35,3 +35,5 @@ v4.0 - fix GUI and many minor export issues
 v4.1 - fix issue with JSON
 
 v5.0 - major fixes to import all OpenNeuro EEG datasets
+
+v5.1 - allow calculating dataset meta-data quality
