@@ -55,10 +55,15 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     % -------------------------
     if isfield(EEG(1), 'subject') && ~isempty(EEG(1).subject)
         allSubjects = { EEG.subject };
-    elseif isfield(STUDY.datasetinfo(1), 'subject') && ~isempty(STUDY.datasetinfo(1).subject)
+    elseif isfield(STUDY,'datasetinfo') && isfield(STUDY.datasetinfo(1), 'subject') && ~isempty(STUDY.datasetinfo(1).subject)
         allSubjects = { STUDY.datasetinfo.subject };
     else
-        errordlg2('No subject info found in either EEG or STUDY.datasetinfo. Please add using Study > Edit STUDY info');
+        if numel(EEG) == 1
+            errordlg2('No subject ID found. Please fill in "Subject code" in the next window, then resume.');
+            EEG = pop_editset(EEG);
+        else
+            errordlg2('No subject info found in STUDY. Please add using "Study > Edit study info", then resume.');
+        end
         return
     end
     emptySubjs = cellfun(@isempty, allSubjects);
@@ -370,7 +375,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
             end
             if ~isempty(EEG(e).subject)
                 rowIdx = strcmp(EEG(e).subject, pTable.Data(:, strcmp('participant_id', pTable.ColumnName)));
-            elseif ~isempty(STUDY.datasetinfo(1).subject) % assuming order of STUDY.datasetinfo matches with EEG
+            elseif ~isempty(STUDY.datasetinfo(1).subject) % assuming order of STUDY.datasetinfo matches with order of EEG in the EEG array
                 rowIdx = strcmp(STUDY.datasetinfo(e).subject, pTable.Data(:, strcmp('participant_id', pTable.ColumnName)));
             end
             if isempty(pTable.Data{rowIdx,strcmp('HeadCircumference',pTable.ColumnName)})
