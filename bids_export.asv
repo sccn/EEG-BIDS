@@ -638,8 +638,7 @@ elseif strcmpi(ext, '.raw')
     pop_saveset(EEG, 'filename', fileOut);
 elseif strcmpi(ext, '.vhdr')
     splitFileName = split(fileIn, filesep);
-    filePath = fileIn(1:end-length(splitFileName{end}));
-    EEG = pop_loadbv(filePath, splitFileName{end});
+    EEG = pop_loadbv(stsplitFileName(1:end-1), splitFileName(end));
     pop_saveset(EEG, 'filename', fileOut);
 else
     error('Data format not supported');
