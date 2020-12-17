@@ -636,6 +636,13 @@ elseif strcmpi(ext, '.mff')
 elseif strcmpi(ext, '.raw')
     EEG = pop_readegi(fileIn);
     pop_saveset(EEG, 'filename', fileOut);
+elseif strcmpi(ext, '.eeg')
+    [tmpPath,tmpFileName,~] = fileparts(fileIn);
+    if exist(fullfile(tmpPath, [tmpFileName '.vhdr']), 'file')
+        EEG = pop_loadbv( tmpPath, [tmpFileName '.vhdr'] );
+    else
+        error('.eeg files not from BrainVision are currently not supported')
+    end
 else
     error('Data format not supported');
 end
