@@ -636,11 +636,6 @@ elseif strcmpi(ext, '.mff')
 elseif strcmpi(ext, '.raw')
     EEG = pop_readegi(fileIn);
     pop_saveset(EEG, 'filename', fileOut);
-elseif strcmpi(ext, '.vhdr')
-    splitFileName = split(fileIn, filesep);
-    filePath = fileIn(1:end-length(splitFileName{end}));
-    EEG = pop_loadbv(filePath, splitFileName{end});
-    pop_saveset(EEG, 'filename', fileOut);
 else
     error('Data format not supported');
 end
