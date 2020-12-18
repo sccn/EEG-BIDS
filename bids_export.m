@@ -640,6 +640,7 @@ elseif strcmpi(ext, '.eeg')
     [tmpPath,tmpFileName,~] = fileparts(fileIn);
     if exist(fullfile(tmpPath, [tmpFileName '.vhdr']), 'file')
         EEG = pop_loadbv( tmpPath, [tmpFileName '.vhdr'] );
+        pop_saveset(EEG, 'filename', fileOut);
     else
         error('.eeg files not from BrainVision are currently not supported')
     end
