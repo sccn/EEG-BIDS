@@ -54,6 +54,7 @@ function [STUDY, ALLEEG, bids, stats, commands] = pop_importbids(bidsFolder, var
 STUDY = [];
 ALLEEG = [];
 bids = [];
+stats = [];
 commands = '';
 if nargin < 1
     bidsFolder = uigetdir('Pick a BIDS folder');
