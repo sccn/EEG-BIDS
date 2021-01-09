@@ -926,7 +926,8 @@ if ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isempty(EEG.chanlocs
     
     % Write coordinate file information (coordsystem.json)
     coordsystemStruct.EEGCoordinateUnits = 'mm';
-    coordsystemStruct.EEGCoordinateSystem = 'ARS'; % X=Anterior Y=Right Z=Superior
+    coordsystemStruct.EEGCoordinateSystem = 'Other';
+    coordsystemStruct.EEGCoordinateSystemDescription = 'EEGLAB'; % 'ARS'; % X=Anterior Y=Right Z=Superior
     writejson( [ fileOut(1:end-7) 'coordsystem.json' ], coordsystemStruct);
 end
 
