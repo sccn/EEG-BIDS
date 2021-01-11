@@ -628,7 +628,7 @@ elseif strcmpi(ext, '.set')
         EEG = pop_loadset([outfilename outfileext],outfilepath, 'loadmode', 'info');
     end
 elseif strcmpi(ext, '.cnt')
-    EEG = pop_loadcnt(fileIn, 'dataformat', 'int16');
+    EEG = pop_loadcnt(fileIn, 'dataformat', 'auto');
     pop_saveset(EEG, 'filename', fileOut);
 elseif strcmpi(ext, '.mff')
     EEG = pop_mffimport(fileIn,{'code'});
