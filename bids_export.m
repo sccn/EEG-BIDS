@@ -629,6 +629,11 @@ elseif strcmpi(ext, '.set')
     end
 elseif strcmpi(ext, '.cnt')
     EEG = pop_loadcnt(fileIn, 'dataformat', 'auto');
+    datFile = [fileIn(1:end-4) '.dat'];
+    if exist(datFile,'file')
+        EEG = pop_importevent(EEG, 'indices',1:length(EEG.event), 'append','no', 'event', datFile,...
+            'fields',{'DatTrial','DatResp','DatType','DatCorrect','DatLatency'},'skipline',20,'timeunit',NaN,'align',0);
+    end
     pop_saveset(EEG, 'filename', fileOut);
 elseif strcmpi(ext, '.mff')
     EEG = pop_mffimport(fileIn,{'code'});
