@@ -754,7 +754,7 @@ for iEvent = 1:length(EEG.event)
                         if ~isempty(opt.trialtype)
                             % mapping on event value
                             if ~isempty(eventVal)
-                                indTrial = strmatch(eventVal, opt.trialtype(:,1), 'exact');
+                                indTrial = strmatch(num2str(eventVal), opt.trialtype(:,1), 'exact');
                                 if ~isempty(indTrial)
                                     trialType = opt.trialtype{indTrial,2};
                                 end
@@ -798,7 +798,7 @@ for iEvent = 1:length(EEG.event)
                         if isempty(opt.renametype)
                             eventValue = num2str(EEG.event(iEvent).(tmpField));
                         else
-                            posType = strmatch(EEG.event(iEvent).(tmpField), opt.renametype(:,1), 'exact');
+                            posType = strmatch(num2str(EEG.event(iEvent).(tmpField)), opt.renametype(:,1), 'exact');
                             if ~isempty(posType)
                                 eventValue = opt.renametype{posType,2};
                             else
