@@ -154,6 +154,9 @@
 %                                                   '4'    'stimulus';
 %                                                   '128'  'response' }
 %
+%  'stimByValue' - [cell] 2 column cell table indicating the stim_file 
+%                  tied to each `value`. For example { '2'    'stim1.jpg';
+%                                                      '4'    'stim2.jpg'}
 %  'chanlocs'  - [file] channel location file (must have the same number
 %                of channel as the data.
 %
@@ -248,6 +251,7 @@ opt = finputcheck(varargin, {
     'cInfoDesc' 'struct'  {}    struct([]);
     'trialtype' 'cell'    {}    {};
     'renametype' 'cell'   {}    {};
+    'stimByValue' 'cell'   {}    {};
     'checkresponse' 'string'   {}    '';
     'anattype'  ''        {}    'T1w';
     'chanlocs'  ''        {}    '';
@@ -815,6 +819,12 @@ for iEvent = 1:length(EEG.event)
                                 eventValue = [ eventValue '_with_reponse' ];
                                 response_time = (EEG.event(iEvent+1).latency - EEG.event(iEvent).latency)/EEG.srate;
                                 str{end-1} = num2str(response_time*1000,'%1.0f');
+                            end
+                        end
+                        if ~isempty(opt.stimByValue)
+                            stimByValue = strcmp(num2str(EEG.event(iEvent).(tmpField)), opt.stimByValue(:,1));
+                            if any(stimByValue)
+                                str{end} = opt.stimByValue{stimByValue,2};
                             end
                         end
                     else
