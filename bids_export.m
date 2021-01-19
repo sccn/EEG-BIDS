@@ -822,7 +822,7 @@ for iEvent = 1:length(EEG.event)
                             end
                         end
                         if ~isempty(opt.stimByValue)
-                            stimByValue = strcmp(num2str(EEG.event(iEvent).(tmpField)), opt.stimByValue(:,1));
+                            stimByValue = strcmp(eventValue, opt.stimByValue(:,1));
                             if any(stimByValue)
                                 str{end} = opt.stimByValue{stimByValue,2};
                             end
