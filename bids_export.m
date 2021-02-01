@@ -69,10 +69,13 @@
 %  'codefiles' - [cell] cell array of file names containing code related
 %                to importing or processing the data.
 %
-%  'stimuli'   - [cell] cell array of type and corresponding file names.
+%  'stimuli'   - [cell] cell array of EEGLAB event type and corresponding file
+%                names for the stimulus on your computer.
 %                For example: { 'sound1' '/Users/xxxx/sounds/sound1.mp3';
 %                               'img1'   '/Users/xxxx/sounds/img1.jpg' }
-%                (the semicolumn above is optional)
+%                (the semicolumn above is optional). Alternatively, after
+%                exporting to BIDS, create a stimuli folder and place your
+%                stimuli in that folder with a README file describing them.
 %
 %  'gInfo'     - [struct] general information fields. See BIDS specifications.
 %                For example.
@@ -473,12 +476,13 @@ if ~isempty(opt.stimuli)
     if size(opt.stimuli,1) == 1, opt.stimuli = opt.stimuli'; end
     disp('Copying images...');
     for iStim = 1:size(opt.stimuli,1)
-        [~,fileName,Ext] = fileparts(opt.stimuli{iStim,1});
-        if ~isempty(dir(opt.stimuli{iStim,1}))
-            copyfile(opt.stimuli{iStim,1}, fullfile(opt.targetdir, 'stimuli', [ fileName Ext ]));
+        [~,fileName,Ext] = fileparts(opt.stimuli{iStim,2});
+        if ~isempty(dir(opt.stimuli{iStim,2}))
+            copyfile(opt.stimuli{iStim,2}, fullfile(opt.targetdir, 'stimuli', [ fileName Ext ]));
         else
             fprintf('Warning: cannot find stimulus file %s\n', opt.codefiles{iFile});
         end
+        opt.stimuli{iStim,2} = [ fileName,Ext ];
     end
 end
 
@@ -685,6 +689,9 @@ if isempty(opt.eInfo)
 else
     if ~isempty(opt.trialtype)              opt.eInfo(end+1,:) = { 'trial_type'    'xxxx' }; end
 end
+if ~isempty(opt.stimuli)
+    opt.eInfo(end+1,:) = { 'stim_file' '' };
+end
 
 % reorder fields so it matches BIDS
 fieldOrder = { 'onset' 'duration' 'sample' 'trial_type' 'response_time' 'stim_file' 'value' 'HED' };
@@ -783,7 +790,17 @@ for iEvent = 1:length(EEG.event)
                     str{end+1} = response_time;
                     
                 case 'stim_file'
-                    if isfield(EEG.event, tmpField)
+                    if isempty(tmpField)
+                        indStim = strmatch(EEG.event(iEvent).type, opt.stimuli(:,1));
+                        if ~isempty(indStim)
+                            stim_file = opt.stimuli{indStim, 2};
+                        else
+                            stim_file = 'n/a';
+                        end
+                    elseif isfield(EEG.event, tmpField)
+                        if ~isempty(opt.stimuli)
+                            error('Cannot use "stim_file" as a BIDS event field and use the "stimuli" option')
+                        end
                         stim_file = num2str(EEG.event(iEvent).(tmpField));
                     else
                         stim_file = 'n/a';

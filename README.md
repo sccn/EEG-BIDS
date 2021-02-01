@@ -37,3 +37,7 @@ v4.1 - fix issue with JSON
 v5.0 - major fixes to import all OpenNeuro EEG datasets
 
 v5.1 - allow calculating dataset meta-data quality
+
+v5.2 - fix issue with history
+
+v5.3 - adding capability to export stimuli
