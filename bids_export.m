@@ -632,7 +632,12 @@ elseif strcmpi(ext, '.set')
         EEG = pop_loadset([outfilename outfileext],outfilepath, 'loadmode', 'info');
     end
 elseif strcmpi(ext, '.cnt')
-    EEG = pop_loadcnt(fileIn, 'dataformat', 'int16');
+    EEG = pop_loadcnt(fileIn, 'dataformat', 'auto');
+    datFile = [fileIn(1:end-4) '.dat'];
+    if exist(datFile,'file')
+        EEG = pop_importevent(EEG, 'indices',1:length(EEG.event), 'append','no', 'event', datFile,...
+            'fields',{'DatTrial','DatResp','DatType','DatCorrect','DatLatency'},'skipline',20,'timeunit',NaN,'align',0);
+    end
     pop_saveset(EEG, 'filename', fileOut);
 elseif strcmpi(ext, '.mff')
     EEG = pop_mffimport(fileIn,{'code'});
@@ -761,7 +766,7 @@ for iEvent = 1:length(EEG.event)
                         if ~isempty(opt.trialtype)
                             % mapping on event value
                             if ~isempty(eventVal)
-                                indTrial = strmatch(eventVal, opt.trialtype(:,1), 'exact');
+                                indTrial = strmatch(num2str(eventVal), opt.trialtype(:,1), 'exact');
                                 if ~isempty(indTrial)
                                     trialType = opt.trialtype{indTrial,2};
                                 end
@@ -815,7 +820,7 @@ for iEvent = 1:length(EEG.event)
                         if isempty(opt.renametype)
                             eventValue = num2str(EEG.event(iEvent).(tmpField));
                         else
-                            posType = strmatch(EEG.event(iEvent).(tmpField), opt.renametype(:,1), 'exact');
+                            posType = strmatch(num2str(EEG.event(iEvent).(tmpField)), opt.renametype(:,1), 'exact');
                             if ~isempty(posType)
                                 eventValue = opt.renametype{posType,2};
                             else
@@ -943,7 +948,8 @@ if ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isempty(EEG.chanlocs
     
     % Write coordinate file information (coordsystem.json)
     coordsystemStruct.EEGCoordinateUnits = 'mm';
-    coordsystemStruct.EEGCoordinateSystem = 'ARS'; % X=Anterior Y=Right Z=Superior
+    coordsystemStruct.EEGCoordinateSystem = 'Other';
+    coordsystemStruct.EEGCoordinateSystemDescription = 'EEGLAB'; % 'ARS'; % X=Anterior Y=Right Z=Superior
     writejson( [ fileOut(1:end-7) 'coordsystem.json' ], coordsystemStruct);
 end
 
