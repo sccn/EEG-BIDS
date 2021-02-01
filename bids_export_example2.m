@@ -23,7 +23,6 @@ data(end  ).notes   = { 'First ~120 seconds did not have push button triggers be
 data(end+1).file = {'../Ref3_17082011/Ref3_17082011_1_256Hz.bdf' '../Ref3_17082011/Ref3_17082011_2_256Hz.bdf' '../Ref3_17082011/Ref3_17082011_3_256Hz.bdf'};
 data(end  ).session = [1 1 1];
 data(end  ).run     = [1 2 3];
-data(end  ).task    = {'oddball' '2back' 'ssvep' };
 
 data(end+1).file = {'../Ref4_19082011/Ref4_19082011_1_256Hz.bdf' '../Ref4_19082011/Ref4_19082011_2_256Hz.bdf' '../Ref4_19082011/Ref4_19082011_3_256Hz.bdf'};
 data(end  ).session = [1 1 1];
