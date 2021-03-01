@@ -922,6 +922,8 @@ else
         % Count channels by type (for use later in eeg.json)
         if strcmp(type, 'n/a') || strcmp(type, 'MISC')
             channelsCount('MISC') = channelsCount('MISC') + 1;
+        elseif strcmp(type, 'HEOG') || strcmp(type,'VEOG')
+            channelsCount('EOG') = channelsCount('EOG') + 1;
         else
             channelsCount(type) = channelsCount(type) + 1;
         end
