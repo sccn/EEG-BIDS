@@ -359,10 +359,19 @@ for iSubj = 1:length(files)
     if length(files(iSubj).run) ~= length(files(iSubj).session)
         error(sprintf('Length of session and run differ for subject %s', iSubj));
     else
-        uniq = files(iSubj).run*1000 + files(iSubj).session;
-        if length(uniq) ~= length(unique(uniq))
-            error(sprintf('Subject %s does not have unique session and runs for each file', iSubj));
-        end
+        if ~isfield(files(iSubj), 'task')
+            uniq = files(iSubj).run*1000 + files(iSubj).session;
+            if length(uniq) ~= length(unique(uniq))
+                error(sprintf('Subject %s does not have unique session and runs for each file', iSubj));
+            end
+        else
+            for iVal = 1:length(files(iSubj).task)
+                strs = [ files(iSubj).task char(files(iSubj).run) char(files(iSubj).session);
+            end
+            if length(strs) ~= length(unique(strs))
+                error(sprintf('Subject %s does not have unique task, session and runs for each file', iSubj));
+            end
+        end            
     end
 end
 
