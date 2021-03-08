@@ -944,7 +944,13 @@ end
 fclose(fid);
 
 % Write electrode file information (electrodes.tsv)
-if ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isempty(EEG.chanlocs(2).X)
+isTemplate = false;
+if ~isempty(strfind(EEG.chaninfo.filename, 'standard-10-5-cap385.elp')) || ...
+      ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005.elc'))
+      isTemplate = true;
+      disp('Template channel location detected, not exporting electrodes.tsv file');
+end
+if ~isTemplate && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isempty(EEG.chanlocs(2).X)
     fid = fopen( [ fileOut(1:end-7) 'electrodes.tsv' ], 'w');
     fprintf(fid, 'name\tx\ty\tz\n');
     
