@@ -67,22 +67,29 @@ if nargin < 1
         'clear tmpfolder;' ];
     type_fields = { 'value' 'trial_type' };
     
+    % scan if multiple tasks are present
+    disp('Scanning folders...');
+    tasklist = bids_gettaskfromfolder(bidsFolder);
+    
     cb_event = 'set(findobj(gcbf, ''userdata'', ''bidstype''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
+    cb_task  = 'set(findobj(gcbf, ''userdata'', ''task''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
     promptstr    = { ...
         { 'style'  'text'       'string' 'Enter study name (default is BIDS folder name)' } ...
         { 'style'  'edit'       'string' '' 'tag' 'studyName' } ...
         {} ...
-        { 'style'  'checkbox'   'string' 'Overwrite channel locations with BIDS channel location files' 'tag' 'chanlocs' 'value' 0 } ...
-        { 'style'  'checkbox'  'string' 'Overwrite events with BIDS event files and use this BIDS field for event type' 'tag' 'events' 'value' 0 'callback' cb_event } ...
-        { 'style'  'popupmenu'  'string' type_fields 'tag' 'typefield' 'value' 1 'userdata' 'bidstype'  'enable' 'off' } ...
+        { 'style'  'checkbox'   'string' 'Use BIDS electrode.tsv files (when present) for channel locations; off: look up locations using channel labels' 'tag' 'chanlocs' 'value' 1 } ...
+        { 'style'  'checkbox'   'string' 'Use BIDS event.tsv files for events and use the following BIDS field for event type' 'tag' 'events' 'value' 1 'callback' cb_event } ...
+        { 'style'  'popupmenu'  'string' type_fields 'tag' 'typefield' 'value' 1 'userdata' 'bidstype'  'enable' 'on' } ...
+        { 'style'  'checkbox'   'string' 'Import only the following BIDS task from the BIDS archive' 'tag' 'bidstask' 'value' 0 'callback' cb_task } ...
+        { 'style'  'popupmenu'  'string' tasklist 'tag' 'bidstaskstr' 'value' 1 'userdata' 'task'  'enable' 'off' } ...
         {} ...
         { 'style'  'text'       'string' 'Study output folder' } ...
         { 'style'  'edit'       'string' fullfile(bidsFolder, 'derivatives') 'tag' 'folder' 'HorizontalAlignment' 'left' } ...
         { 'style'  'pushbutton' 'string' '...' 'callback' cb_select } ...
         };
-    geometry = {[2 1.5], 1, 1,[1 0.25],1,[1 2 0.5]};
+    geometry = {[2 1.5], 1, 1,[1 0.25],[1 0.25],1,[1 2 0.5]};
     
-    [~,~,~,res] = inputgui( 'geometry', geometry, 'geomvert', [1 0.5, 1 1 0.5 1], 'uilist', promptstr, 'helpcom', 'pophelp(''pop_importbids'')', 'title', 'Import BIDS data -- pop_importbids()');
+    [~,~,~,res] = inputgui( 'geometry', geometry, 'geomvert', [1 0.5, 1 1 1 0.5 1], 'uilist', promptstr, 'helpcom', 'pophelp(''pop_importbids'')', 'title', 'Import BIDS data -- pop_importbids()');
     if isempty(res), return; end
     
     options = { 'eventtype' type_fields{res.typefield} };
@@ -90,6 +97,7 @@ if nargin < 1
     if res.chanlocs,  options = { options{:} 'bidschanloc' 'on' }; else options = { options{:} 'bidschanloc' 'off' }; end
     if ~isempty(res.folder),  options = { options{:} 'outputdir' res.folder }; end
     if ~isempty(res.studyName),  options = { options{:} 'studyName' res.studyName }; end
+    if res.bidstask,  options = { options{:} 'bidstask' tasklist{res.bidstaskstr} }; end
 else
     options = varargin;
 end
@@ -98,6 +106,7 @@ end
 opt = finputcheck(options, { ...
     'bidsevent'      'string'    { 'on' 'off' }    'on';  ...
     'bidschanloc'    'string'    { 'on' 'off' }    'on'; ...
+    'bidstask'       'string'    {}                ''; ...
     'metadata'       'string'    { 'on' 'off' }    'off'; ...
     'eventtype'      'string'    {  }              'value'; ...
     'outputdir'      'string'    { } fullfile(bidsFolder,'derivatives'); ...
@@ -195,6 +204,16 @@ for iSubject = 2:size(bids.participants,1)
             elecFile      = searchparent(subjectFolder{iFold}, '*_electrodes.tsv');
             eventFile     = searchparent(subjectFolder{iFold}, '*_events.tsv');
             eventDescFile = searchparent(subjectFolder{iFold}, '*_events.json');
+            
+            % check the task
+            if ~isempty(opt.bidstask)
+                eegFile       = filterFiles(eegFile      , opt.bidstask);
+                infoFile      = filterFiles(infoFile     , opt.bidstask);
+                channelFile   = filterFiles(channelFile  , opt.bidstask);
+                elecFile      = filterFiles(elecFile     , opt.bidstask);
+                eventDescFile = filterFiles(eventDescFile, opt.bidstask);
+            end
+            
             % raw data
             allFiles = { eegFile.name };
             ind = strmatch( 'json', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) );
@@ -343,6 +362,13 @@ for iSubject = 2:size(bids.participants,1)
                             EEG.chanlocs = convertlocs(chanlocs, 'cart2all');
                         else
                             EEG.chanlocs = chanlocs;
+                        end
+                    else
+                        if ~isfield(EEG.chanlocs, 'theta')
+                            dipfitdefs;
+                            EEG = pop_chanedit(EEG, 'lookup', template_models(4).chanfile);
+                        else
+                            disp('The EEG file has channel locations associated with it, we are keeping them');
                         end
                     end
                     
@@ -519,7 +545,20 @@ end
 % remove bad files
 fileList = fileList(isGoodFile);
 
+% Filter files
+% ------------
+function fileList = filterFiles(fileList, taskList)
+
+keepInd = zeros(1,length(fileList));
+for iFile = 1:length(fileList)
+    if ~isempty(strfind(fileList(iFile).name, taskList))
+        keepInd(iFile) = 1;
+    end
+end
+fileList = fileList(logical(keepInd));
+
 % import JSON or TSV file
+% -----------------------
 function data = loadfile(localFile, globalFile)
 [~,~,ext] = fileparts(localFile);
 data = [];
@@ -539,6 +578,7 @@ elseif ~isempty(globalFile)
 end
 
 % set structure
+% -------------
 function sdata = setallfields(sdata, indices, newdata)
 if isempty(newdata), return; end
 if ~isstruct(newdata), error('Can only assign structures'); end
