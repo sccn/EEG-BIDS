@@ -366,7 +366,7 @@ for iSubj = 1:length(files)
             end
         else
             for iVal = 1:length(files(iSubj).task)
-                strs = [ files(iSubj).task char(files(iSubj).run) char(files(iSubj).session);
+                strs = [ files(iSubj).task char(files(iSubj).run) char(files(iSubj).session) ];
             end
             if length(strs) ~= length(unique(strs))
                 error(sprintf('Subject %s does not have unique task, session and runs for each file', iSubj));
