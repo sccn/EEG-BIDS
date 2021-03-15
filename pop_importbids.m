@@ -364,7 +364,7 @@ for iSubject = 2:size(bids.participants,1)
                             EEG.chanlocs = chanlocs;
                         end
                     else
-                        if ~isfield(EEG.chanlocs, 'theta')
+                        if isempty(EEG.chanlocs(1).theta) || isempty(EEG.chanlocs(1).X) || isempty(EEG.chanlocs(1).sph_theta)
                             dipfitdefs;
                             EEG = pop_chanedit(EEG, 'lookup', template_models(4).chanfile);
                         else
