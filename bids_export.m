@@ -55,8 +55,10 @@
 %  'targetdir' - [string] target directory. Default is 'bidsexport' in the
 %                current folder.
 %
-%  'taskName'  - [string] name of the task. No space are allowed and no
-%                special characters. Default is ''.
+%  'taskName'  - [string] name of the task for all datasets. No space are 
+%                allowed and no special characters. Default is 'Experiment'.
+%                Use 'mixed' for dataset with multiple tasks or specify each
+%                task using files.task.
 %
 %  'README'    - [string] content of the README file. If the string points
 %                to a file that exists on the path, the file is copied.
@@ -333,12 +335,15 @@ for iSubj = 1:length(files)
         end
     end
     
-    % run and sessions
+    % run and sessions and tasks
     if ~isfield(files(iSubj), 'run') || isempty(files(iSubj).run)
         files(iSubj).run = ones(1, length(files(iSubj).file));
     end
     if ~isfield(files(iSubj), 'session') || isempty(files(iSubj).session)
         files(iSubj).session = ones(1, length(files(iSubj).file));
+    end
+    if ~isfield(files(iSubj), 'task') || isempty(files(iSubj).task)
+        [files(iSubj).task{1:length(files(iSubj).file)}] = deal(opt.taskName);
     end
     
     % notes
@@ -355,7 +360,7 @@ for iSubj = 1:length(files)
         end
     end
 
-    % check that no two files have the same session/run
+    % check that no two files have the same session/run and task
     if length(files(iSubj).run) ~= length(files(iSubj).session)
         error(sprintf('Length of session and run differ for subject %s', iSubj));
     else
@@ -366,12 +371,12 @@ for iSubj = 1:length(files)
             end
         else
             for iVal = 1:length(files(iSubj).task)
-                strs = [ files(iSubj).task char(files(iSubj).run) char(files(iSubj).session);
+                strs = strcat(files(iSubj).task, char(files(iSubj).run), char(files(iSubj).session));
             end
             if length(strs) ~= length(unique(strs))
                 error(sprintf('Subject %s does not have unique task, session and runs for each file', iSubj));
             end
-        end            
+        end
     end
 end
 
@@ -516,32 +521,41 @@ end
 % Heuristic for identifying multiple/single-run/sessions
 %--------------------------------------------------------------------------
 for iSubj = 1:length(files)
-    allsubjnruns(iSubj)    = length(unique(files(iSubj).run));
+    allsubjnruns(iSubj)     = length(unique(files(iSubj).run));
     allsubjnsessions(iSubj) = length(unique(files(iSubj).session));
+    allsubjntasks(iSubj)    = length(unique(files(iSubj).task));
 end
-tmpuniqueruns = unique(allsubjnruns);
-tmpuniquesessions = unique(allsubjnsessions);
 
 multsessionflag = 1;
-if length(tmpuniquesessions) == 1 && tmpuniquesessions == 1
+if all(allsubjnsessions == 1)
     multsessionflag = 0;
 end
 
 multrunflag = 1;
-if length(tmpuniqueruns) == 1 && tmpuniqueruns == 1
+if all(allsubjnruns == 1)
     multrunflag = 0;
 end
 
 tmpsessrun = [multsessionflag multrunflag];
-if all(tmpsessrun == [0 0])    % Single-Session Single-Run
-    bidscase = 1';
-elseif all(tmpsessrun == [0 1]) % Single-Session Mult-Run
-    bidscase = 2';
+if all(tmpsessrun == [0 0])    % Single-Session Single-Run 
+    bidscase = 1;
+elseif all(tmpsessrun == [0 1]) % Single-Session Mult-Run 
+    bidscase = 2;
 elseif all(tmpsessrun == [1 0]) % Mult-Session Single-Run
     bidscase = 3;
 elseif all(tmpsessrun == [1 1]) % Mult-Session Mult-Run
     bidscase = 4;
 end
+
+if ~all(allsubjntasks == 1)
+    if bidscase == 1
+        bidscase = 5; % Mult Task: Single-Session Single-Run 
+    end
+    if bidscase == 3
+        bidscase = 6; % Mult Task: Mult-Session Single-Run 
+    end 
+end
+
 %--------------------------------------------------------------------------
 % copy EEG files
 % --------------
@@ -575,21 +589,21 @@ for iSubj = 1:length(files)
     switch bidscase
         case 1 % Single-Session Single-Run
             
-            fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' opt.taskName '_eeg' files(iSubj).file{1}(end-3:end)]);
+            fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' char(files(iSubj).task) '_eeg' files(iSubj).file{1}(end-3:end)]);
             %             copy_data_bids( files(iSubj).file{1}, fileOut, opt.eInfo, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
             copy_data_bids( files(iSubj).file{1}, fileOut, files(iSubj).notes{1}, opt, files(iSubj).chanlocs{1}, opt.copydata);
             
         case 2 % Single-Session Mult-Run
             
             for iRun = 1:length(files(iSubj).run)
-                fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' opt.taskName sprintf('_run-%2.2d', iRun) '_eeg' files(iSubj).file{iRun}(end-3:end) ]);
+                fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' num2str(files(iSubj).run(iRun)) '_eeg' files(iSubj).file{iRun}(end-3:end) ]);
                 copy_data_bids( files(iSubj).file{iRun}, fileOut, files(iSubj).notes{iRun}, opt, files(iSubj).chanlocs{iRun}, opt.copydata);
             end
             
         case 3 % Mult-Session Single-Run
             
             for iSess = 1:length(unique(files(iSubj).session))
-                fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName '_eeg' files(iSubj).file{iSess}(end-3:end)]);
+                fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task) '_eeg' files(iSubj).file{iSess}(end-3:end)]);
                 copy_data_bids( files(iSubj).file{iSess}, fileOut, files(iSubj).notes{iSess}, opt, files(iSubj).chanlocs{iSess}, opt.copydata);
             end
             
@@ -599,7 +613,23 @@ for iSubj = 1:length(files)
                 runindx = find(files(iSubj).session == iSess);
                 for iSet = runindx
                     iRun = files(iSubj).run(iSet);
-                    fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' opt.taskName  sprintf('_run-%2.2d', iRun) '_eeg' files(iSubj).file{iSet}(end-3:end)]);
+                    fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task(iRun)) '_run-' num2str(files(iSubj).run(iRun)) '_eeg' files(iSubj).file{iSet}(end-3:end)]);
+                    copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, opt, files(iSubj).chanlocs{iSet}, opt.copydata);
+                end
+            end
+            
+        case 5 % Mult Task: Single-Session Single-Run 
+            for iTask = 1:length(files(iSubj).task)
+                fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iTask)) '_eeg' files(iSubj).file{iTask}(end-3:end) ]);
+                copy_data_bids( files(iSubj).file{iTask}, fileOut, files(iSubj).notes{iTask}, opt, files(iSubj).chanlocs{iTask}, opt.copydata);
+            end
+            
+        case 6 % Mult Task: Mult-Session Single-Run 
+            for iSess = 1:length(unique(files(iSubj).session))
+                runindx = find(files(iSubj).session == iSess);
+                for iSet = runindx
+                    iTask = files(iSubj).task(iSet);
+                    fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task(iTask)) '_eeg' files(iSubj).file{iSet}(end-3:end)]);
                     copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, opt, files(iSubj).chanlocs{iSet}, opt.copydata);
                 end
             end
@@ -945,11 +975,14 @@ fclose(fid);
 
 % Write electrode file information (electrodes.tsv)
 isTemplate = false;
-if ~isempty(strfind(EEG.chaninfo.filename, 'standard-10-5-cap385.elp')) || ...
+if isfield(EEG.chaninfo, 'filename')
+    if ~isempty(strfind(EEG.chaninfo.filename, 'standard-10-5-cap385.elp')) || ...
       ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005.elc'))
       isTemplate = true;
       disp('Template channel location detected, not exporting electrodes.tsv file');
+    end
 end
+
 if ~isTemplate && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isempty(EEG.chanlocs(2).X)
     fid = fopen( [ fileOut(1:end-7) 'electrodes.tsv' ], 'w');
     fprintf(fid, 'name\tx\ty\tz\n');
