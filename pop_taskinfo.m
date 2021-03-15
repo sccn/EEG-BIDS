@@ -33,7 +33,7 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
     bg = [0.65 0.76 1];
     fg = [0 0 0.4];
     fontSize = 11;
-    tfHeight = 0.04;
+    tfHeight = 0.035;
     
     f = figure('MenuBar', 'None', 'ToolBar', 'None', 'Name', 'BIDS task information -- pop_taskinfo()', 'Color', bg, 'IntegerHandle','off');
     f.Position(3) = 1200;
@@ -54,6 +54,8 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
     top = top - tfHeight - 0.01;
     uicontrol('Style', 'text', 'string', 'Task name (no space)','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '', 'tag', 'TaskName','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
+    top = top - tfHeight - 0.01;
+    uicontrol('Style', 'checkbox', 'string', 'Use dataset "task condition" instead of task above', 'tag', 'Taskname2','BackgroundColor',bg,'fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight], 'callback', 'set(findobj(gcbf, ''tag'', ''TaskName''), ''string'', ''mixed'')'); 
     top = top - tfHeight - 0.01;
     uicontrol('Style', 'text', 'string', 'README (short introduction to the experiment):','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight]);
     top = top - tfHeight*2.2;
