@@ -124,10 +124,12 @@ end
 if ~any(strcmpi(Data.Properties.VariableNames,'age'))
     disp('age variable is missing - this is only an optional field still exporting')
 else
-    for v = 1:length(Data.age)
-        Data.age{v} = str2double(Data.age{v});
+    if ~isnumeric(Data.age)
+        for v = 1:length(Data.age)
+            Data.age{v} = str2double(Data.age{v});
+        end
+        Data.age = cell2mat(Data.age);  % ensure age treated as number
     end
-    Data.age = cell2mat(Data.age);  % ensure age treated as number
 end
 
 % 2nd check if any of those variable should be removed - and feedback if
