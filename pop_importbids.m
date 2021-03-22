@@ -155,7 +155,7 @@ end
 
 if isempty(bids.participants)
     participantFolders = dir(fullfile(bidsFolder, 'sub-*'));
-    bids.participants = { participantFolders.name }';
+    bids.participants = {'dummyRow' participantFolders.name }';
 end
 
 % scan participants
@@ -405,6 +405,18 @@ for iSubject = 2:size(bids.participants,1)
                     % copy information inside dataset
                     EEG.subject = bids.participants{iSubject,1};
                     EEG.session = iFold;
+                    EEG.run = iRun;
+                    
+                    % build `EEG.BIDS` from `bids`
+                    BIDS.gInfo = bids.dataset_description;
+                    BIDS.gInfo.README = bids.README;
+                    BIDS.pInfo = [bids.participants(1,:); bids.participants(iSubject,:)];
+                    BIDS.pInfoDesc = bids.participantsJSON;
+%                     BIDS.eInfo = ;
+                    BIDS.eInfoDesc = bids.data.eventdesc;
+                    BIDS.tInfo = infoData;
+                    EEG.BIDS = BIDS;
+                    EEG.task = task(6:end);
                     
                     if strcmpi(opt.metadata, 'off')
                         if exist(subjectFolderOut{iFold},'dir') ~= 7
@@ -483,7 +495,12 @@ if strcmpi(opt.metadata, 'off')
         error('No dataset were found');
     end
     studyName = fullfile(opt.outputdir, [opt.studyName '.study']);
-    [STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', task);
+    if length(tasklist)~=1 && isempty(opt.bidstask)
+        [STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', 'task-mixed');
+    else
+        [STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', task);
+    end
+    
     if ~isempty(options)
         commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'', %s);', bidsFolder, vararg2str(options));
     else
