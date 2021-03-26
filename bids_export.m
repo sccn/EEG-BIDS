@@ -115,13 +115,15 @@
 %                pInfo.age.Description = 'Age in years';
 %
 %  'eInfo'     - [cell] additional event information columns and their corresponding
-%                event fields in the EEGLAB event structure. Note that
-%                EEGLAB event latency, duration, and type are inserted
-%                automatically as columns "onset" (latency in sec), "duration"
-%                (duration in sec), "value" (EEGLAB event type). For example
-%                { 'HED' 'usertag';
+%                event fields in the EEGLAB event structure in format
+%                { '<BIDS field1>' '<EEG field1>';
+%                  '<BIDS field2>' '<EEG field2>'}
+%                Note that EEGLAB event latency, duration, and type are inserted
+%                automatically as columns "sample" (latency), "onset" (latency in sec), "duration"
+%                (duration in sec), and "value" (EEGLAB event type). For example
+%                { 'sample' 'latency';
 %                  'value' 'type' }
-%                See also 'trial_type parameter.
+%                See also trial_type parameter.
 %
 %  'eInfoDesc' - [struct] structure describing additional or/and original
 %                event fields if you wish to redefine these.
@@ -722,6 +724,7 @@ fid = fopen( [ fileOut(1:end-7) 'events.tsv' ], 'w');
 if isempty(opt.eInfo)
     if isfield(EEG.event, 'onset')          opt.eInfo(end+1,:) = { 'onset'    'onset' };
         else                                opt.eInfo(end+1,:) = { 'onset'    'latency' }; end
+    opt.eInfo(end+1,:) = { 'sample'    'latency' };
     if isfield(EEG.event, 'trial_type')     opt.eInfo(end+1,:) = { 'trial_type'    'trial_type' };
     elseif ~isempty(opt.trialtype)          opt.eInfo(end+1,:) = { 'trial_type'    'xxxx' }; end % to be filled with event type based on opt.trialtype mapping
     if isfield(EEG.event, 'duration')       opt.eInfo(end+1,:) = { 'duration'      'duration' }; end
@@ -731,7 +734,24 @@ if isempty(opt.eInfo)
     if isfield(EEG.event, 'stim_file'),     opt.eInfo(end+1,:) = { 'stim_file'     'stim_file' }; end
     if isfield(EEG.event, 'usertags'),      opt.eInfo(end+1,:) = { 'HED'           'usertags' }; end
 else
-    if ~isempty(opt.trialtype)              opt.eInfo(end+1,:) = { 'trial_type'    'xxxx' }; end
+    bids_fields = opt.eInfo(:,1);
+    if ~any(strcmp(bids_fields,'onset'))
+        if isfield(EEG.event, 'onset')      
+            opt.eInfo(end+1,:) = { 'onset' 'onset' };
+        else
+            opt.eInfo(end+1,:) = { 'onset' 'latency' }; 
+        end
+    end
+    if ~any(strcmp(bids_fields,'sample')) && isfield(EEG.event, 'latency'), opt.eInfo(end+1,:) = { 'sample' 'latency' }; end
+    if ~any(strcmp(bids_fields,'value'))
+        if isfield(EEG.event, 'value')      
+            opt.eInfo(end+1,:) = { 'value' 'value' };
+        else
+            opt.eInfo(end+1,:) = { 'value' 'type' }; 
+        end
+    end
+    if ~any(strcmp(bids_fields,'duration')) && isfield(EEG.event, 'duration'), opt.eInfo(end+1,:) = { 'duration' 'duration' }; end
+    if ~isempty(opt.trialtype), opt.eInfo(end+1,:) = { 'trial_type' 'xxxx' }; end
 end
 if ~isempty(opt.stimuli)
     opt.eInfo(end+1,:) = { 'stim_file' '' };
