@@ -92,6 +92,9 @@
 %                tInfo.InstitutionalDepartmentName = 'Institute of Neural Computation';
 %                tInfo.PowerLineFrequency = 50;
 %                tInfo.SoftwareFilters = struct('NotchFilter', struct('cutof', '50 (Hz)'));
+%                tInfo.HardwareFilters = struct('HighpassRCFilter',struct('HalfAmplitudeCutoff', '0.0159 Hz', 'RollOff','6dB/Octave'))
+%                Notice that SoftwareFilters and HardwareFilters take struct.
+%
 %
 %  'pInfo'     - [cell] cell array of participant values, with one row
 %                per participants. The first row contains columns names.
@@ -1089,7 +1092,7 @@ tInfoFields = {...
     'ManufacturersModelName' 'OPTIONAL' 'char' '';
     'CapManufacturer' 'RECOMMENDED' 'char' 'Unknown';
     'CapManufacturersModelName' 'OPTIONAL' 'char' '';
-    'HardwareFilters' 'OPTIONAL' 'struct' struct([]);
+    'HardwareFilters' 'OPTIONAL' 'struct' 'n/a';
     'SoftwareFilters' 'REQUIRED' 'struct' 'n/a';
     'RecordingDuration' 'RECOMMENDED' '' 'n/a';
     'RecordingType' 'RECOMMENDED' 'char' '';
