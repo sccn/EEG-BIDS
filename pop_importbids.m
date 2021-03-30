@@ -145,17 +145,17 @@ bids.participants = '';
 if exist(participantsFile,'File')
     bids.participants = importtsv( participantsFile );
 end
+% if no participants.tsv, use subjects folder names as their IDs
+if isempty(bids.participants)
+    participantFolders = dir(fullfile(bidsFolder, 'sub-*'));
+    bids.participants = {'participant_id' participantFolders.name }';
+end
 
-% load participant file
+% load participant sidecar file
 participantsJSONFile = fullfile(bidsFolder, 'participants.json');
 bids.participantsJSON = '';
 if exist(participantsJSONFile,'File')
     bids.participantsJSON = jsondecode(importalltxt( participantsJSONFile ));
-end
-
-if isempty(bids.participants)
-    participantFolders = dir(fullfile(bidsFolder, 'sub-*'));
-    bids.participants = {'dummyRow' participantFolders.name }';
 end
 
 % scan participants
@@ -406,17 +406,17 @@ for iSubject = 2:size(bids.participants,1)
                     EEG.subject = bids.participants{iSubject,1};
                     EEG.session = iFold;
                     EEG.run = iRun;
+                    EEG.task = task(6:end); %TODO
                     
                     % build `EEG.BIDS` from `bids`
                     BIDS.gInfo = bids.dataset_description;
                     BIDS.gInfo.README = bids.README;
-                    BIDS.pInfo = [bids.participants(1,:); bids.participants(iSubject,:)];
+                    BIDS.pInfo = [bids.participants(1,:); bids.participants(iSubject,:)]; % header -> iSubject info
                     BIDS.pInfoDesc = bids.participantsJSON;
 %                     BIDS.eInfo = ;
                     BIDS.eInfoDesc = bids.data.eventdesc;
                     BIDS.tInfo = infoData;
                     EEG.BIDS = BIDS;
-                    EEG.task = task(6:end);
                     
                     if strcmpi(opt.metadata, 'off')
                         if exist(subjectFolderOut{iFold},'dir') ~= 7
