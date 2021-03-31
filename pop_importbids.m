@@ -145,17 +145,17 @@ bids.participants = '';
 if exist(participantsFile,'File')
     bids.participants = importtsv( participantsFile );
 end
+% if no participants.tsv, use subjects folder names as their IDs
+if isempty(bids.participants)
+    participantFolders = dir(fullfile(bidsFolder, 'sub-*'));
+    bids.participants = {'participant_id' participantFolders.name }';
+end
 
-% load participant file
+% load participant sidecar file
 participantsJSONFile = fullfile(bidsFolder, 'participants.json');
 bids.participantsJSON = '';
 if exist(participantsJSONFile,'File')
     bids.participantsJSON = jsondecode(importalltxt( participantsJSONFile ));
-end
-
-if isempty(bids.participants)
-    participantFolders = dir(fullfile(bidsFolder, 'sub-*'));
-    bids.participants = { participantFolders.name }';
 end
 
 % scan participants
@@ -378,18 +378,22 @@ for iSubject = 2:size(bids.participants,1)
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
                     eventDesc = loadfile( [ eegFileRaw(1:end-8) '_events.json' ], eventDescFile);
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
+                    bids.eventInfo = {}; % for eInfo. Default is empty. If replacing EEG.event with events.tsv, match field names accordingly
                     if strcmpi(opt.bidsevent, 'on')                        
                         events = struct([]);
                         indTrial = strmatch( opt.eventtype, lower(eventData(1,:)), 'exact');
                         for iEvent = 2:size(eventData,1)
                             events(end+1).latency  = eventData{iEvent,1}*EEG.srate+1; % convert to samples
                             events(end).duration   = eventData{iEvent,2}*EEG.srate;   % convert to samples
+                            bids.eventInfo = {'onset' 'latency'; 'duration' 'duration'}; % order in events.tsv: onset duration
                             if ~isempty(indTrial)
                                 events(end).type = eventData{iEvent,indTrial};
+                                bids.eventInfo(end+1,:) = { opt.eventtype 'type' };
                             end
                             for iField = 1:length(eventData(1,:))
                                 if ~strcmpi(eventData{1,iField}, 'onset') && ~strcmpi(eventData{1,iField}, 'duration')
                                     events(end).(eventData{1,iField}) = eventData{iEvent,iField};
+                                    bids.eventInfo(end+1,:) = { eventData{1,iField} eventData{1,iField} };
                                 end
                             end
                             %                         if size(eventData,2) > 3 && strcmpi(eventData{1,4}, 'response_time') && ~strcmpi(eventData{iEvent,4}, 'n/a')
@@ -400,11 +404,25 @@ for iSubject = 2:size(bids.participants,1)
                         end
                         EEG.event = events;
                         EEG = eeg_checkset(EEG, 'eventconsistency');
+                        
+                        
                     end
                     
                     % copy information inside dataset
                     EEG.subject = bids.participants{iSubject,1};
                     EEG.session = iFold;
+                    EEG.run = iRun;
+                    EEG.task = task(6:end); % task is currently of format "task-<Task name>"
+                    
+                    % build `EEG.BIDS` from `bids`
+                    BIDS.gInfo = bids.dataset_description;
+                    BIDS.gInfo.README = bids.README;
+                    BIDS.pInfo = [bids.participants(1,:); bids.participants(iSubject,:)]; % header -> iSubject info
+                    BIDS.pInfoDesc = bids.participantsJSON;
+                    BIDS.eInfo = bids.eventInfo;
+                    BIDS.eInfoDesc = bids.data.eventdesc;
+                    BIDS.tInfo = infoData;
+                    EEG.BIDS = BIDS;
                     
                     if strcmpi(opt.metadata, 'off')
                         if exist(subjectFolderOut{iFold},'dir') ~= 7
@@ -483,7 +501,12 @@ if strcmpi(opt.metadata, 'off')
         error('No dataset were found');
     end
     studyName = fullfile(opt.outputdir, [opt.studyName '.study']);
-    [STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', task);
+    if length(tasklist)~=1 && isempty(opt.bidstask)
+        [STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', 'task-mixed');
+    else
+        [STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', task);
+    end
+    
     if ~isempty(options)
         commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'', %s);', bidsFolder, vararg2str(options));
     else
