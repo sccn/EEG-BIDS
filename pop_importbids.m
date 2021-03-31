@@ -412,7 +412,7 @@ for iSubject = 2:size(bids.participants,1)
                     EEG.subject = bids.participants{iSubject,1};
                     EEG.session = iFold;
                     EEG.run = iRun;
-                    EEG.task = task(6:end); %TODO
+                    EEG.task = task(6:end); % task is currently of format "task-<Task name>"
                     
                     % build `EEG.BIDS` from `bids`
                     BIDS.gInfo = bids.dataset_description;
