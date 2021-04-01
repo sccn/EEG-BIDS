@@ -391,7 +391,7 @@ for iSubject = 2:size(bids.participants,1)
                                 bids.eventInfo(end+1,:) = { opt.eventtype 'type' };
                             end
                             for iField = 1:length(eventData(1,:))
-                                if ~strcmpi(eventData{1,iField}, 'onset') && ~strcmpi(eventData{1,iField}, 'duration')
+                                if ~any(strcmpi(eventData{1,iField}, {'onset', 'duration', opt.eventtype}))
                                     events(end).(eventData{1,iField}) = eventData{iEvent,iField};
                                     bids.eventInfo(end+1,:) = { eventData{1,iField} eventData{1,iField} };
                                 end
