@@ -383,6 +383,9 @@ for iSubject = 2:size(bids.participants,1)
                         indTrial = strmatch( opt.eventtype, lower(eventData(1,:)), 'exact');
                         for iEvent = 2:size(eventData,1)
                             events(end+1).latency  = eventData{iEvent,1}*EEG.srate+1; % convert to samples
+                            if EEG.trials > 1
+                                events(end).epoch = floor(events(end).latency/EEG.pnts)+1;
+                            end
                             events(end).duration   = eventData{iEvent,2}*EEG.srate;   % convert to samples
                             if ~isempty(indTrial)
                                 events(end).type = eventData{iEvent,indTrial};
