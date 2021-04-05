@@ -34,12 +34,12 @@ if exist(bidsFolder, 'dir') && bidsFolder(end) ~= '.'
     files = dir(bidsFolder);
     [files(:).folder] = deal(bidsFolder);
     %fprintf('Scanning %s\n', bidsFolder);
-    
     for iFile = 1:length(files)
         tasklistTmp = bids_gettaskfromfolder(fullfile(files(iFile).folder, fullfile(files(iFile).name)));
         if ~isempty(tasklistTmp)
-            if isempty(tasklist) || all(ismember(tasklist, tasklistTmp) == 0)
-                tasklist = [ tasklist tasklistTmp ];
+            newTasks = tasklistTmp(~ismember(tasklistTmp, tasklist));
+            if ~isempty(newTasks)
+                tasklist = [ tasklist newTasks ];
             end
         end
     end

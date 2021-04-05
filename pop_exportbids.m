@@ -148,7 +148,7 @@ pInfo = {}; % each EEG file has its own pInfo --> need to aggregate
 if isfield(EEG(1), 'BIDS') && isfield(EEG(1).BIDS,'pInfo') 
     pInfo = EEG(1).BIDS.pInfo(1,:);
 end
-subjects = struct('file',{}, 'session', [], 'run', []);
+subjects = struct('file',{}, 'session', [], 'run', [], 'task', {});
 for iSubj = 1:length(uniqueSubjects)
     indS = strmatch( uniqueSubjects{iSubj}, allSubjects, 'exact' );
     for iFile = 1:length(indS)
@@ -162,6 +162,10 @@ for iSubj = 1:length(uniqueSubjects)
             subjects(iSubj).run(iFile) = EEG(indS(iFile)).run;
         else
             subjects(iSubj).run(iFile) = 1;  % Assume only one run
+        end
+        if isfield(EEG(indS(iFile)), 'task') && ~isempty(EEG(indS(iFile)).task)
+            subjects(iSubj).task{iFile} = EEG(indS(iFile)).task; 
+            % blank task field will be filled in bids_export.m
         end
     end
     if isfield(EEG(indS(1)), 'BIDS') && isfield(EEG(indS(1)).BIDS,'pInfo')

@@ -41,3 +41,5 @@ v5.1 - allow calculating dataset meta-data quality
 v5.2 - fix issue with history
 
 v5.3 - adding capability to export stimuli
+
+v5.3.1 - update documentation for tInfo.HardwareFilters; fix bug defaults fields not filled for eInfo
