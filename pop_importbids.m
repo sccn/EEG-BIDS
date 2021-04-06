@@ -440,7 +440,7 @@ for iSubject = 2:size(bids.participants,1)
                 
                 % custom fields
                 for iCol = 2:size(bids.participants,2)
-                    commands = { commands{:} bids.participants{1,iCol} bids.participants{iSubject,iCol} };
+                    commands = { commands{:} bids.participants{1,iCol} num2str(bids.participants{iSubject,iCol}) };
                 end
                 
                 count = count+1;
