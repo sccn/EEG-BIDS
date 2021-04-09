@@ -268,7 +268,7 @@ opt = finputcheck(varargin, {
     'CHANGES'   'string'  {}    '' ;
     'copydata'   'real'   [0 1] 1 }, 'bids_export');
 if isstr(opt), error(opt); end
-if size(opt.stimuli,1) == 1 || size(opt.stimuli,1) == 1
+if size(opt.stimuli,1) == 1 || size(opt.stimuli,2) == 1
     opt.stimuli = reshape(opt.stimuli, [2 length(opt.stimuli)/2])';
 end
 
@@ -492,14 +492,13 @@ end
 % Write stimulus files
 % --------------------
 if ~isempty(opt.stimuli)
-    if size(opt.stimuli,1) == 1, opt.stimuli = opt.stimuli'; end
-    disp('Copying images...');
+    disp('Copying stimuli...');
     for iStim = 1:size(opt.stimuli,1)
         [~,fileName,Ext] = fileparts(opt.stimuli{iStim,2});
         if ~isempty(dir(opt.stimuli{iStim,2}))
             copyfile(opt.stimuli{iStim,2}, fullfile(opt.targetdir, 'stimuli', [ fileName Ext ]));
         else
-            fprintf('Warning: cannot find stimulus file %s\n', opt.codefiles{iFile});
+            fprintf('Warning: cannot find stimulus file %s\n', opt.stimuli{iStim,2});
         end
         opt.stimuli{iStim,2} = [ fileName,Ext ];
     end
