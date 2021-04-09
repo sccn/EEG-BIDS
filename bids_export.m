@@ -633,8 +633,7 @@ for iSubj = 1:length(files)
             for iSess = 1:length(unique(files(iSubj).session))
                 runindx = find(files(iSubj).session == iSess);
                 for iSet = runindx
-                    iTask = files(iSubj).task(iSet);
-                    fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task(iTask)) '_eeg' files(iSubj).file{iSet}(end-3:end)]);
+                    fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task(iSet)) '_eeg' files(iSubj).file{iSet}(end-3:end)]);
                     copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, opt, files(iSubj).chanlocs{iSet}, opt.copydata);
                 end
             end
