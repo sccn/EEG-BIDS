@@ -170,6 +170,14 @@
 %  'chanlookup' - [file] look up channel locations based on file. Default
 %                 not to look up channel location.
 %
+%  'coordsys'  -  [struct] Used to fill *_coordsys.json for chanlocs without
+%                 ear and nose anatomical landmarks. EEGCoordinateUnits and
+%                 EEGCoordinateSystem are required, and EEGCoordinateSystemDescription
+%                 is required of EEGCoordinateSystem is 'Other'
+%                 For example coordsys.EEGCoordinateUnits  = 'mm';
+%                             coordsys.EEGCoordinateSystem = 'Other';
+%                             coordsys.EEGCoordinateSystemDescription = '<text of or link to description>'; 
+%
 %  'anattype'  - [string] type of anatomical MRI image ('T1w', 'T2w', etc...)
 %                see BIDS specification for more information.
 %
@@ -262,6 +270,7 @@ opt = finputcheck(varargin, {
     'anattype'  ''        {}    'T1w';
     'chanlocs'  ''        {}    '';
     'chanlookup' 'string' {}    '';
+    'coordsys'  'struct'  {}    struct([]);
     'defaced'   'string'  {'on' 'off'}    'on';
     'createids' 'string'  {'on' 'off'}    'on';
     'README'    'string'  {}    '';
@@ -955,8 +964,12 @@ if ~isempty(chanlocs)
         error(sprintf('Number of channels in channel location inconsistent with data for file %s', fileIn));
     end
 end
+
 if ischar(opt.chanlookup) && ~isempty(opt.chanlookup)
-    EEG=pop_chanedit(EEG, 'lookup', opt.chanlookup);
+    EEG = pop_chanedit(EEG, 'lookup', opt.chanlookup);
+    if isempty(opt.coordsys)
+        EEG = eeg_setcoordsys(EEG, 'ctf');
+    end
 end
 
 if isempty(EEG.chanlocs)
@@ -1002,7 +1015,7 @@ isTemplate = false;
 if isfield(EEG.chaninfo, 'filename')
     if ~isempty(strfind(EEG.chaninfo.filename, 'standard-10-5-cap385.elp')) || ...
       ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005.elc'))||...
-      ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005_BIDS.ced'))
+      ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005.ced'))
       isTemplate = true;
       disp('Template channel location detected, not exporting electrodes.tsv file');
     end
@@ -1022,9 +1035,15 @@ if ~isTemplate && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isemp
     fclose(fid);
     
     % Write coordinate file information (coordsystem.json)
-    coordsystemStruct.EEGCoordinateUnits = 'mm';
-    coordsystemStruct.EEGCoordinateSystem = 'CTF'; % Change as soon as possible to EEGLAB
-    coordsystemStruct.EEGCoordinateSystemDescription = 'EEGLAB';
+    if ~isempty(opt.coordsys)
+        coordsystemStruct = opt.coordsys;
+    elseif isfield(EEG.chaninfo, 'coordsys')
+        coordsystemStruct.EEGCoordinateUnits = 'mm';
+        coordsystemStruct.EEGCoordinateSystem = EEG.chaninfo.coordsys;
+        coordsystemStruct.EEGCoordinateSystemDescription = 'https://eeglab.org/tutorials/ConceptsGuide/coordinateSystem.html';
+    else
+        error('bids_export.m: Please specify coordinate system of digitized channel locations using the `coordsys` optional input.')
+    end
     writejson( [ fileOut(1:end-7) 'coordsystem.json' ], coordsystemStruct);
 end
 
