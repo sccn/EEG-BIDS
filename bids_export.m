@@ -173,7 +173,7 @@
 %  'coordsys'  -  [struct] Used to fill *_coordsys.json for chanlocs without
 %                 ear and nose anatomical landmarks. EEGCoordinateUnits and
 %                 EEGCoordinateSystem are required, and EEGCoordinateSystemDescription
-%                 is required of EEGCoordinateSystem is 'Other'
+%                 is required if EEGCoordinateSystem is 'Other'
 %                 For example coordsys.EEGCoordinateUnits  = 'mm';
 %                             coordsys.EEGCoordinateSystem = 'Other';
 %                             coordsys.EEGCoordinateSystemDescription = '<text of or link to description>'; 
