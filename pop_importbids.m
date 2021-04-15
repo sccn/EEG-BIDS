@@ -504,7 +504,7 @@ if strcmpi(opt.metadata, 'off')
         error('No dataset were found');
     end
     studyName = fullfile(opt.outputdir, [opt.studyName '.study']);
-    if length(tasklist)~=1 && isempty(opt.bidstask)
+    if exist('tasklist','var') && length(tasklist)~=1 && isempty(opt.bidstask)
         [STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', 'task-mixed');
     else
         [STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', task);
