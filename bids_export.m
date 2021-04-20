@@ -268,7 +268,7 @@ opt = finputcheck(varargin, {
     'CHANGES'   'string'  {}    '' ;
     'copydata'   'real'   [0 1] 1 }, 'bids_export');
 if isstr(opt), error(opt); end
-if size(opt.stimuli,1) == 1 || size(opt.stimuli,1) == 1
+if size(opt.stimuli,1) == 1 || size(opt.stimuli,2) == 1
     opt.stimuli = reshape(opt.stimuli, [2 length(opt.stimuli)/2])';
 end
 
@@ -492,14 +492,13 @@ end
 % Write stimulus files
 % --------------------
 if ~isempty(opt.stimuli)
-    if size(opt.stimuli,1) == 1, opt.stimuli = opt.stimuli'; end
-    disp('Copying images...');
+    disp('Copying stimuli...');
     for iStim = 1:size(opt.stimuli,1)
         [~,fileName,Ext] = fileparts(opt.stimuli{iStim,2});
         if ~isempty(dir(opt.stimuli{iStim,2}))
             copyfile(opt.stimuli{iStim,2}, fullfile(opt.targetdir, 'stimuli', [ fileName Ext ]));
         else
-            fprintf('Warning: cannot find stimulus file %s\n', opt.codefiles{iFile});
+            fprintf('Warning: cannot find stimulus file %s\n', opt.stimuli{iStim,2});
         end
         opt.stimuli{iStim,2} = [ fileName,Ext ];
     end
@@ -633,8 +632,7 @@ for iSubj = 1:length(files)
             for iSess = 1:length(unique(files(iSubj).session))
                 runindx = find(files(iSubj).session == iSess);
                 for iSet = runindx
-                    iTask = files(iSubj).task(iSet);
-                    fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task(iTask)) '_eeg' files(iSubj).file{iSet}(end-3:end)]);
+                    fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task(iSet)) '_eeg' files(iSubj).file{iSet}(end-3:end)]);
                     copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, opt, files(iSubj).chanlocs{iSet}, opt.copydata);
                 end
             end
