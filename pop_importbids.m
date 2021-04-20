@@ -366,7 +366,7 @@ for iSubject = 2:size(bids.participants,1)
                     else
                         if isempty(EEG.chanlocs(1).theta) || isempty(EEG.chanlocs(1).X) || isempty(EEG.chanlocs(1).sph_theta)
                             dipfitdefs;
-                            EEG = pop_chanedit(EEG, 'lookup', template_models(4).chanfile);
+                            EEG = pop_chanedit(EEG, 'lookup', template_models(2).chanfile);
                         else
                             disp('The EEG file has channel locations associated with it, we are keeping them');
                         end
