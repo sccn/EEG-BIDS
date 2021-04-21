@@ -249,9 +249,9 @@ for iSubject = 2:size(bids.participants,1)
             % skip most import if set file with no need for modication
             for iFile = 1:length(eegFileRawAll)
                 
-                eegFileRaw = eegFileRawAll{iFile};
-                [~,tmpFileName,fileExt] = fileparts(eegFileRaw);
-                eegFileRaw     = fullfile(subjectFolder{   iFold}, eegFileRaw);
+                eegFileName = eegFileRawAll{iFile};
+                [~,tmpFileName,fileExt] = fileparts(eegFileName);
+                eegFileRaw     = fullfile(subjectFolder{   iFold}, eegFileName);
                 eegFileNameOut = fullfile(subjectFolderOut{iFold}, [ tmpFileName '.set' ]);
                 
                 % what is the run
@@ -282,8 +282,11 @@ for iSubject = 2:size(bids.participants,1)
                         end
                     end
                 end
-                if isempty(findstr('ses', tmpFileName(underScores(end-1)+1:underScores(end)-1)))
-                    task = tmpFileName(underScores(end-1)+1:underScores(end)-1);
+                if contains(tmpFileName,'task')
+                    tStart = strfind(tmpFileName,'task');
+                    tEnd = underScores - tStart; 
+                    tEnd = min(tEnd(tEnd>0)) + tStart - 1;
+                    task = tmpFileName(tStart:tEnd);
                 end
                 
                 if ~strcmpi(fileExt, '.set') || strcmpi(opt.bidsevent, 'on') || strcmpi(opt.bidschanloc, 'on') || ~strcmpi(opt.outputdir, bidsFolder)
@@ -293,7 +296,7 @@ for iSubject = 2:size(bids.participants,1)
                             if strcmpi(opt.metadata, 'on')
                                 EEG = pop_loadset( 'filename', eegFileRaw, 'loadmode', 'info' );
                             else
-                                EEG = pop_loadset( 'filename', eegFileRaw );
+                                EEG = pop_loadset( 'filename', eegFileName, 'filepath', subjectFolder{iFold});
                             end
                         case {'.bdf','.edf'}
                             EEG = pop_biosig( eegFileRaw ); % no way to read meta data only (because events in channel)
