@@ -175,6 +175,23 @@ end
 if ~isempty(pInfo)
     options = [options 'pInfo' {pInfo}];
 end
+
+% use other EEG.BIDS fields as input options
+if isfield(EEG(1), 'BIDS')
+    if isfield(EEG(1).BIDS,'pInfoDesc') && ~isempty(EEG(1).BIDS.pInfoDesc) 
+        pInfoDesc = EEG(1).BIDS.pInfoDesc;
+        options = [options 'pInfoDesc' {pInfoDesc}];
+    end
+    if isfield(EEG(1).BIDS,'eInfo') && ~isempty(EEG(1).BIDS.eInfo) 
+        eInfo = EEG(1).BIDS.eInfo;
+        options = [options 'eInfo' {eInfo}];
+    end
+    if isfield(EEG(1).BIDS,'eInfoDesc') && ~isempty(EEG(1).BIDS.eInfoDesc)
+        eInfoDesc = EEG(1).BIDS.eInfoDesc;
+        options = [options 'eInfoDesc' {eInfoDesc}];
+    end
+end
+
 bids_export(subjects, options{:});
 disp('Done');
 
