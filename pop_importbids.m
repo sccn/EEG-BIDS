@@ -384,6 +384,7 @@ for iSubject = 2:size(bids.participants,1)
                     bids.eventInfo = {}; % for eInfo. Default is empty. If replacing EEG.event with events.tsv, match field names accordingly
                     if strcmpi(opt.bidsevent, 'on')                        
                         events = struct([]);
+                        indSample = strmatch('sample', lower(eventData(1,:)), 'exact');
                         indTrial = strmatch( opt.eventtype, lower(eventData(1,:)), 'exact');
                         for iEvent = 2:size(eventData,1)
                             events(end+1).latency  = eventData{iEvent,1}*EEG.srate+1; % convert to samples
@@ -392,12 +393,16 @@ for iSubject = 2:size(bids.participants,1)
                             end
                             events(end).duration   = eventData{iEvent,2}*EEG.srate;   % convert to samples
                             bids.eventInfo = {'onset' 'latency'; 'duration' 'duration'}; % order in events.tsv: onset duration
+                            if ~isempty(indSample)
+                                events(end).sample = eventData{iEvent,indSample} + 1;
+                                bids.eventInfo(end+1,:) = {'sample' 'sample'};
+                            end
                             if ~isempty(indTrial)
                                 events(end).type = eventData{iEvent,indTrial};
                                 bids.eventInfo(end+1,:) = { opt.eventtype 'type' };
-                            end
+                            end                           
                             for iField = 1:length(eventData(1,:))
-                                if ~any(strcmpi(eventData{1,iField}, {'onset', 'duration', opt.eventtype}))
+                                if ~any(strcmpi(eventData{1,iField}, {'onset', 'duration', 'sample', opt.eventtype}))
                                     events(end).(eventData{1,iField}) = eventData{iEvent,iField};
                                     bids.eventInfo(end+1,:) = { eventData{1,iField} eventData{1,iField} };
                                 end

@@ -1007,7 +1007,7 @@ isTemplate = false;
 if isfield(EEG.chaninfo, 'filename')
     if ~isempty(strfind(EEG.chaninfo.filename, 'standard-10-5-cap385.elp')) || ...
       ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005.elc'))||...
-      ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005_BIDS.ced'))
+      ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005.ced'))
       isTemplate = true;
       disp('Template channel location detected, not exporting electrodes.tsv file');
     end
