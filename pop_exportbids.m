@@ -87,22 +87,6 @@ if nargin < 3 && ~ischar(STUDY)
         EEG = pop_participantinfo(EEG, STUDY, 'default');
         EEG = pop_taskinfo(EEG, 'default');
     end
-    
-    % rearrange information in BIDS structures
-    if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'README') 
-        options = [options 'README' {EEG(1).BIDS.gInfo.README}];
-        EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'README');
-    end
-    if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'TaskName') 
-        options = [options 'taskName' {EEG(1).BIDS.gInfo.TaskName}];
-        EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'TaskName');
-    end
-    bidsFieldsFromALLEEG = fieldnames(EEG(1).BIDS); % All EEG should share same BIDS info -> using EEG(1)
-    for f=1:numel(bidsFieldsFromALLEEG)
-        options = [options bidsFieldsFromALLEEG{f} {EEG(1).BIDS.(bidsFieldsFromALLEEG{f})}];
-    end        
-
-    
 elseif ischar(STUDY)
     command = STUDY;
     fig = EEG;
@@ -121,6 +105,22 @@ elseif ischar(STUDY)
     return
 else
     options = varargin;
+end
+  
+% rearrange information in BIDS structures
+if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'README')
+    options = [options 'README' {EEG(1).BIDS.gInfo.README}];
+    EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'README');
+end
+if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'TaskName')
+    options = [options 'taskName' {EEG(1).BIDS.gInfo.TaskName}];
+    EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'TaskName');
+end
+
+bidsFieldsFromALLEEG = fieldnames(EEG(1).BIDS); % All EEG should share same BIDS info  -> using EEG(1)
+% tInfo.SubjectArtefactDescription is not shared, arguments passed as `notes` below
+for f=1:numel(bidsFieldsFromALLEEG)
+    options = [options bidsFieldsFromALLEEG{f} {EEG(1).BIDS.(bidsFieldsFromALLEEG{f})}];
 end
 
 % get subjects and sessions
@@ -166,6 +166,10 @@ for iSubj = 1:length(uniqueSubjects)
         if isfield(EEG(indS(iFile)), 'task') && ~isempty(EEG(indS(iFile)).task)
             subjects(iSubj).task{iFile} = EEG(indS(iFile)).task; 
             % blank task field will be filled in bids_export.m
+        end
+        if isfield(EEG(indS(iFile)).BIDS.tInfo, 'SubjectArtefactDescription')...
+                && ~isempty(EEG(indS(iFile)).BIDS.tInfo.SubjectArtefactDescription)
+            subjects(iSubj).notes{iFile} = EEG(indS(iFile)).BIDS.tInfo.SubjectArtefactDescription;
         end
     end
     if isfield(EEG(indS(1)), 'BIDS') && isfield(EEG(indS(1)).BIDS,'pInfo')

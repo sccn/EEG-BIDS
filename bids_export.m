@@ -55,10 +55,11 @@
 %  'targetdir' - [string] target directory. Default is 'bidsexport' in the
 %                current folder.
 %
-%  'taskName'  - [string] name of the task for all datasets. No space are 
-%                allowed and no special characters. Default is 'Experiment'.
-%                Use 'mixed' for dataset with multiple tasks or specify each
-%                task using files.task.
+%  'taskName'  - [string] name of the task for all datasets. No spaces and
+%                special characters are allowed. Default is 'Experiment'
+%                if no tasks are detected, '<taskname>' when single task detected,
+%				 and 'mixed' when multiple tasks detected. Individual file
+%			     task can be specified using files.task
 %
 %  'README'    - [string] content of the README file. If the string points
 %                to a file that exists on the path, the file is copied.
@@ -506,7 +507,11 @@ end
 
 % check task info
 % ---------------
-opt.tInfo(1).TaskName = opt.taskName;
+if length(unique([files(:).task])) == 1
+    opt.tInfo(1).TaskName = files(1).task{1};
+else
+    opt.tInfo(1).TaskName = 'mixed';
+end
 
 % load channel information
 % ------------------------
@@ -1002,7 +1007,7 @@ isTemplate = false;
 if isfield(EEG.chaninfo, 'filename')
     if ~isempty(strfind(EEG.chaninfo.filename, 'standard-10-5-cap385.elp')) || ...
       ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005.elc'))||...
-      ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005_BIDS.ced'))
+      ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005.ced'))
       isTemplate = true;
       disp('Template channel location detected, not exporting electrodes.tsv file');
     end
