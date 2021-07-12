@@ -1025,7 +1025,7 @@ if ~isTemplate && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isemp
     coordsystemStruct.EEGCoordinateUnits = 'mm';
     coordsystemStruct.EEGCoordinateSystem = 'CTF'; % Change as soon as possible to EEGLAB
     coordsystemStruct.EEGCoordinateSystemDescription = 'EEGLAB';
-    writejson( [ fileOut(1:end-7) 'coordsystem.json' ], coordsystemStruct);
+    jsonwrite( [ fileOut(1:end-7) 'coordsystem.json' ], coordsystemStruct);
 end
 
 % Write task information (eeg.json) Note: depends on channels
