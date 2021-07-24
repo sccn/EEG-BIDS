@@ -136,7 +136,11 @@ end
 dataset_descriptionFile = fullfile(bidsFolder, 'dataset_description.json');
 bids.dataset_description = '';
 if exist(dataset_descriptionFile,'File')
-    bids.dataset_description = jsondecode(importalltxt( dataset_descriptionFile ));
+    if exist('jsondecode.m','file')
+        bids.dataset_description = jsondecode(importalltxt( dataset_descriptionFile ));
+    else
+        bids.dataset_description = jsonread(dataset_descriptionFile);
+    end
 end
 
 % load participant file
@@ -155,7 +159,11 @@ end
 participantsJSONFile = fullfile(bidsFolder, 'participants.json');
 bids.participantsJSON = '';
 if exist(participantsJSONFile,'File')
-    bids.participantsJSON = jsondecode(importalltxt( participantsJSONFile ));
+    if exist('jsondecode.m','file')
+        bids.participantsJSON = jsondecode(importalltxt( participantsJSONFile ));
+    else
+        bids.participantsJSON = jsonread(participantsJSONFile);
+    end
 end
 
 % scan participants
@@ -601,13 +609,21 @@ if ~isempty(localFile)
     if strcmpi(ext, '.tsv')
         data = importtsv( fullfile(localFile(1).folder, localFile(1).name));
     else
-        data = jsondecode( importalltxt( fullfile(localFile(1).folder, localFile(1).name) ));
+        if exist('jsondecode.m','file')
+            data = jsondecode( importalltxt( fullfile(localFile(1).folder, localFile(1).name) ));
+        else
+            data = jsonread(fullfile(localFile(1).folder, localFile(1).name));
+        end
     end        
 elseif ~isempty(globalFile)
     if strcmpi(ext, '.tsv')
         data = importtsv( fullfile(globalFile(1).folder, globalFile(1).name));
     else
-        data = jsondecode( importalltxt( fullfile(globalFile(1).folder, globalFile(1).name) ));
+        if exist('jsondecode.m','file')
+            data = jsondecode( importalltxt( fullfile(globalFile(1).folder, globalFile(1).name) ));
+        else
+            data = jsonread(fullfile(globalFile(1).folder, globalFile(1).name));
+        end
     end
 end
 
