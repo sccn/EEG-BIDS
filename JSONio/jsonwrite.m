@@ -10,7 +10,7 @@ function varargout = jsonwrite(varargin)
 %
 % FORMAT [...] = jsonwrite(...,opts)
 % opts     - structure or list of name/value pairs of optional parameters:
-%              indent: string to use for indentation [Default: '']
+%              prettyPrint: indent output [Default: false]
 %              replacementStyle: string to control how non-alphanumeric
 %                characters are replaced {'underscore','hex','delete','nop'}
 %                [Default: 'underscore']
@@ -22,13 +22,14 @@ function varargout = jsonwrite(varargin)
 %   jsonencode: https://www.mathworks.com/help/matlab/ref/jsonencode.html
 
 % Guillaume Flandin
-% $Id: jsonwrite.m 7526 2019-02-06 14:33:18Z guillaume $
+% $Id: spm_jsonwrite.m 8031 2020-12-10 13:37:00Z guillaume $
 
 
 %-Input parameters
 %--------------------------------------------------------------------------
 opts = struct(...
     'indent','',...
+    'prettyprint',false,...
     'replacementstyle','underscore',...
     'convertinfandnan',true);
 opt  = {struct([])};
@@ -60,6 +61,9 @@ fn = fieldnames(opt);
 for i=1:numel(fn)
     if ~isfield(opts,lower(fn{i})), warning('Unknown option "%s".',fn{i}); end
     opts.(lower(fn{i})) = opt.(fn{i});
+end
+if opts.prettyprint
+    opts.indent = '  ';
 end
 optregistry(opts);
 
