@@ -566,7 +566,7 @@ while ~any(arrayfun(@(x) strcmp(lower(x.name),'dataset_description.json'), dir(p
     parent = fileparts(parent);
 end
 if isempty(outFile)
-    outFile = filterHiddenFile(folder, dir(fullfile(parent, fileName)));
+    outFile = filterHiddenFile(parent, dir(fullfile(parent, fileName)));
 end
 
 function fileList = filterHiddenFile(folder, fileList)
