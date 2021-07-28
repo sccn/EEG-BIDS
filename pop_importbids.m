@@ -246,7 +246,7 @@ for iSubject = 2:size(bids.participants,1)
                             ind = strmatch( '.fif', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % FIF
                             if isempty(ind)
                                 ind = strmatch( '.gz', cellfun(@(x)x(end-2:end), allFiles, 'uniformoutput', false) ); % FIF
-                                if isempty(ind)
+                                if isempty(ind) && ~isempty(allFiles)
                                     fprintf(2, 'No EEG file found for subject %s\n', bids.participants{iSubject,1});
                                 end
                             end
