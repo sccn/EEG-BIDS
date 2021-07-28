@@ -21,6 +21,8 @@
 %  'eventtype'   - [string] BIDS event column to use for EEGLAB event types.
 %                  common choices are usually 'trial_type' or 'value'.
 %                  Default is 'value'.
+%  'bidstask'    - [string] value of a key task- allowing to analyze some
+%                  tasks only
 %
 % Outputs:
 %   STUDY   - EEGLAB STUDY structure
