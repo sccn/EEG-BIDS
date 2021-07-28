@@ -116,6 +116,10 @@ opt = finputcheck(options, { ...
     }, 'pop_importbids');
 if isstr(opt), error(opt); end
 
+if ~exist('jsondecode.m','file')
+   addpath([fileparts(which('pop_importbids.m')) filesep 'JSONio']) 
+end
+
 % Options:
 % - copy folder
 % - use channel location and event
