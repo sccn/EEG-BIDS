@@ -21,6 +21,8 @@
 %  'eventtype'   - [string] BIDS event column to use for EEGLAB event types.
 %                  common choices are usually 'trial_type' or 'value'.
 %                  Default is 'value'.
+%  'bidstask'    - [string] value of a key task- allowing to analyze some
+%                  tasks only
 %
 % Outputs:
 %   STUDY   - EEGLAB STUDY structure
@@ -113,6 +115,10 @@ opt = finputcheck(options, { ...
     'studyName'      'string'    { }                defaultStudyName ...
     }, 'pop_importbids');
 if isstr(opt), error(opt); end
+
+if ~exist('jsondecode.m','file')
+   addpath([fileparts(which('pop_importbids.m')) filesep 'JSONio']) 
+end
 
 % Options:
 % - copy folder
@@ -244,7 +250,7 @@ for iSubject = 2:size(bids.participants,1)
                             ind = strmatch( '.fif', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % FIF
                             if isempty(ind)
                                 ind = strmatch( '.gz', cellfun(@(x)x(end-2:end), allFiles, 'uniformoutput', false) ); % FIF
-                                if isempty(ind)
+                                if isempty(ind) && ~isempty(allFiles)
                                     fprintf(2, 'No EEG file found for subject %s\n', bids.participants{iSubject,1});
                                 end
                             end
@@ -566,7 +572,7 @@ while ~any(arrayfun(@(x) strcmp(lower(x.name),'dataset_description.json'), dir(p
     parent = fileparts(parent);
 end
 if isempty(outFile)
-    outFile = filterHiddenFile(folder, dir(fullfile(parent, fileName)));
+    outFile = filterHiddenFile(parent, dir(fullfile(parent, fileName)));
 end
 
 function fileList = filterHiddenFile(folder, fileList)
