@@ -21,6 +21,8 @@
 %  'eventtype'   - [string] BIDS event column to use for EEGLAB event types.
 %                  common choices are usually 'trial_type' or 'value'.
 %                  Default is 'value'.
+%  'bidstask'    - [string] value of a key task- allowing to analyze some
+%                  tasks only
 %
 % Outputs:
 %   STUDY   - EEGLAB STUDY structure
@@ -114,6 +116,10 @@ opt = finputcheck(options, { ...
     }, 'pop_importbids');
 if isstr(opt), error(opt); end
 
+if ~exist('jsondecode.m','file')
+   addpath([fileparts(which('pop_importbids.m')) filesep 'JSONio']) 
+end
+
 % Options:
 % - copy folder
 % - use channel location and event
@@ -136,7 +142,11 @@ end
 dataset_descriptionFile = fullfile(bidsFolder, 'dataset_description.json');
 bids.dataset_description = '';
 if exist(dataset_descriptionFile,'File')
-    bids.dataset_description = jsondecode(importalltxt( dataset_descriptionFile ));
+    if exist('jsondecode.m','file')
+        bids.dataset_description = jsondecode(importalltxt( dataset_descriptionFile ));
+    else
+        bids.dataset_description = jsonread(dataset_descriptionFile);
+    end
 end
 
 % load participant file
@@ -155,7 +165,11 @@ end
 participantsJSONFile = fullfile(bidsFolder, 'participants.json');
 bids.participantsJSON = '';
 if exist(participantsJSONFile,'File')
-    bids.participantsJSON = jsondecode(importalltxt( participantsJSONFile ));
+    if exist('jsondecode.m','file')
+        bids.participantsJSON = jsondecode(importalltxt( participantsJSONFile ));
+    else
+        bids.participantsJSON = jsonread(participantsJSONFile);
+    end
 end
 
 % scan participants
@@ -236,7 +250,7 @@ for iSubject = 2:size(bids.participants,1)
                             ind = strmatch( '.fif', cellfun(@(x)x(end-3:end), allFiles, 'uniformoutput', false) ); % FIF
                             if isempty(ind)
                                 ind = strmatch( '.gz', cellfun(@(x)x(end-2:end), allFiles, 'uniformoutput', false) ); % FIF
-                                if isempty(ind)
+                                if isempty(ind) && ~isempty(allFiles)
                                     fprintf(2, 'No EEG file found for subject %s\n', bids.participants{iSubject,1});
                                 end
                             end
@@ -558,7 +572,7 @@ while ~any(arrayfun(@(x) strcmp(lower(x.name),'dataset_description.json'), dir(p
     parent = fileparts(parent);
 end
 if isempty(outFile)
-    outFile = filterHiddenFile(folder, dir(fullfile(parent, fileName)));
+    outFile = filterHiddenFile(parent, dir(fullfile(parent, fileName)));
 end
 
 function fileList = filterHiddenFile(folder, fileList)
@@ -601,13 +615,21 @@ if ~isempty(localFile)
     if strcmpi(ext, '.tsv')
         data = importtsv( fullfile(localFile(1).folder, localFile(1).name));
     else
-        data = jsondecode( importalltxt( fullfile(localFile(1).folder, localFile(1).name) ));
+        if exist('jsondecode.m','file')
+            data = jsondecode( importalltxt( fullfile(localFile(1).folder, localFile(1).name) ));
+        else
+            data = jsonread(fullfile(localFile(1).folder, localFile(1).name));
+        end
     end        
 elseif ~isempty(globalFile)
     if strcmpi(ext, '.tsv')
         data = importtsv( fullfile(globalFile(1).folder, globalFile(1).name));
     else
-        data = jsondecode( importalltxt( fullfile(globalFile(1).folder, globalFile(1).name) ));
+        if exist('jsondecode.m','file')
+            data = jsondecode( importalltxt( fullfile(globalFile(1).folder, globalFile(1).name) ));
+        else
+            data = jsonread(fullfile(globalFile(1).folder, globalFile(1).name));
+        end
     end
 end
 
