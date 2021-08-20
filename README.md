@@ -43,3 +43,5 @@ v5.2 - fix issue with history
 v5.3 - adding capability to export stimuli
 
 v5.3.1 - update documentation for tInfo.HardwareFilters; fix bug defaults fields not filled for eInfo
+
+v5.4 - fix issue with reading BIDS information when importing BIDS data to STUDY
