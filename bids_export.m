@@ -1030,7 +1030,7 @@ if ~isTemplate && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isemp
     fprintf(fid, 'name\tx\ty\tz\n');
     
     for iChan = 1:EEG.nbchan
-        if isempty(EEG.chanlocs(iChan).X)
+        if isempty(EEG.chanlocs(iChan).X) || isnan(EEG.chanlocs(iChan).X)
             fprintf(fid, '%s\tn/a\tn/a\tn/a\n', EEG.chanlocs(iChan).labels );
         else
             fprintf(fid, '%s\t%2.2f\t%2.2f\t%2.2f\n', EEG.chanlocs(iChan).labels, EEG.chanlocs(iChan).X, EEG.chanlocs(iChan).Y, EEG.chanlocs(iChan).Z );
