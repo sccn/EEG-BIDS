@@ -598,21 +598,24 @@ for iSubj = 1:length(files)
     switch bidscase
         case 1 % Single-Session Single-Run
             
-            fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' char(files(iSubj).task) '_eeg' files(iSubj).file{1}(end-3:end)]);
+            [~,~,fileExt] = fileparts(files(iSubj).file{1});
+            fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' char(files(iSubj).task) '_eeg' fileExt]);
             %             copy_data_bids( files(iSubj).file{1}, fileOut, opt.eInfo, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
             copy_data_bids( files(iSubj).file{1}, fileOut, files(iSubj).notes{1}, opt, files(iSubj).chanlocs{1}, opt.copydata);
             
         case 2 % Single-Session Mult-Run
             
             for iRun = 1:length(files(iSubj).run)
-                fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' num2str(files(iSubj).run(iRun)) '_eeg' files(iSubj).file{iRun}(end-3:end) ]);
+                [~,~,fileExt] = fileparts(files(iSubj).file{iRun});
+                fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' num2str(files(iSubj).run(iRun)) '_eeg' fileExt ]);
                 copy_data_bids( files(iSubj).file{iRun}, fileOut, files(iSubj).notes{iRun}, opt, files(iSubj).chanlocs{iRun}, opt.copydata);
             end
             
         case 3 % Mult-Session Single-Run
             
             for iSess = 1:length(unique(files(iSubj).session))
-                fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task) '_eeg' files(iSubj).file{iSess}(end-3:end)]);
+                [~,~,fileExt] = fileparts(files(iSubj).file{iSess});
+                fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task) '_eeg' ffileExt]);
                 copy_data_bids( files(iSubj).file{iSess}, fileOut, files(iSubj).notes{iSess}, opt, files(iSubj).chanlocs{iSess}, opt.copydata);
             end
             
@@ -622,14 +625,16 @@ for iSubj = 1:length(files)
                 runindx = find(files(iSubj).session == iSess);
                 for iSet = runindx
                     iRun = files(iSubj).run(iSet);
-                    fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task(iRun)) '_run-' num2str(files(iSubj).run(iRun)) '_eeg' files(iSubj).file{iSet}(end-3:end)]);
+                    [~,~,fileExt] = fileparts(files(iSubj).file{iSet});
+                    fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task(iRun)) '_run-' num2str(files(iSubj).run(iRun)) '_eeg' fileExt]);
                     copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, opt, files(iSubj).chanlocs{iSet}, opt.copydata);
                 end
             end
             
         case 5 % Mult Task: Single-Session Single-Run 
             for iTask = 1:length(files(iSubj).task)
-                fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iTask)) '_eeg' files(iSubj).file{iTask}(end-3:end) ]);
+                [~,~,fileExt] = fileparts(files(iSubj).file{iTask});
+                fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iTask)) '_eeg' fileExt ]);
                 copy_data_bids( files(iSubj).file{iTask}, fileOut, files(iSubj).notes{iTask}, opt, files(iSubj).chanlocs{iTask}, opt.copydata);
             end
             
@@ -637,7 +642,8 @@ for iSubj = 1:length(files)
             for iSess = 1:length(unique(files(iSubj).session))
                 runindx = find(files(iSubj).session == iSess);
                 for iSet = runindx
-                    fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task(iSet)) '_eeg' files(iSubj).file{iSet}(end-3:end)]);
+                    [~,~,fileExt] = fileparts(files(iSubj).file{iSet});
+                    fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task(iSet)) '_eeg' fileExt]);
                     copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, opt, files(iSubj).chanlocs{iSet}, opt.copydata);
                 end
             end
@@ -669,6 +675,10 @@ if strcmpi(ext, '.bdf')
     tInfo.EEGReference = 'CMS/DRL';
     tInfo.Manufacturer = 'BIOSEMI';
     EEG = pop_biosig(fileOut);
+elseif strcmpi(ext, '.vhdr')
+    rename_brainvision_files(fileIn, fileOut, 'rmf', 'off');
+    [fpathin, fname, ext] = fileparts(fileIn);
+    EEG = pop_loadbv(fpathin, [fname ext]);
 elseif strcmpi(ext, '.set')
     [outfilepath, outfilename,outfileext] = fileparts(fileOut);
     if copydata
@@ -721,10 +731,12 @@ end
 
 % write event file information
 % --- _events.json
-jsonwrite([ fileOut(1:end-7) 'events.json' ], opt.eInfoDesc,struct('indent','  '));
+[folderOut,fileOut,~] = fileparts(fileOut);
+fileOut = fullfile(folderOut,fileOut);
+jsonwrite([ fileOut(1:end-3) 'events.json' ], opt.eInfoDesc,struct('indent','  '));
 
 % --- _events.tsv
-fid = fopen( [ fileOut(1:end-7) 'events.tsv' ], 'w');
+fid = fopen( [ fileOut(1:end-3) 'events.tsv' ], 'w');
 
 % -- parse eInfo
 if isempty(opt.eInfo)
@@ -943,7 +955,7 @@ fclose(fid);
 
 % Write channel file information (channels.tsv)
 % Note: Consider using here electrodes_to_tsv.m
-fid = fopen( [ fileOut(1:end-7) 'channels.tsv' ], 'w');
+fid = fopen( [ fileOut(1:end-3) 'channels.tsv' ], 'w');
 miscChannels = 0;
 
 if ~isempty(chanlocs)
@@ -988,8 +1000,8 @@ else
         end
         
         % Count channels by type (for use later in eeg.json)
-        if strcmp(type, 'n/a') || strcmp(type, 'MISC')
-            channelsCount('MISC') = channelsCount('MISC') + 1;
+        if strcmp(type, 'n/a')
+            channelsCount('EEG') = channelsCount('EEG') + 1;
         elseif strcmp(type, 'HEOG') || strcmp(type,'VEOG')
             channelsCount('EOG') = channelsCount('EOG') + 1;
         else
@@ -1014,7 +1026,7 @@ if isfield(EEG.chaninfo, 'filename')
 end
 
 if ~isTemplate && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isempty(EEG.chanlocs(2).X)
-    fid = fopen( [ fileOut(1:end-7) 'electrodes.tsv' ], 'w');
+    fid = fopen( [ fileOut(1:end-3) 'electrodes.tsv' ], 'w');
     fprintf(fid, 'name\tx\ty\tz\n');
     
     for iChan = 1:EEG.nbchan
@@ -1030,7 +1042,7 @@ if ~isTemplate && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && ~isemp
     coordsystemStruct.EEGCoordinateUnits = 'mm';
     coordsystemStruct.EEGCoordinateSystem = 'CTF'; % Change as soon as possible to EEGLAB
     coordsystemStruct.EEGCoordinateSystemDescription = 'EEGLAB';
-    jsonwrite( [ fileOut(1:end-7) 'coordsystem.json' ], coordsystemStruct);
+    jsonwrite( [ fileOut(1:end-3) 'coordsystem.json' ], coordsystemStruct);
 end
 
 % Write task information (eeg.json) Note: depends on channels
@@ -1069,7 +1081,7 @@ if ~isempty(notes)
     tInfo.SubjectArtefactDescription = notes;
 end
 %     jsonStr = jsonencode(tInfo);
-%     fid = fopen( [fileOut(1:end-7) 'eeg.json' ], 'w');
+%     fid = fopen( [fileOut(1:end-3) 'eeg.json' ], 'w');
 %     fprintf(fid, '%s', jsonStr);
 %     fclose(fid);
 
@@ -1108,7 +1120,7 @@ tInfoFields = {...
     'SubjectArtefactDescription' 'OPTIONAL' 'char' '' };
 tInfo = checkfields(tInfo, tInfoFields, 'tInfo');
 
-jsonwrite([fileOut(1:end-7) 'eeg.json' ], tInfo,struct('indent','  '));
+jsonwrite([fileOut(1:end-3) 'eeg.json' ], tInfo,struct('indent','  '));
 
 % write channel information
 %     cInfo.name.LongName = 'Channel name';
@@ -1118,7 +1130,7 @@ jsonwrite([fileOut(1:end-7) 'eeg.json' ], tInfo,struct('indent','  '));
 %     cInfo.units.LongName = 'Channel unit';
 %     cInfo.units.Description = 'Channel unit';
 %     jsonStr = jsonencode(cInfo);
-%     fid = fopen( [fileOut(1:end-7) 'channels.json' ], 'w');
+%     fid = fopen( [fileOut(1:end-3) 'channels.json' ], 'w');
 %     fprintf(fid, '%s', jsonStr);
 %     fclose(fid);
 

@@ -42,7 +42,8 @@ else
 end
 
 % determine the filename without extension
-[~, f, ~] = fileparts(newheaderfile);
+[pathIn , baseNameIn,  ~] = fileparts(oldheaderfile);
+[pathOut, baseNameOut, ~] = fileparts(newheaderfile);
 
 %% do the renaming
 
@@ -58,13 +59,13 @@ while ~feof(fid1)
     [~, rem] = strtok(line, '=');
     oldmarkerfile = rem(2:end);
     [~, ~, x] = fileparts(oldmarkerfile);
-    newmarkerfile = [f switchcase(x)];
+    newmarkerfile = [baseNameOut switchcase(x)]; % use relative path
     line = sprintf('MarkerFile=%s', newmarkerfile);
   elseif ~isempty(regexp(line, '^DataFile', 'once'))
     [~, rem] = strtok(line, '=');
     olddatafile = rem(2:end);
     [~, ~, x] = fileparts(olddatafile);
-    newdatafile = [f switchcase(x)];
+    newdatafile = [baseNameOut switchcase('.eeg')]; % must be .eeg
     line = sprintf('DataFile=%s', newdatafile);
   end
   fprintf(fid2, '%s\r\n', line);
@@ -72,16 +73,8 @@ end
 fclose(fid1);
 fclose(fid2);
 
-% deal with the marker file
-if exist(oldmarkerfile, 'file') == 0
-    [~,~,ext] = fileparts(oldmarkerfile);
-    [~, ff, ~] = fileparts(oldheaderfile); % re-reading as sometimes weird names comes up
-    if exist([ff ext], 'file')
-        oldmarkerfile = [ff ext];
-    else
-        error('the file %s does not exists', oldmarkerfile);
-    end
-end
+oldmarkerfile = fullfile(pathIn , oldmarkerfile);
+newmarkerfile = fullfile(pathOut, newmarkerfile);
 assert(exist(newmarkerfile, 'file')==0, 'the file %s already exists', newmarkerfile);
 fid1 = fopen(oldmarkerfile, 'r');
 fid2 = fopen(newmarkerfile, 'w');
@@ -92,13 +85,13 @@ while ~feof(fid1)
     [~, rem] = strtok(line, '=');
     oldheaderfile = rem(2:end);
     [~, ~, x] = fileparts(oldheaderfile);
-    newheaderfile = [f switchcase(x)];
+    newheaderfile = [baseNameOut switchcase(x)];
     line = sprintf('HeaderFile=%s', newheaderfile);
   elseif ~isempty(regexp(line, '^DataFile', 'once'))
     [~, rem] = strtok(line, '=');
     olddatafile = rem(2:end);
     [~, ~, x] = fileparts(olddatafile);
-    newdatafile = [f switchcase(x)];
+    newdatafile = [baseNameOut switchcase('.eeg')];
     line = sprintf('DataFile=%s', newdatafile);
   end
   fprintf(fid2, '%s\r\n', line);
@@ -106,18 +99,12 @@ end
 fclose(fid1);
 fclose(fid2);
 
+olddatafile = fullfile(pathIn , olddatafile);
+newdatafile = fullfile(pathOut, newdatafile);
+
 % deal with the data file
-if exist(olddatafile, 'file') == 0
-    [~,~,ext] = fileparts(olddatafile);
-    [~, ff, ~] = fileparts(oldheaderfile); % re-reading as sometimes weird names comes up
-    if exist([ff ext], 'file')
-        olddatafile = [ff ext];
-    else
-        error('the file %s does not exists', oldmarkerfile);
-    end
-end
 assert(exist(newdatafile, 'file')==0, 'the file %s already exists', newdatafile);
-status = copyfile(olddatafile, newdatafile);
+status = copyfile( olddatafile, newdatafile);
 if ~status
   error('failed to copy data from %s to %s', olddatafile, newdatafile);
 end
