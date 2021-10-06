@@ -1,11 +1,15 @@
 % Matlab script to export to BIDS
 % Exported dataset is available at https://openneuro.org/datasets/ds003061
 %
+% You may not use this script because you do not have the original data
+% It is provided as an example to be adapted for your specific need
+%
 % Arnaud Delorme - Feb 2020
 
 % export notes
 % export event type problem
 % export event value problem
+return
 
 clear
 
