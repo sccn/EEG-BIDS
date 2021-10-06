@@ -265,6 +265,7 @@ opt = finputcheck(varargin, {
     'chanlookup' 'string' {}    '';
     'defaced'   'string'  {'on' 'off'}    'on';
     'createids' 'string'  {'on' 'off'}    'on';
+    'exportext' 'string'  { 'edf' 'eeglab' } 'eeglab';
     'README'    'string'  {}    '';
     'CHANGES'   'string'  {}    '' ;
     'copydata'   'real'   [0 1] 1 }, 'bids_export');
@@ -601,22 +602,22 @@ for iSubj = 1:length(files)
             [~,~,fileExt] = fileparts(files(iSubj).file{1});
             fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' char(files(iSubj).task) '_eeg' fileExt]);
             %             copy_data_bids( files(iSubj).file{1}, fileOut, opt.eInfo, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
-            copy_data_bids( files(iSubj).file{1}, fileOut, files(iSubj).notes{1}, opt, files(iSubj).chanlocs{1}, opt.copydata);
+            copy_data_bids( files(iSubj).file{1}, fileOut, files(iSubj).notes{1}, opt, files(iSubj).chanlocs{1}, opt.copydata, opt.exportext);
             
         case 2 % Single-Session Mult-Run
             
             for iRun = 1:length(files(iSubj).run)
                 [~,~,fileExt] = fileparts(files(iSubj).file{iRun});
                 fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' num2str(files(iSubj).run(iRun)) '_eeg' fileExt ]);
-                copy_data_bids( files(iSubj).file{iRun}, fileOut, files(iSubj).notes{iRun}, opt, files(iSubj).chanlocs{iRun}, opt.copydata);
+                copy_data_bids( files(iSubj).file{iRun}, fileOut, files(iSubj).notes{iRun}, opt, files(iSubj).chanlocs{iRun}, opt.copydata, opt.exportext);
             end
             
         case 3 % Mult-Session Single-Run
             
             for iSess = 1:length(unique(files(iSubj).session))
                 [~,~,fileExt] = fileparts(files(iSubj).file{iSess});
-                fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task) '_eeg' ffileExt]);
-                copy_data_bids( files(iSubj).file{iSess}, fileOut, files(iSubj).notes{iSess}, opt, files(iSubj).chanlocs{iSess}, opt.copydata);
+                fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task{iSess}) '_eeg' fileExt]);
+                copy_data_bids( files(iSubj).file{iSess}, fileOut, files(iSubj).notes{iSess}, opt, files(iSubj).chanlocs{iSess}, opt.copydata, opt.exportext);
             end
             
         case 4 % Mult-Session Mult-Run
@@ -627,7 +628,7 @@ for iSubj = 1:length(files)
                     iRun = files(iSubj).run(iSet);
                     [~,~,fileExt] = fileparts(files(iSubj).file{iSet});
                     fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task(iRun)) '_run-' num2str(files(iSubj).run(iRun)) '_eeg' fileExt]);
-                    copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, opt, files(iSubj).chanlocs{iSet}, opt.copydata);
+                    copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, opt, files(iSubj).chanlocs{iSet}, opt.copydata, opt.exportext);
                 end
             end
             
@@ -635,7 +636,7 @@ for iSubj = 1:length(files)
             for iTask = 1:length(files(iSubj).task)
                 [~,~,fileExt] = fileparts(files(iSubj).file{iTask});
                 fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iTask)) '_eeg' fileExt ]);
-                copy_data_bids( files(iSubj).file{iTask}, fileOut, files(iSubj).notes{iTask}, opt, files(iSubj).chanlocs{iTask}, opt.copydata);
+                copy_data_bids( files(iSubj).file{iTask}, fileOut, files(iSubj).notes{iTask}, opt, files(iSubj).chanlocs{iTask}, opt.copydata, opt.exportext);
             end
             
         case 6 % Mult Task: Mult-Session Single-Run 
@@ -644,7 +645,7 @@ for iSubj = 1:length(files)
                 for iSet = runindx
                     [~,~,fileExt] = fileparts(files(iSubj).file{iSet});
                     fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task(iSet)) '_eeg' fileExt]);
-                    copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, opt, files(iSubj).chanlocs{iSet}, opt.copydata);
+                    copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, opt, files(iSubj).chanlocs{iSet}, opt.copydata, opt.exportext);
                 end
             end
     end
@@ -653,7 +654,7 @@ end
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 %function copy_data_bids(fileIn, fileOut, eInfo, tInfo, trialtype, chanlocs, copydata)
-function copy_data_bids(fileIn, fileOut, notes, opt, chanlocs, copydata)
+function copy_data_bids(fileIn, fileOut, notes, opt, chanlocs, copydata, exportExt)
 folderOut = fileparts(fileOut);
 if ~exist(folderOut)
     mkdir(folderOut);
@@ -683,7 +684,11 @@ elseif strcmpi(ext, '.set')
     [outfilepath, outfilename,outfileext] = fileparts(fileOut);
     if copydata
         EEGin = pop_loadset(fileIn);
-        EEG   = pop_saveset(EEGin, 'filename',[outfilename outfileext], 'filepath', outfilepath);
+        if strcmp(exportExt,'edf')
+            pop_writeeeg(EEG, [outfilepath filesep outfilename '.edf'], 'TYPE','EDF');
+        else
+            EEG   = pop_saveset(EEGin, 'filename',[outfilename outfileext], 'filepath', outfilepath);
+        end
     else
         copyfile(fileIn, fileOut);
         EEG = pop_loadset([outfilename outfileext],outfilepath, 'loadmode', 'info');
@@ -1105,7 +1110,7 @@ tInfoFields = {...
     'EEGGround' 'RECOMMENDED ' 'char' '';
     'HeadCircumference' 'OPTIONAL ' '' 0;
     'MiscChannelCount' ' OPTIONAL' '' '';
-    'TriggerChannelCount' 'RECOMMENDED' 'char' '';
+    'TriggerChannelCount' 'RECOMMENDED' 'char' ''; % double in Bucanl's fork
     'EEGPlacementScheme' 'RECOMMENDED' 'char' '';
     'Manufacturer' 'RECOMMENDED' 'char' '';
     'ManufacturersModelName' 'OPTIONAL' 'char' '';
