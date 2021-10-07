@@ -48,7 +48,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
             warning('There is mismatch in number of fields in EEG.event structures. Using fields of EEG(%d) which has the highest number of fields (%d).', index, num);
         end
     end
-    bidsFields = {'onset', 'duration', 'trial_type','value','stim_file','sample','response_time','HED'};    
+    bidsFields = {'onset', 'duration', 'trial_type','value','stim_file','sample','response_time'};%,'HED'};    
     eventFields = setdiff(eventFields, 'latency');
     % define global variables
     % -----------------------
@@ -201,6 +201,10 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                 
         % prepare return struct
         fields = fieldnames(eventBIDS);
+        if isfield(EEG.etc,'tags')
+            hedTags = EEG.etc.tags;
+            fMap = fieldMap.createfMapFromStruct(hedTags);
+        end
         for k=1:length(fields)
             bidsField = fields{k};
             if ~isfield(eventBIDS.(bidsField), 'EEGField')
@@ -224,6 +228,22 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                 end
                 if isfield(eventBIDS.(bidsField),'Levels') && ~isempty(eventBIDS.(bidsField).Levels) && ~strcmp(eventBIDS.(bidsField).Levels,'n/a')
                     eInfoDesc.(bidsField).Levels = eventBIDS.(bidsField).Levels;
+                end
+                % parse HED
+                if isfield(EEG.etc,'tags')
+                    tMap = fMap.getMap(eegField);
+                    if ~isempty(tMap)
+                        codes = tMap.getCodes();
+                        if numel(codes) == 1 && strcmp(codes{1},'HED')
+                            tList = tMap.getValue('HED');
+                            eInfoDesc.(bidsField).HED = tagList.stringify(tList.getTags());
+                        else
+                            for c=1:numel(codes)
+                                tList = tMap.getValue(codes{c});
+                                eInfoDesc.(bidsField).HED.(codes{c}) = tagList.stringify(tList.getTags());
+                            end
+                        end
+                    end
                 end
                 if isfield(eventBIDS.(bidsField), 'TermURL') && ~isempty(eventBIDS.(bidsField).TermURL)
                     eInfoDesc.(bidsField).TermURL = eventBIDS.(bidsField).TermURL;
@@ -599,23 +619,23 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                     event.value.Units = '';
                     event.value.Levels = [];
                     event.value.TermURL = '';
-                elseif strcmp(fields{idx}, 'HED') && any(strcmp(eventFields, 'usertags'))
-                    if isfield(EEG(1).event, 'usertags')
-                        event.HED.EEGField = 'usertags';
-                    else
-                        event.HED.EEGField = '';
-                    end
-                    event.HED.LongName = 'Hierarchical Event Descriptor';
-                    event.HED.Description = 'Tags describing the nature of the event';      
-                    event.HED.Levels = [];
-                    event.HED.Units = '';
-                    event.HED.TermURL = '';
+%                 elseif strcmp(fields{idx}, 'HED') && any(strcmp(eventFields, 'usertags'))
+%                     if isfield(EEG(1).event, 'usertags')
+%                         event.HED.EEGField = 'usertags';
+%                     else
+%                         event.HED.EEGField = '';
+%                     end
+%                     event.HED.LongName = 'Hierarchical Event Descriptor';
+%                     event.HED.Description = 'Tags describing the nature of the event';      
+%                     event.HED.Levels = [];
+%                     event.HED.Units = '';
+%                     event.HED.TermURL = '';
                 elseif strcmp(fields{idx}, 'duration')
-                    if isfield(EEG(1).event, 'duration')
-                        event.HED.EEGField = 'duration';
-                    else
-                        event.HED.EEGField = '';
-                    end
+%                     if isfield(EEG(1).event, 'duration')
+%                         event.HED.EEGField = 'duration';
+%                     else
+%                         event.HED.EEGField = '';
+%                     end
                     event.duration.LongName = 'Event duration';
                     event.duration.Description = 'Duration of the event (measured from onset) in seconds. Must always be either zero or positive. A "duration" value of zero implies that the delta function or event is so short as to be effectively modeled as an impulse.';
                     event.duration.Units = 'second';
