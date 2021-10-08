@@ -265,6 +265,7 @@ opt = finputcheck(varargin, {
     'chanlookup' 'string' {}    '';
     'defaced'   'string'  {'on' 'off'}    'on';
     'createids' 'string'  {'on' 'off'}    'on';
+    'singleEventsJson' 'string'  {'on' 'off'}    'on';
     'exportext' 'string'  { 'edf' 'eeglab' } 'eeglab';
     'README'    'string'  {}    '';
     'CHANGES'   'string'  {}    '' ;
@@ -456,6 +457,9 @@ for iField = 1:length(fields)
     descFields{1,4} = fields{iField};
     if ~isfield(opt.eInfoDesc, fields{iField}), opt.eInfoDesc(1).(fields{iField}) = struct([]); end
     opt.eInfoDesc.(fields{iField}) = checkfields(opt.eInfoDesc.(fields{iField}), eInfoDescFields, 'eInfoDesc');
+end
+if strcmpi(opt.singleEventsJson, 'on')
+    jsonwrite(fullfile(opt.targetdir, ['task-' opt.taskName '_events.json' ]), opt.eInfoDesc,struct('indent','  '));
 end
 
 % Write README files (README)
@@ -745,8 +749,9 @@ end
 [folderOut,fileOut,~] = fileparts(fileOut);
 fileOut = fullfile(folderOut,fileOut);
 if ~isempty(EEG.event)
-    jsonwrite([ fileOut(1:end-3) 'events.json' ], opt.eInfoDesc,struct('indent','  '));
-    
+    if strcmpi(opt.singleEventsJson,'off')
+        jsonwrite([ fileOut(1:end-3) 'events.json' ], opt.eInfoDesc,struct('indent','  '));
+    end
     % --- _events.tsv
     
     fid = fopen( [ fileOut(1:end-3) 'events.tsv' ], 'w');
