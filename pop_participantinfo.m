@@ -45,8 +45,8 @@
 % CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 % ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 % THE POSSIBILITY OF SUCH DAMAGE.
-function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
-    command = '[EEG, command] = pop_participantinfo(EEG);';
+function [EEG, STUDY, command] = pop_participantinfo(EEG,STUDY, varargin)
+    command = '[EEG, [], command] = pop_participantinfo(EEG);';
     
     %% check if there's already an opened window
     if ~isempty(findobj('Tag','pInfoTable'))
@@ -55,9 +55,11 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     end
     
     %% if STUDY is provided, check for consistency
+    hasSTUDY = false;
     if exist('STUDY','var') && ~isempty(STUDY)
         [STUDY, EEG] = pop_checkdatasetinfo(STUDY, EEG);
-        command = '[EEG, command] = pop_participantinfo(EEG, STUDY);';
+        command = '[EEG, STUDY, command] = pop_participantinfo(EEG, STUDY);';
+        hasSTUDY = true;
     end
     
     %% default settings
@@ -79,13 +81,13 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
     % -------------------------
     if isfield(EEG(1), 'subject') && ~isempty(EEG(1).subject)
         allSubjects = { EEG.subject };
-    elseif isfield(STUDY,'datasetinfo') && isfield(STUDY.datasetinfo(1), 'subject') && ~isempty(STUDY.datasetinfo(1).subject)
+    elseif hasSTUDY && isfield(STUDY,'datasetinfo') && isfield(STUDY.datasetinfo(1), 'subject') && ~isempty(STUDY.datasetinfo(1).subject)
         allSubjects = { STUDY.datasetinfo.subject };
     else
         if numel(EEG) == 1
             errordlg2('No subject ID found. Please fill in "Subject code" in the next window, then resume.');
             EEG = pop_editset(EEG);
-        else
+        elseif hasSTUDY
             errordlg2('No subject info found in STUDY. Please add using "Study > Edit study info", then resume.');
         end
         return
@@ -399,7 +401,7 @@ function [EEG, command] = pop_participantinfo(EEG,STUDY, varargin)
             end
             if ~isempty(EEG(e).subject)
                 rowIdx = strcmp(EEG(e).subject, pTable.Data(:, strcmp('participant_id', pTable.ColumnName)));
-            elseif ~isempty(STUDY.datasetinfo(1).subject) % assuming order of STUDY.datasetinfo matches with order of EEG in the EEG array
+            elseif hasSTUDY && ~isempty(STUDY.datasetinfo(1).subject) % assuming order of STUDY.datasetinfo matches with order of EEG in the EEG array
                 rowIdx = strcmp(STUDY.datasetinfo(e).subject, pTable.Data(:, strcmp('participant_id', pTable.ColumnName)));
             end
             if isempty(pTable.Data{rowIdx,strcmp('HeadCircumference',pTable.ColumnName)})
