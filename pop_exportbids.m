@@ -83,7 +83,7 @@ if nargin < 3 && ~ischar(STUDY)
     options = { 'targetdir' restag.outputfolder 'License' restag.license 'CHANGES' restag.changes 'createids' fastif(restag.newids, 'on', 'off') };
     
     if ~isfield(EEG(1), 'BIDS') % none of the edit button was clicked
-        EEG = pop_eventinfo(EEG, 'default');
+        EEG = pop_eventinfo(EEG, STUDY, 'default');
         EEG = pop_participantinfo(EEG, STUDY, 'default');
         EEG = pop_taskinfo(EEG, 'default');
     end

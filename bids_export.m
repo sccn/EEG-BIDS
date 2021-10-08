@@ -445,11 +445,17 @@ end
 
 % prepare event file information (_events.json)
 % ----------------------------
+eInfoDescFields = { 'LongName'     'optional' 'char'   '';
+    'Levels'       'optional' 'struct' struct([]);
+    'Description'  'optional' 'char'   '';
+    'Units'        'optional' 'char'   '';
+    'TermURL'      'optional' 'char'   '';
+    'HED'          'optional' 'struct'   struct([])};
 fields = fieldnames(opt.eInfoDesc);
 for iField = 1:length(fields)
     descFields{1,4} = fields{iField};
     if ~isfield(opt.eInfoDesc, fields{iField}), opt.eInfoDesc(1).(fields{iField}) = struct([]); end
-    opt.eInfoDesc.(fields{iField}) = checkfields(opt.eInfoDesc.(fields{iField}), descFields, 'eInfoDesc');
+    opt.eInfoDesc.(fields{iField}) = checkfields(opt.eInfoDesc.(fields{iField}), eInfoDescFields, 'eInfoDesc');
 end
 
 % Write README files (README)
@@ -1158,6 +1164,10 @@ for iRow = 1:size(f,1)
             s = setfield(s, {1}, f{iRow,1}, f{iRow,4});
         end
     elseif ~isempty(f{iRow,3}) && ~isa(s.(f{iRow,1}), f{iRow,3}) && ~strcmpi(s.(f{iRow,1}), 'n/a')
+        % if it's HED in eInfoDesc, allow string also
+        if strcmp(structName,'eInfoDesc') && strcmp(f{iRow,1}, 'HED') && isa(s.(f{iRow,1}), 'char')
+            return
+        end
         error(sprintf('Parameter %s.%s must be a %s', structName, f{iRow,1}, f{iRow,3}));
     end
 end
