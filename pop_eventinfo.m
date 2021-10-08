@@ -14,29 +14,36 @@
 %  'EEG'       - [struct] Updated EEG structure containing event BIDS information
 %                in each EEG structure at EEG.BIDS.eInfoDesc and EEG.BIDS.eInfo
 %
-%  'eInfoDesc' - [struct] structure describing BIDS event fields as you specified.
+%                'eInfoDesc' - [struct] structure describing BIDS event fields as you specified.
 %                See BIDS specification for all suggested fields.
 %
-%  'eInfo'     - [cell] BIDS event fields and their corresponding
+%                'eInfo'     - [cell] BIDS event fields and their corresponding
 %                event fields in the EEGLAB event structure. Note that
 %                EEGLAB event latency, duration, and type are inserted
 %                automatically as columns "onset" (latency in sec), "duration"
 %                (duration in sec), "value" (EEGLAB event type)
 %
 % Author: Dung Truong, Arnaud Delorme
-function [EEG, command] = pop_eventinfo(EEG, varargin)
+function [EEG, STUDY, command] = pop_eventinfo(EEG, STUDY, varargin)
     %% check if there's already an opened window
     if ~isempty(findobj('Tag','eventBidsTable'))
         errordlg2('A window is already openened for pop_eventinfo');
         return
     end
     
-    command = '[EEG, command] = pop_eventinfo(EEG)';
+    command = '[EEG, [], command] = pop_eventinfo(EEG)';
+    %% if STUDY is provided, check for consistency
+    hasSTUDY = false;
+    if exist('STUDY','var') && ~isempty(STUDY)
+        [STUDY, EEG] = pop_checkdatasetinfo(STUDY, EEG);
+        command = '[EEG, STUDY, command] = pop_eventinfo(EEG, STUDY);';
+        hasSTUDY = true;
+    end
+    
     % perform check to make sure EEG.event is consistent across EEG
     if isempty(EEG(1).event)
         errordlg2('EEG.event is empty for first dataset');
-        return
-        
+        return  
     end
     try
        eventFields = fieldnames([EEG.event]);
@@ -48,7 +55,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
             warning('There is mismatch in number of fields in EEG.event structures. Using fields of EEG(%d) which has the highest number of fields (%d).', index, num);
         end
     end
-    bidsFields = {'onset', 'duration', 'trial_type','value','stim_file','sample','response_time'};%,'HED'};    
+    bidsFields = {'onset', 'duration', 'trial_type','value','stim_file','sample','response_time'};    
     eventFields = setdiff(eventFields, 'latency');
     % define global variables
     % -----------------------
@@ -63,7 +70,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
     fontSize = 12;
         
     % Use GUI
-    if nargin < 2
+    if nargin < 3
         % create UI
         f = figure('MenuBar', 'None', 'ToolBar', 'None', 'Name', 'Edit BIDS event info - pop_eventinfo', 'Color', bg);
         f.Position(3) = appWidth;
@@ -110,7 +117,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                 if isfield(eventBIDS.(field), 'Levels') && ~isempty(eventBIDS.(field).Levels)
                     data{i,strcmp(tbl.ColumnName, 'Levels')} = strjoin(fieldnames(eventBIDS.(field).Levels),',');
                 else
-                    if strcmp(field, 'onset') || strcmp(field, "sample") || strcmp(field, "duration") || strcmp(field, "HED")
+                    if strcmp(field, 'onset') || strcmp(field, "sample") || strcmp(field, "duration")
                         data{i,strcmp(tbl.ColumnName, 'Levels')} = 'n/a';
                     else
                         data{i,strcmp(tbl.ColumnName, 'Levels')} = 'Click to specify below';
@@ -122,7 +129,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         tbl.Data = data;
         waitfor(f);
     % Use default value - pop_eventinfo(EEG,'default') called
-    elseif nargin < 3 && ischar(varargin{1}) && strcmp(varargin{1}, 'default')
+    elseif nargin < 4 && ischar(varargin{1}) && strcmp(varargin{1}, 'default')
         done();
     end
     
@@ -201,8 +208,12 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                 
         % prepare return struct
         fields = fieldnames(eventBIDS);
-        if isfield(EEG.etc,'tags')
-            hedTags = EEG.etc.tags;
+        fMap = [];
+        if hasSTUDY && isfield(STUDY.etc, 'tags')
+            hedTags = STUDY.etc.tags;
+            fMap = fieldMap.createfMapFromStruct(hedTags);
+        elseif isfield(EEG(1).etc,'tags')
+            hedTags = EEG(1).etc.tags;
             fMap = fieldMap.createfMapFromStruct(hedTags);
         end
         for k=1:length(fields)
@@ -229,18 +240,23 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                 if isfield(eventBIDS.(bidsField),'Levels') && ~isempty(eventBIDS.(bidsField).Levels) && ~strcmp(eventBIDS.(bidsField).Levels,'n/a')
                     eInfoDesc.(bidsField).Levels = eventBIDS.(bidsField).Levels;
                 end
-                % parse HED
-                if isfield(EEG.etc,'tags')
+                % parse HED if exists
+                if ~isempty(fMap)
                     tMap = fMap.getMap(eegField);
-                    if ~isempty(tMap)
+                    if ~isempty(tMap) && tMap.hasAnnotation()
                         codes = tMap.getCodes();
                         if numel(codes) == 1 && strcmp(codes{1},'HED')
                             tList = tMap.getValue('HED');
-                            eInfoDesc.(bidsField).HED = tagList.stringify(tList.getTags());
+                            if tList.hasAnnotation()
+                                eInfoDesc.(bidsField).HED = tagList.stringify(tList.getTags());
+                            end
                         else
                             for c=1:numel(codes)
                                 tList = tMap.getValue(codes{c});
-                                eInfoDesc.(bidsField).HED.(codes{c}) = tagList.stringify(tList.getTags());
+                                % only add HED tags for the ones that 
+                                if tList.hasAnnotation()
+                                    eInfoDesc.(bidsField).HED.(codes{c}) = tagList.stringify(tList.getTags());
+                                end
                             end
                         end
                     end
@@ -250,12 +266,12 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                 end
             end
         end
-        if numel(EEG) == 1
-            command = '[EEG, eInfoDesc, eInfo] = pop_eventinfo(EEG);';
-        else
-            command = '[EEG, eInfoDesc, eInfo] = pop_eventinfo(EEG);';
-        end
         
+        % add info to STUDY if exists
+        if hasSTUDY
+            STUDY.BIDS.eInfoDesc = eInfoDesc;
+            STUDY.BIDS.eInfo = eInfo;
+        end
         % add info to EEG structs
         for e=1:numel(EEG)
             EEG(e).BIDS.eInfoDesc = eInfoDesc;
@@ -380,9 +396,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
         removeLevelUI();
         matchedRow = strcmp(table.Source.Data(:, strcmp(table.Source.ColumnName, 'BIDS Field')), field);
         levelCellText = table.Source.Data{matchedRow, strcmp(table.Source.ColumnName, 'Levels')}; % text @ (field, Levels) cell. if 'n/a' then no action, 'Click to..' then conditional action, '<value>,...' then get levels
-        if strcmp(field, 'HED')
-            uicontrol(f, 'Style', 'text', 'String', 'Levels editing not applied for HED. Use ''pop_tageeg(EEG)'' of HEDTools plug-in to edit event HED tags', 'Units', 'normalized', 'Position', [0.01 0.45 1 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
-        elseif strcmp(field, 'onset') || strcmp(field, 'sample') || strcmp(field, 'duration')
+        if strcmp(field, 'onset') || strcmp(field, 'sample') || strcmp(field, 'duration')
             uicontrol(f, 'Style', 'text', 'String', 'Levels editing not applied for field with continuous values.', 'Units', 'normalized', 'Position', [0.01 0.45 1 0.05],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
         else
             % retrieve all unique values from EEG.event.(field). 
@@ -619,23 +633,7 @@ function [EEG, command] = pop_eventinfo(EEG, varargin)
                     event.value.Units = '';
                     event.value.Levels = [];
                     event.value.TermURL = '';
-%                 elseif strcmp(fields{idx}, 'HED') && any(strcmp(eventFields, 'usertags'))
-%                     if isfield(EEG(1).event, 'usertags')
-%                         event.HED.EEGField = 'usertags';
-%                     else
-%                         event.HED.EEGField = '';
-%                     end
-%                     event.HED.LongName = 'Hierarchical Event Descriptor';
-%                     event.HED.Description = 'Tags describing the nature of the event';      
-%                     event.HED.Levels = [];
-%                     event.HED.Units = '';
-%                     event.HED.TermURL = '';
                 elseif strcmp(fields{idx}, 'duration')
-%                     if isfield(EEG(1).event, 'duration')
-%                         event.HED.EEGField = 'duration';
-%                     else
-%                         event.HED.EEGField = '';
-%                     end
                     event.duration.LongName = 'Event duration';
                     event.duration.Description = 'Duration of the event (measured from onset) in seconds. Must always be either zero or positive. A "duration" value of zero implies that the delta function or event is so short as to be effectively modeled as an impulse.';
                     event.duration.Units = 'second';
