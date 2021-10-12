@@ -59,10 +59,11 @@ if nargin < 3 && ~ischar(STUDY)
         { 'Style', 'pushbutton', 'string', 'Edit participants' 'tag' 'participants' 'callback' cb_participants }, ...
         { 'Style', 'pushbutton', 'string', 'Edit event info' 'tag' 'events' 'callback' cb_events }, ...
         { 'Style', 'checkbox', 'string', 'Do not use participants ID and create anonymized participant ID instead' 'tag' 'newids' }, ...
+        { 'Style', 'checkbox', 'string', 'Use single top-level events.json' 'tag' 'eventsJson' }, ...
         };
     relSize = 0.7;
-    geometry = { [1] [1] [1-relSize relSize*0.8 relSize*0.2] [1-relSize relSize] [1] [1] [1 1 1] [1] };
-    geomvert =   [1  0.2 1                                                   1  1   3    1       1 ];
+    geometry = { [1] [1] [1-relSize relSize*0.8 relSize*0.2] [1-relSize relSize] [1] [1] [1 1 1] [1] [1]};
+    geomvert =   [1  0.2 1                                                   1  1   3    1       1   1];
     userdata.EEG = EEG;
     userdata.STUDY = STUDY;
     [results,userdata,~,restag] = inputgui( 'geometry', geometry, 'geomvert', geomvert, 'uilist', uilist, 'helpcom', 'pophelp(''pop_exportbids'');', 'title', 'Export EEGLAB STUDY to BIDS -- pop_exportbids()', 'userdata', userdata );
@@ -80,10 +81,10 @@ if nargin < 3 && ~ischar(STUDY)
 %     end
     
     % options
-    options = { 'targetdir' restag.outputfolder 'License' restag.license 'CHANGES' restag.changes 'createids' fastif(restag.newids, 'on', 'off') };
+    options = { 'targetdir' restag.outputfolder 'License' restag.license 'CHANGES' restag.changes 'createids' fastif(restag.newids, 'on', 'off') 'singleEventsJson' fastif(restag.eventsJson, 'on', 'off')};
     
     if ~isfield(EEG(1), 'BIDS') % none of the edit button was clicked
-        EEG = pop_eventinfo(EEG, 'default');
+        EEG = pop_eventinfo(EEG, STUDY, 'default');
         EEG = pop_participantinfo(EEG, STUDY, 'default');
         EEG = pop_taskinfo(EEG, 'default');
     end

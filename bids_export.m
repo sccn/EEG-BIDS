@@ -265,6 +265,7 @@ opt = finputcheck(varargin, {
     'chanlookup' 'string' {}    '';
     'defaced'   'string'  {'on' 'off'}    'on';
     'createids' 'string'  {'on' 'off'}    'on';
+    'singleEventsJson' 'string'  {'on' 'off'}    'on';
     'exportext' 'string'  { 'edf' 'eeglab' } 'eeglab';
     'README'    'string'  {}    '';
     'CHANGES'   'string'  {}    '' ;
@@ -277,8 +278,20 @@ end
 % deleting folder
 fprintf('Exporting data to %s...\n', opt.targetdir);
 if exist(opt.targetdir,'dir')
-    disp('Deleting folder...')
-    rmdir(opt.targetdir, 's');
+    uilist = { ...
+        { 'Style', 'text', 'string', 'Output directory exists and all current files will be deleted if continue', 'fontweight', 'bold'  }, ...
+        { 'Style', 'text', 'string', 'Would you want to proceed?'}, ...
+        };
+    geometry = { [1] [1]};
+    geomvert =   [1  1 ];
+    [results,userdata,isOk,restag] = inputgui( 'geometry', geometry, 'geomvert', geomvert, 'uilist', uilist, 'title', 'Warning');
+    if isempty(isOk) 
+        disp('BIDS export cancelled...')
+        return 
+    else
+        disp('Deleting folder...')
+        rmdir(opt.targetdir, 's');
+    end
 end
 
 disp('Creating sub-directories...')
@@ -445,11 +458,20 @@ end
 
 % prepare event file information (_events.json)
 % ----------------------------
+eInfoDescFields = { 'LongName'     'optional' 'char'   '';
+    'Levels'       'optional' 'struct' struct([]);
+    'Description'  'optional' 'char'   '';
+    'Units'        'optional' 'char'   '';
+    'TermURL'      'optional' 'char'   '';
+    'HED'          'optional' 'struct'   struct([])};
 fields = fieldnames(opt.eInfoDesc);
 for iField = 1:length(fields)
     descFields{1,4} = fields{iField};
     if ~isfield(opt.eInfoDesc, fields{iField}), opt.eInfoDesc(1).(fields{iField}) = struct([]); end
-    opt.eInfoDesc.(fields{iField}) = checkfields(opt.eInfoDesc.(fields{iField}), descFields, 'eInfoDesc');
+    opt.eInfoDesc.(fields{iField}) = checkfields(opt.eInfoDesc.(fields{iField}), eInfoDescFields, 'eInfoDesc');
+end
+if strcmpi(opt.singleEventsJson, 'on')
+    jsonwrite(fullfile(opt.targetdir, ['task-' opt.taskName '_events.json' ]), opt.eInfoDesc,struct('indent','  '));
 end
 
 % Write README files (README)
@@ -739,8 +761,9 @@ end
 [folderOut,fileOut,~] = fileparts(fileOut);
 fileOut = fullfile(folderOut,fileOut);
 if ~isempty(EEG.event)
-    jsonwrite([ fileOut(1:end-3) 'events.json' ], opt.eInfoDesc,struct('indent','  '));
-    
+    if strcmpi(opt.singleEventsJson,'off')
+        jsonwrite([ fileOut(1:end-3) 'events.json' ], opt.eInfoDesc,struct('indent','  '));
+    end
     % --- _events.tsv
     
     fid = fopen( [ fileOut(1:end-3) 'events.tsv' ], 'w');
@@ -757,7 +780,7 @@ if ~isempty(EEG.event)
         else                                opt.eInfo(end+1,:) = { 'value'         'type' }; end
         if isfield(EEG.event, 'response_time'), opt.eInfo(end+1,:) = { 'response_time' 'response_time' }; end
         if isfield(EEG.event, 'stim_file'),     opt.eInfo(end+1,:) = { 'stim_file'     'stim_file' }; end
-        if isfield(EEG.event, 'usertags'),      opt.eInfo(end+1,:) = { 'HED'           'usertags' }; end
+        if isfield(EEG.event, 'HED'),      opt.eInfo(end+1,:) = { 'HED'           'HED' }; end
     else
         bids_fields = opt.eInfo(:,1);
         if ~any(strcmp(bids_fields,'onset'))
@@ -783,7 +806,7 @@ if ~isempty(EEG.event)
     end
     
     % reorder fields so it matches BIDS
-    fieldOrder = { 'onset' 'duration' 'sample' 'trial_type' 'response_time' 'stim_file' 'value' 'HED' };
+    fieldOrder = { 'onset' 'duration' 'sample' 'trial_type' 'response_time' 'stim_file' 'value'}; % 'HED' }; % remove HED from default column in events.tsv as HED tags should be put in events.json instead
     newOrder = [];
     for iField = 1:length(fieldOrder)
         ind = strmatch(fieldOrder{iField}, opt.eInfo(:,1)', 'exact');
@@ -926,21 +949,21 @@ if ~isempty(EEG.event)
                         end
                         str{end+1} = eventValue;
                         
-                    case 'HED'
-                        hed = 'n/a';
-                        if isfield(EEG.event, tmpField) && ~isempty(EEG.event(iEvent).(tmpField))
-                            hed = EEG.event(iEvent).(tmpField);
-                        else
-                            if isfield(EEG.event, 'usertags') && ~isempty(EEG.event(iEvent).usertags)
-                                hed = EEG.event(iEvent).usertags;
-                                if isfield(EEG.event, 'hedtags') && ~isempty(EEG.event(iEvent).hedtags)
-                                    hed = [hed ',' EEG.event(iEvent).hedtags];
-                                end
-                            elseif isfield(EEG.event, 'hedtags') && ~isempty(EEG.event(iEvent).hedtags)
-                                hed = EEG.event(iEvent).hedtags;
-                            end
-                        end
-                        str{end+1} = hed;
+%                     case 'HED'
+%                         hed = 'n/a';
+%                         if isfield(EEG.event, tmpField) && ~isempty(EEG.event(iEvent).(tmpField))
+%                             hed = EEG.event(iEvent).(tmpField);
+%                         else
+%                             if isfield(EEG.event, 'HED') && ~isempty(EEG.event(iEvent).usertags)
+%                                 hed = EEG.event(iEvent).usertags;
+%                                 if isfield(EEG.event, 'hedtags') && ~isempty(EEG.event(iEvent).hedtags)
+%                                     hed = [hed ',' EEG.event(iEvent).hedtags];
+%                                 end
+%                             elseif isfield(EEG.event, 'hedtags') && ~isempty(EEG.event(iEvent).hedtags)
+%                                 hed = EEG.event(iEvent).hedtags;
+%                             end
+%                         end
+%                         str{end+1} = hed;
                         
                     otherwise
                         if isfield(EEG.event, opt.eInfo{iField,2})
@@ -1161,6 +1184,10 @@ for iRow = 1:size(f,1)
             s = setfield(s, {1}, f{iRow,1}, f{iRow,4});
         end
     elseif ~isempty(f{iRow,3}) && ~isa(s.(f{iRow,1}), f{iRow,3}) && ~strcmpi(s.(f{iRow,1}), 'n/a')
+        % if it's HED in eInfoDesc, allow string also
+        if strcmp(structName,'eInfoDesc') && strcmp(f{iRow,1}, 'HED') && isa(s.(f{iRow,1}), 'char')
+            return
+        end
         error(sprintf('Parameter %s.%s must be a %s', structName, f{iRow,1}, f{iRow,3}));
     end
 end
