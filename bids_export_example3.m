@@ -136,5 +136,5 @@ bids_export(data, ...
 % copyfile('../sourcedata', fullfile(targetFolder, 'sourcedata'), 'f');
 
 fprintf(2, 'WHAT TO DO NEXT?')
-fprintf(2, ' -> upload the %s folder to http://openneuro.org to check it is valid', targetFolder);
+fprintf(2, ' -> upload the %s folder to http://openneuro.org to check it is valid\n', targetFolder);
 

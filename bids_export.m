@@ -1013,7 +1013,7 @@ if isempty(EEG.chanlocs)
 else
     fprintf(fid, 'name\ttype\tunits\n');
     acceptedChannelTypes = { 'AUDIO' 'EEG' 'EOG' 'ECG' 'EMG' 'EYEGAZE' 'GSR' 'HEOG' 'MISC' 'PUPIL' 'REF' 'RESP' 'SYSCLOCK' 'TEMP' 'TRIG' 'VEOG' };
-    channelsCount = containers.Map(acceptedChannelTypes, zeros(1, numel(acceptedChannelTypes)));
+    channelsCount = [];
     for iChan = 1:EEG.nbchan
         % Type
         if ~isfield(EEG.chanlocs, 'type') || isempty(EEG.chanlocs(iChan).type)
@@ -1032,11 +1032,15 @@ else
         
         % Count channels by type (for use later in eeg.json)
         if strcmp(type, 'n/a')
-            channelsCount('EEG') = channelsCount('EEG') + 1;
-        elseif strcmp(type, 'HEOG') || strcmp(type,'VEOG')
-            channelsCount('EOG') = channelsCount('EOG') + 1;
+            if ~isfield(channelsCount, 'EEG'), channelsCount.('EEG') = 0; end
+            channelsCount.('EEG') = channelsCount.('EEG') + 1;
         else
-            channelsCount(type) = channelsCount(type) + 1;
+            if ~isfield(channelsCount, type), channelsCount.(type) = 0; end
+            if strcmp(type, 'HEOG') || strcmp(type,'VEOG')
+                channelsCount.('EOG') = channelsCount.('EOG') + 1;
+            else
+                channelsCount.(type) = channelsCount.(type) + 1;
+            end
         end
         
         %Write
@@ -1079,14 +1083,12 @@ end
 % Write task information (eeg.json) Note: depends on channels
 % requiredChannelTypes: 'EEG', 'EOG', 'ECG', 'EMG', 'MISC'. Other channel
 % types are currently not valid output for eeg.json.
-nonEmptyChannelTypesIndices = find(cellfun(@(x) x(1),channelsCount.values));
-channelTypes = channelsCount.keys;
-nonEmptyChannelTypes = channelTypes(nonEmptyChannelTypesIndices);
+nonEmptyChannelTypes = fieldnames(channelsCount);
 for i=1:numel(nonEmptyChannelTypes)
     if strcmp(nonEmptyChannelTypes{i}, 'MISC')
-        tInfo.('MiscChannelCount') = channelsCount('MISC');
+        tInfo.('MiscChannelCount') = channelsCount.('MISC');
     else
-        tInfo.([nonEmptyChannelTypes{i} 'ChannelCount']) = channelsCount(nonEmptyChannelTypes{i});
+        tInfo.([nonEmptyChannelTypes{i} 'ChannelCount']) = channelsCount.(nonEmptyChannelTypes{i});
     end
 end
 
