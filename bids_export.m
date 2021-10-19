@@ -1203,7 +1203,7 @@ fields = eInfo{:,1};
 function writejson(fileName, matlabStruct)
 jsonStr = jsonencode(matlabStruct);
 
-fid = fopen(fileName, 'w');
+fid = fopen(fileName, 'w', 'n', 'UTF-8');
 if fid == -1, error('Cannot write file - make sure you have writing permission'); end
 fprintf(fid, '%s', jsonStr);
 fclose(fid);
@@ -1211,7 +1211,7 @@ fclose(fid);
 % write TSV file
 % --------------
 function writetsv(fileName, matlabArray)
-fid = fopen(fileName, 'w');
+fid = fopen(fileName, 'w', 'n', 'UTF-8');
 if fid == -1, error('Cannot write file - make sure you have writing permission'); end
 for iRow=1:size(matlabArray,1)
     for iCol=1:size(matlabArray,2)
