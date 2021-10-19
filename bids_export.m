@@ -1014,6 +1014,7 @@ else
     fprintf(fid, 'name\ttype\tunits\n');
     acceptedChannelTypes = { 'AUDIO' 'EEG' 'EOG' 'ECG' 'EMG' 'EYEGAZE' 'GSR' 'HEOG' 'MISC' 'PUPIL' 'REF' 'RESP' 'SYSCLOCK' 'TEMP' 'TRIG' 'VEOG' };
     channelsCount = [];
+    channelsCount.EEG = 0;
     for iChan = 1:EEG.nbchan
         % Type
         if ~isfield(EEG.chanlocs, 'type') || isempty(EEG.chanlocs(iChan).type)
@@ -1032,7 +1033,6 @@ else
         
         % Count channels by type (for use later in eeg.json)
         if strcmp(type, 'n/a')
-            if ~isfield(channelsCount, 'EEG'), channelsCount.('EEG') = 0; end
             channelsCount.('EEG') = channelsCount.('EEG') + 1;
         else
             if ~isfield(channelsCount, type), channelsCount.(type) = 0; end
