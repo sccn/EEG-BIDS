@@ -364,6 +364,9 @@ for iSubj = 1:length(files)
             files(iSubj).notes = cell(1,length(files(iSubj).file));
             files(iSubj).notes(:) = { tmpNote };
         end
+        if length(files(iSubj).notes) < length(files(iSubj).file)
+            files(iSubj).notes{length(files(iSubj).file)} = [];
+        end
     end
 
     % check that no two files have the same session/run and task
