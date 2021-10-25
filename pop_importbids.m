@@ -199,6 +199,10 @@ for iSubject = 2:size(bids.participants,1)
             if ~exist(subjectFolder{iFold},'dir')
                 subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders(iFold).name, 'meg');
                 subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders(iFold).name, 'meg');
+                if ~exist(subjectFolder{iFold},'dir')
+                    subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders(iFold).name, 'ieeg');
+                    subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders(iFold).name, 'ieeg');
+                end
             end
         end
     end
@@ -290,9 +294,11 @@ for iSubject = 2:size(bids.participants,1)
                 % extract task name
                 underScores = find(tmpFileName == '_');
                 if ~strcmpi(tmpFileName(underScores(end)+1:end), 'eeg')
-                    if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg.fif')
-                        if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg')
-                            error('Data file name does not contain eeg or meg'); % theoretically impossible
+                    if ~strcmpi(tmpFileName(underScores(end)+1:end), 'ieeg')
+                        if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg.fif')
+                            if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg')
+                                error('Data file name does not contain eeg, ieeg, or meg'); % theoretically impossible
+                            end
                         end
                     end
                 end
