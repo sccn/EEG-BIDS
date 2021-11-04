@@ -481,7 +481,7 @@ end
 % ---------------------------
 if ~isempty(opt.README)
     if exist(opt.README) ~= 2
-        fid = fopen(fullfile(opt.targetdir, 'README.txt'), 'w');
+        fid = fopen(fullfile(opt.targetdir, 'README'), 'w');
         if fid == -1, error('Cannot write README file'); end
         fprintf(fid, '%s', opt.README);
         fclose(fid);
