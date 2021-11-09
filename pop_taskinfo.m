@@ -192,7 +192,11 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
                             if strcmp(objs(i).Tag, 'ReferencesAndLinks') || strcmp(objs(i).Tag, 'Authors')
                                 gInfo.(objs(i).Tag) = {objs(i).String};
                             else
-                                gInfo.(objs(i).Tag) = objs(i).String;
+                                tmp = objs(i).String;
+                                if ndims(tmp) > 1 && size(tmp,1) > 1
+                                    tmp = reformatchartostring(tmp);                               
+                                end
+                                gInfo.(objs(i).Tag) = tmp;
                             end
                         else
                             if strcmp(objs(i).Style, 'popupmenu')
@@ -210,7 +214,11 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
                                     tmp.FilterDescription.Description = objs(i).String;
                                     tInfo.(objs(i).Tag) = tmp;
                                 else
-                                    tInfo.(objs(i).Tag) = objs(i).String;
+                                    tmp = objs(i).String;
+                                    if ndims(tmp) > 1 && size(tmp,1) > 1
+                                        tmp = reformatchartostring(tmp);
+                                    end
+                                    tInfo.(objs(i).Tag) = tmp;
                                 end
                             end
                         end
@@ -339,5 +347,11 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
     end
 
     function editedCB(src,event)
+    end
+
+    function string_out = reformatchartostring(char_in)
+        char_in(1:end-1,end+1) = newline;
+        char_in = char_in';
+        string_out = char_in(:)';
     end
 end
