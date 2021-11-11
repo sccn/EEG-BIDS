@@ -263,6 +263,7 @@ opt = finputcheck(varargin, {
     'anattype'  ''        {}    'T1w';
     'chanlocs'  ''        {}    '';
     'chanlookup' 'string' {}    '';
+    'interactive' 'string'  {'on' 'off'}    'off';
     'defaced'   'string'  {'on' 'off'}    'on';
     'createids' 'string'  {'on' 'off'}    'on';
     'singleEventsJson' 'string'  {'on' 'off'}    'on';
@@ -277,21 +278,22 @@ end
 
 % deleting folder
 fprintf('Exporting data to %s...\n', opt.targetdir);
-if exist(opt.targetdir,'dir')
-    uilist = { ...
-        { 'Style', 'text', 'string', 'Output directory exists and all current files will be deleted if continue', 'fontweight', 'bold'  }, ...
-        { 'Style', 'text', 'string', 'Would you want to proceed?'}, ...
-        };
-    geometry = { [1] [1]};
-    geomvert =   [1  1 ];
-    [results,userdata,isOk,restag] = inputgui( 'geometry', geometry, 'geomvert', geomvert, 'uilist', uilist, 'title', 'Warning');
-    if isempty(isOk) 
-        disp('BIDS export cancelled...')
-        return 
-    else
-        disp('Deleting folder...')
-        rmdir(opt.targetdir, 's');
+if exist(opt.targetdir,'dir') 
+    if strcmpi(opt.interactive, 'on')
+        uilist = { ...
+            { 'Style', 'text', 'string', 'Output directory exists and all current files will be deleted if continue', 'fontweight', 'bold'  }, ...
+            { 'Style', 'text', 'string', 'Would you want to proceed?'}, ...
+            };
+        geometry = { [1] [1]};
+        geomvert =   [1  1 ];
+        [results,userdata,isOk,restag] = inputgui( 'geometry', geometry, 'geomvert', geomvert, 'uilist', uilist, 'title', 'Warning');
+        if isempty(isOk)
+            disp('BIDS export cancelled...')
+            return
+        end
     end
+    disp('Folder exist. Deleting folder...')
+    rmdir(opt.targetdir, 's');
 end
 
 disp('Creating sub-directories...')

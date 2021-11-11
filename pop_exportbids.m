@@ -180,7 +180,11 @@ end
 if ~isempty(pInfo)
     options = [options 'pInfo' {pInfo}];
 end
-bids_export(subjects, options{:});
+if nargin < 3
+    bids_export(subjects, 'interactive', 'on', options{:});
+else
+    bids_export(subjects, options{:});
+end
 disp('Done');
 
 % history
