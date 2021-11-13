@@ -266,7 +266,7 @@ opt = finputcheck(varargin, {
     'interactive' 'string'  {'on' 'off'}    'off';
     'defaced'   'string'  {'on' 'off'}    'on';
     'createids' 'string'  {'on' 'off'}    'on';
-    'singleEventsJson' 'string'  {'on' 'off'}    'on';
+    'individualEventsJson' 'string'  {'on' 'off'}    'off';
     'exportext' 'string'  { 'edf' 'eeglab' } 'eeglab';
     'README'    'string'  {}    '';
     'CHANGES'   'string'  {}    '' ;
@@ -475,7 +475,7 @@ for iField = 1:length(fields)
     if ~isfield(opt.eInfoDesc, fields{iField}), opt.eInfoDesc(1).(fields{iField}) = struct([]); end
     opt.eInfoDesc.(fields{iField}) = checkfields(opt.eInfoDesc.(fields{iField}), eInfoDescFields, 'eInfoDesc');
 end
-if strcmpi(opt.singleEventsJson, 'on')
+if strcmpi(opt.individualEventsJson, 'off')
     jsonwrite(fullfile(opt.targetdir, ['task-' opt.taskName '_events.json' ]), opt.eInfoDesc,struct('indent','  '));
 end
 
@@ -766,7 +766,7 @@ end
 [folderOut,fileOut,~] = fileparts(fileOut);
 fileOut = fullfile(folderOut,fileOut);
 if ~isempty(EEG.event)
-    if strcmpi(opt.singleEventsJson,'off')
+    if strcmpi(opt.individualEventsJson,'on')
         jsonwrite([ fileOut(1:end-3) 'events.json' ], opt.eInfoDesc,struct('indent','  '));
     end
     % --- _events.tsv
