@@ -263,9 +263,10 @@ opt = finputcheck(varargin, {
     'anattype'  ''        {}    'T1w';
     'chanlocs'  ''        {}    '';
     'chanlookup' 'string' {}    '';
+    'interactive' 'string'  {'on' 'off'}    'off';
     'defaced'   'string'  {'on' 'off'}    'on';
     'createids' 'string'  {'on' 'off'}    'on';
-    'singleEventsJson' 'string'  {'on' 'off'}    'on';
+    'individualEventsJson' 'string'  {'on' 'off'}    'off';
     'exportext' 'string'  { 'edf' 'eeglab' } 'eeglab';
     'README'    'string'  {}    '';
     'CHANGES'   'string'  {}    '' ;
@@ -277,21 +278,22 @@ end
 
 % deleting folder
 fprintf('Exporting data to %s...\n', opt.targetdir);
-if exist(opt.targetdir,'dir')
-    uilist = { ...
-        { 'Style', 'text', 'string', 'Output directory exists and all current files will be deleted if continue', 'fontweight', 'bold'  }, ...
-        { 'Style', 'text', 'string', 'Would you want to proceed?'}, ...
-        };
-    geometry = { [1] [1]};
-    geomvert =   [1  1 ];
-    [results,userdata,isOk,restag] = inputgui( 'geometry', geometry, 'geomvert', geomvert, 'uilist', uilist, 'title', 'Warning');
-    if isempty(isOk) 
-        disp('BIDS export cancelled...')
-        return 
-    else
-        disp('Deleting folder...')
-        rmdir(opt.targetdir, 's');
+if exist(opt.targetdir,'dir') 
+    if strcmpi(opt.interactive, 'on')
+        uilist = { ...
+            { 'Style', 'text', 'string', 'Output directory exists and all current files will be deleted if continue', 'fontweight', 'bold'  }, ...
+            { 'Style', 'text', 'string', 'Would you want to proceed?'}, ...
+            };
+        geometry = { [1] [1]};
+        geomvert =   [1  1 ];
+        [results,userdata,isOk,restag] = inputgui( 'geometry', geometry, 'geomvert', geomvert, 'uilist', uilist, 'title', 'Warning');
+        if isempty(isOk)
+            disp('BIDS export cancelled...')
+            return
+        end
     end
+    disp('Folder exist. Deleting folder...')
+    rmdir(opt.targetdir, 's');
 end
 
 disp('Creating sub-directories...')
@@ -473,7 +475,7 @@ for iField = 1:length(fields)
     if ~isfield(opt.eInfoDesc, fields{iField}), opt.eInfoDesc(1).(fields{iField}) = struct([]); end
     opt.eInfoDesc.(fields{iField}) = checkfields(opt.eInfoDesc.(fields{iField}), eInfoDescFields, 'eInfoDesc');
 end
-if strcmpi(opt.singleEventsJson, 'on')
+if strcmpi(opt.individualEventsJson, 'off')
     jsonwrite(fullfile(opt.targetdir, ['task-' opt.taskName '_events.json' ]), opt.eInfoDesc,struct('indent','  '));
 end
 
@@ -764,7 +766,7 @@ end
 [folderOut,fileOut,~] = fileparts(fileOut);
 fileOut = fullfile(folderOut,fileOut);
 if ~isempty(EEG.event)
-    if strcmpi(opt.singleEventsJson,'off')
+    if strcmpi(opt.individualEventsJson,'on')
         jsonwrite([ fileOut(1:end-3) 'events.json' ], opt.eInfoDesc,struct('indent','  '));
     end
     % --- _events.tsv

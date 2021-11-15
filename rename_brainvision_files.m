@@ -73,31 +73,33 @@ end
 fclose(fid1);
 fclose(fid2);
 
-oldmarkerfile = fullfile(pathIn , oldmarkerfile);
-newmarkerfile = fullfile(pathOut, newmarkerfile);
-assert(exist(newmarkerfile, 'file')==0, 'the file %s already exists', newmarkerfile);
-fid1 = fopen(oldmarkerfile, 'r');
-fid2 = fopen(newmarkerfile, 'w');
+if exist('oldmarkerfile', 'var')
+    oldmarkerfile = fullfile(pathIn , oldmarkerfile);
+    newmarkerfile = fullfile(pathOut, newmarkerfile);
+    assert(exist(newmarkerfile, 'file')==0, 'the file %s already exists', newmarkerfile);
+    fid1 = fopen(oldmarkerfile, 'r');
+    fid2 = fopen(newmarkerfile, 'w');
 
-while ~feof(fid1)
-  line = fgetl(fid1);
-  if ~isempty(regexp(line, '^HeaderFile', 'once'))
-    [~, rem] = strtok(line, '=');
-    oldheaderfile = rem(2:end);
-    [~, ~, x] = fileparts(oldheaderfile);
-    newheaderfile = [baseNameOut switchcase(x)];
-    line = sprintf('HeaderFile=%s', newheaderfile);
-  elseif ~isempty(regexp(line, '^DataFile', 'once'))
-    [~, rem] = strtok(line, '=');
-    olddatafile = rem(2:end);
-    [~, ~, x] = fileparts(olddatafile);
-    newdatafile = [baseNameOut switchcase('.eeg')];
-    line = sprintf('DataFile=%s', newdatafile);
-  end
-  fprintf(fid2, '%s\r\n', line);
+    while ~feof(fid1)
+        line = fgetl(fid1);
+        if ~isempty(regexp(line, '^HeaderFile', 'once'))
+            [~, rem] = strtok(line, '=');
+            oldheaderfile = rem(2:end);
+            [~, ~, x] = fileparts(oldheaderfile);
+            newheaderfile = [baseNameOut switchcase(x)];
+            line = sprintf('HeaderFile=%s', newheaderfile);
+        elseif ~isempty(regexp(line, '^DataFile', 'once'))
+            [~, rem] = strtok(line, '=');
+            olddatafile = rem(2:end);
+            [~, ~, x] = fileparts(olddatafile);
+            newdatafile = [baseNameOut switchcase('.eeg')];
+            line = sprintf('DataFile=%s', newdatafile);
+        end
+        fprintf(fid2, '%s\r\n', line);
+    end
+    fclose(fid1);
+    fclose(fid2);
 end
-fclose(fid1);
-fclose(fid2);
 
 olddatafile = fullfile(pathIn , olddatafile);
 newdatafile = fullfile(pathOut, newdatafile);

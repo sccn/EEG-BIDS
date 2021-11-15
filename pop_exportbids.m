@@ -59,7 +59,7 @@ if nargin < 3 && ~ischar(STUDY)
         { 'Style', 'pushbutton', 'string', 'Edit participants' 'tag' 'participants' 'callback' cb_participants }, ...
         { 'Style', 'pushbutton', 'string', 'Edit event info' 'tag' 'events' 'callback' cb_events }, ...
         { 'Style', 'checkbox', 'string', 'Do not use participants ID and create anonymized participant ID instead' 'tag' 'newids' }, ...
-        { 'Style', 'checkbox', 'string', 'Use single top-level events.json' 'tag' 'eventsJson' }, ...
+        { 'Style', 'checkbox', 'string', 'Export individual events.json' 'tag' 'eventsJson' }, ...
         };
     relSize = 0.7;
     geometry = { [1] [1] [1-relSize relSize*0.8 relSize*0.2] [1-relSize relSize] [1] [1] [1 1 1] [1] [1]};
@@ -81,7 +81,7 @@ if nargin < 3 && ~ischar(STUDY)
 %     end
     
     % options
-    options = { 'targetdir' restag.outputfolder 'License' restag.license 'CHANGES' restag.changes 'createids' fastif(restag.newids, 'on', 'off') 'singleEventsJson' fastif(restag.eventsJson, 'on', 'off')};
+    options = { 'targetdir' restag.outputfolder 'License' restag.license 'CHANGES' restag.changes 'createids' fastif(restag.newids, 'on', 'off') 'individualEventsJson' fastif(restag.eventsJson, 'on', 'off')};
     
     if ~isfield(EEG(1), 'BIDS') % none of the edit button was clicked
         EEG = pop_eventinfo(EEG, STUDY, 'default');
@@ -180,7 +180,11 @@ end
 if ~isempty(pInfo)
     options = [options 'pInfo' {pInfo}];
 end
-bids_export(subjects, options{:});
+if nargin < 3
+    bids_export(subjects, 'interactive', 'on', options{:});
+else
+    bids_export(subjects, options{:});
+end
 disp('Done');
 
 % history
