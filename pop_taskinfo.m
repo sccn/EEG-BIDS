@@ -156,7 +156,7 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
     end
     
     %% history
-    com = sprintf('pop_taskinfo(ALLEG);');
+    com = sprintf('EEG = pop_taskinfo(EEG);');
 
 
 %% Helper functions
