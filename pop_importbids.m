@@ -434,6 +434,17 @@ for iSubject = 2:size(bids.participants,1)
                             %                         end
                         end
                         EEG.event = events;
+                        % import HED tags if exists
+                        if plugin_status('HEDTools')
+                            eventsJsonFile = fullfile(eventDescFile.folder, eventDescFile.name);
+                            if exist([ eegFileRaw(1:end-8) '_events.json' ], 'File')
+                                eventsJsonFile = [ eegFileRaw(1:end-8) '_events.json' ];
+                            end
+                            fMap = fieldMap.createfMapFromJson(eventsJsonFile);
+                            if fMap.hasAnnotation()
+                                EEG.etc.tags = fMap.getStruct();
+                            end
+                        end
                         EEG = eeg_checkset(EEG, 'eventconsistency');
                         
                         
