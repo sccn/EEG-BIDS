@@ -196,7 +196,7 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
                             case 'TaskName' % no space allowed for task name
                                 gInfo.(objs(i).Tag) = strrep(objs(i).String,' ',''); 
                             case 'Authors'
-                                gInfo.(objs(i).Tag) = split(objs(i).String, ',');
+                                gInfo.(objs(i).Tag) = split(objs(i).String, ', ');
                             case 'ReferencesAndLinks'
                                 gInfo.(objs(i).Tag) = {objs(i).String};
                             case 'PowerLineFrequency'
@@ -205,7 +205,7 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
                                 tInfo.(objs(i).Tag) = [];
                                 tInfo.(objs(i).Tag).FilterDescription.Description = objs(i).String;
                             otherwise
-                                tInfo.(objs(i).Tag) = {objs(i).String};
+                                tInfo.(objs(i).Tag) = objs(i).String;
                         end
                     elseif isfield(tInfo,objs(i).Tag) % remove field if no longer has value
                         tInfo = rmfield(tInfo, objs(i).Tag);
