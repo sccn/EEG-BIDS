@@ -259,7 +259,15 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
                         if ischar(prevtInfo.(objs(i).Tag)) % accommodate previous code
                             objs(i).String = prevtInfo.(objs(i).Tag);
                         else
-                            objs(i).String = prevtInfo.(objs(i).Tag).FilterDescription.Description;
+                            try
+                                objs(i).String = ['LowPassFilter-cutoff: ' prevtInfo.(objs(i).Tag).LowPassFilter.cutoff];
+                            catch
+                                try
+                                    objs(i).String = prevtInfo.(objs(i).Tag).FilterDescription.Description;
+                                catch
+                                    objs(i).String = '';
+                                end
+                            end
                         end
                     else
                         objs(i).String = char(prevtInfo.(objs(i).Tag));

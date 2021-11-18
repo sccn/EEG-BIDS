@@ -1042,7 +1042,11 @@ else
         else
             if ~isfield(channelsCount, type), channelsCount.(type) = 0; end
             if strcmp(type, 'HEOG') || strcmp(type,'VEOG')
-                channelsCount.('EOG') = channelsCount.('EOG') + 1;
+                if ~isfield(channelsCount, 'EOG')
+                    channelsCount.('EOG') = 1;
+                else
+                    channelsCount.('EOG') = channelsCount.('EOG') + 1;
+                end
             else
                 channelsCount.(type) = channelsCount.(type) + 1;
             end
