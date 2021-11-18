@@ -195,10 +195,8 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
                                 gInfo.(objs(i).Tag) = tmp;
                             case 'TaskName' % no space allowed for task name
                                 gInfo.(objs(i).Tag) = strrep(objs(i).String,' ',''); 
-                            case 'Authors'
+                            case {'Authors', 'ReferencesAndLinks'}
                                 gInfo.(objs(i).Tag) = split(objs(i).String, ', ');
-                            case 'ReferencesAndLinks'
-                                gInfo.(objs(i).Tag) = {objs(i).String};
                             case 'PowerLineFrequency'
                                 tInfo.(objs(i).Tag) = str2double(objs(i).String{objs(i).Value});
                             case {'SoftwareFilters', 'HardwareFilters'}
@@ -261,8 +259,9 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
                     if strcmp(objs(i).Style, 'popupmenu') % dropdown
                         objs(i).Value = find(strcmp(objs(i).String, prevgInfo.(objs(i).Tag))); % set position of dropdown menu to the appropriate string
                     else
-                        if iscell(prevgInfo.(objs(i).Tag))
-                            objs(i).String = prevgInfo.(objs(i).Tag){1}; % e.g., Authors & ReferencesAndLinks
+                        if iscell(prevgInfo.(objs(i).Tag)) %e.g., Authors & ReferencesAndLinks
+                            tmp = sprintf('%s, ', prevgInfo.(objs(i).Tag){:}); % unpack multiple entries
+                            objs(i).String = tmp(1:end-2); % remove trailing comma and space 
                         else
                             objs(i).String = prevgInfo.(objs(i).Tag);
                         end
