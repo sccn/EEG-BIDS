@@ -435,7 +435,7 @@ for iSubject = 2:size(bids.participants,1)
                         end
                         EEG.event = events;
                         % import HED tags if exists
-                        if plugin_status('HEDTools')
+                        if plugin_status('HEDTools') && ~isempty(eventDescFile)
                             eventsJsonFile = fullfile(eventDescFile.folder, eventDescFile.name);
                             if exist([ eegFileRaw(1:end-8) '_events.json' ], 'File')
                                 eventsJsonFile = [ eegFileRaw(1:end-8) '_events.json' ];
