@@ -1147,7 +1147,7 @@ tInfoFields = {...
     'EEGGround' 'RECOMMENDED ' 'char' '';
     'HeadCircumference' 'OPTIONAL ' '' 0;
     'MiscChannelCount' ' OPTIONAL' '' '';
-    'TriggerChannelCount' 'RECOMMENDED' 'char' ''; % double in Bucanl's fork
+    'TriggerChannelCount' 'RECOMMENDED' '' ''; % double in Bucanl's fork
     'EEGPlacementScheme' 'RECOMMENDED' 'char' '';
     'Manufacturer' 'RECOMMENDED' 'char' '';
     'ManufacturersModelName' 'OPTIONAL' 'char' '';

@@ -552,7 +552,7 @@ function [EEG, STUDY, command] = pop_eventinfo(EEG, STUDY, varargin)
         end
         
         % if resume editing
-        if ~isempty(bidsEEG) && isfield(bidsEEG.BIDS,'eInfoDesc') && isfield(bidsEEG.BIDS,'eInfo')
+        if ~isempty(bidsEEG) && isfield(bidsEEG.BIDS,'eInfoDesc') && ~isempty(bidsEEG.BIDS.eInfoDesc) && isfield(bidsEEG.BIDS,'eInfo')
             prev_bids_fields = fieldnames(bidsEEG.BIDS.eInfoDesc);
             for idx=1:numel(prev_bids_fields)
                 bids_field = prev_bids_fields{idx}; % to be keys of event struct
