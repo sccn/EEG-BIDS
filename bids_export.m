@@ -972,13 +972,19 @@ if ~isempty(EEG.event)
                         
                     otherwise
                         if isfield(EEG.event, opt.eInfo{iField,2})
-                            tmpVal = num2str(EEG.event(iEvent).(opt.eInfo{iField,2}));
+                            tmpVal = EEG.event(iEvent).(opt.eInfo{iField,2});
+                            if isnumeric(tmpVal)
+                                tmpVal = num2str(tmpVal);
+                            elseif iscell(tmpVal)
+                                tmpVal = tmpVal{1};
+                            end
                             if isequal(tmpVal, 'NaN')
                                 tmpVal = 'n/a';
                             end
                         else
                             tmpVal = 'n/a';
                         end
+                        assert(ischar(tmpVal));
                         str{end+1} = tmpVal;
                 end % switch
             end
