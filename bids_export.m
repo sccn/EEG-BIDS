@@ -180,6 +180,8 @@
 %  'createids' - ['on'|'off'] do not use Participant IDs and create new
 %                anonymized IDs instead. Default is 'off'.
 %
+%  'noevents' - ['on'|'off'] do not save event files. Default is 'off'.
+%
 %  'chanlocs'  - [struct or file name] channel location structure or file
 %                name to use when saving channel information. Note that
 %                this assumes that all the files have the same number of
@@ -266,6 +268,7 @@ opt = finputcheck(varargin, {
     'interactive' 'string'  {'on' 'off'}    'off';
     'defaced'   'string'  {'on' 'off'}    'on';
     'createids' 'string'  {'on' 'off'}    'on';
+    'noevents'  'string'  {'on' 'off'}    'on';
     'individualEventsJson' 'string'  {'on' 'off'}    'off';
     'exportext' 'string'  { 'edf' 'eeglab' } 'eeglab';
     'README'    'string'  {}    '';
@@ -692,6 +695,7 @@ end
 % if BDF file anonymize records
 tInfo = opt.tInfo;
 [~,~,ext] = fileparts(fileOut);
+fprintf('Processing file %s\n', fileOut);
 if strcmpi(ext, '.bdf')
     fileIDIn  = fopen(fileIn,'rb','ieee-le');  % see sopen
     fileIDOut = fopen(fileOut,'wb','ieee-le');  % see sopen
@@ -744,6 +748,9 @@ elseif strcmpi(ext, '.eeg')
     end
 else
     error('Data format not supported');
+end
+if strcmpi(opt.noevents, 'on')
+    EEG.event = [];
 end
 
 % Getting events latency

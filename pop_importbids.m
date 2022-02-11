@@ -303,7 +303,7 @@ for iSubject = 2:size(bids.participants,1)
                     end
                 end
                 if contains(tmpFileName,'task')
-                    tStart = strfind(tmpFileName,'task');
+                    tStart = strfind(tmpFileName,'_task')+1;
                     tEnd = underScores - tStart; 
                     tEnd = min(tEnd(tEnd>0)) + tStart - 1;
                     task = tmpFileName(tStart:tEnd);
