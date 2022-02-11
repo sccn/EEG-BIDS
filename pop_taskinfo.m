@@ -55,7 +55,7 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
     uicontrol('Style', 'text', 'string', 'Task name (no space)','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '', 'tag', 'TaskName','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
     top = top - tfHeight - 0.01;
-    uicontrol('Style', 'text', 'string', 'For several tasks, use bids_export.m from the command line', 'tag', 'Taskname2','BackgroundColor',bg,'fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
+    uicontrol('Style', 'text', 'string', 'For several tasks, use bids_export.m from the command line', 'BackgroundColor',bg,'fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
     top = top - tfHeight - 0.01;
     uicontrol('Style', 'text', 'string', 'README (short introduction to the experiment):','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight]);
     top = top - tfHeight*2.2;
@@ -186,41 +186,24 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
             for i=1:numel(objs)
                 if ~isempty(objs(i).Tag)
                     if ~isempty(objs(i).String)
-                        if strcmp(objs(i).Tag, 'TaskName')
-                            gInfo.(objs(i).Tag) = strrep(objs(i).String,' ',''); % no space allowed for task name
-                        elseif strcmp(objs(i).Tag, 'README') || strcmp(objs(i).Tag, 'Name') || strcmp(objs(i).Tag, 'ReferencesAndLinks') || strcmp(objs(i).Tag, 'Authors')
-                            if strcmp(objs(i).Tag, 'ReferencesAndLinks') || strcmp(objs(i).Tag, 'Authors')
-                                gInfo.(objs(i).Tag) = {objs(i).String};
-                            else
+                        switch objs(i).Tag
+                            case {'README', 'TaskDescription', 'Instructions'}
                                 tmp = objs(i).String;
                                 if ndims(tmp) > 1 && size(tmp,1) > 1
-                                    tmp = reformatchartostring(tmp);                               
+                                    tmp = reformatchartostring(tmp);
                                 end
                                 gInfo.(objs(i).Tag) = tmp;
-                            end
-                        else
-                            if strcmp(objs(i).Style, 'popupmenu')
-                                if objs(i).Value > 1 % dropdown
-                                    if strcmp(objs(i).Tag, 'PowerLineFrequency')
-                                        tInfo.(objs(i).Tag) = str2double(objs(i).String{objs(i).Value});
-                                    else
-                                        tInfo.(objs(i).Tag) = objs(i).String{objs(i).Value};
-                                    end
-                                end
-                            else
-                                if strcmp(objs(i).Tag, 'HardwareFilters') || strcmp(objs(i).Tag, 'SoftwareFilters')
-                                    tmp = [];
-                                    tmp.FilterDescription = [];
-                                    tmp.FilterDescription.Description = objs(i).String;
-                                    tInfo.(objs(i).Tag) = tmp;
-                                else
-                                    tmp = objs(i).String;
-                                    if ndims(tmp) > 1 && size(tmp,1) > 1
-                                        tmp = reformatchartostring(tmp);
-                                    end
-                                    tInfo.(objs(i).Tag) = tmp;
-                                end
-                            end
+                            case 'TaskName' % no space allowed for task name
+                                gInfo.(objs(i).Tag) = strrep(objs(i).String,' ',''); 
+                            case {'Authors', 'ReferencesAndLinks'}
+                                gInfo.(objs(i).Tag) = split(objs(i).String, ', ');
+                            case 'PowerLineFrequency'
+                                tInfo.(objs(i).Tag) = str2double(objs(i).String{objs(i).Value});
+                            case {'SoftwareFilters', 'HardwareFilters'}
+                                tInfo.(objs(i).Tag) = [];
+                                tInfo.(objs(i).Tag).FilterDescription.Description = objs(i).String;
+                            otherwise
+                                tInfo.(objs(i).Tag) = objs(i).String;
                         end
                     elseif isfield(tInfo,objs(i).Tag) % remove field if no longer has value
                         tInfo = rmfield(tInfo, objs(i).Tag);
@@ -259,7 +242,15 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
                         if ischar(prevtInfo.(objs(i).Tag)) % accommodate previous code
                             objs(i).String = prevtInfo.(objs(i).Tag);
                         else
-                            objs(i).String = prevtInfo.(objs(i).Tag).FilterDescription.Description;
+                            try
+                                objs(i).String = ['LowPassFilter-cutoff: ' prevtInfo.(objs(i).Tag).LowPassFilter.cutoff];
+                            catch
+                                try
+                                    objs(i).String = prevtInfo.(objs(i).Tag).FilterDescription.Description;
+                                catch
+                                    objs(i).String = '';
+                                end
+                            end
                         end
                     else
                         objs(i).String = char(prevtInfo.(objs(i).Tag));
@@ -276,8 +267,9 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
                     if strcmp(objs(i).Style, 'popupmenu') % dropdown
                         objs(i).Value = find(strcmp(objs(i).String, prevgInfo.(objs(i).Tag))); % set position of dropdown menu to the appropriate string
                     else
-                        if iscell(prevgInfo.(objs(i).Tag))
-                            objs(i).String = prevgInfo.(objs(i).Tag){1}; % e.g., Authors & ReferencesAndLinks
+                        if iscell(prevgInfo.(objs(i).Tag)) %e.g., Authors & ReferencesAndLinks
+                            tmp = sprintf('%s, ', prevgInfo.(objs(i).Tag){:}); % unpack multiple entries
+                            objs(i).String = tmp(1:end-2); % remove trailing comma and space 
                         else
                             objs(i).String = prevgInfo.(objs(i).Tag);
                         end

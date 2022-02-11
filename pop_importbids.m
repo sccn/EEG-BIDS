@@ -67,7 +67,7 @@ if nargin < 1
         '   set(findobj(gcbf, ''tag'', ''folder''), ''string'', tmpfolder);' ...
         'end;' ...
         'clear tmpfolder;' ];
-    type_fields = { 'value' 'trial_type' };
+    type_fields = { 'value' 'trial_type' 'event_kind' };
     
     % scan if multiple tasks are present
     disp('Scanning folders...');
@@ -405,6 +405,11 @@ for iSubject = 2:size(bids.participants,1)
                     if strcmpi(opt.bidsevent, 'on')                        
                         events = struct([]);
                         indSample = strmatch('sample', lower(eventData(1,:)), 'exact');
+                        indType      = strmatch('type', lower(eventData(1,:)), 'exact');
+                        indTrialType = strmatch('trial_type', lower(eventData(1,:)), 'exact');
+                        if ~isempty(indType) && isempty(indTrialType)
+                            eventData(1,indType) = { 'trial_type' }; % renaming type as trial_type because erased below
+                        end
                         indTrial = strmatch( opt.eventtype, lower(eventData(1,:)), 'exact');
                         for iEvent = 2:size(eventData,1)
                             events(end+1).latency  = eventData{iEvent,1}*EEG.srate+1; % convert to samples
@@ -417,16 +422,16 @@ for iSubject = 2:size(bids.participants,1)
                                 events(end).sample = eventData{iEvent,indSample} + 1;
                                 bids.eventInfo(end+1,:) = {'sample' 'sample'};
                             end
-                            if ~isempty(indTrial)
-                                events(end).type = eventData{iEvent,indTrial};
-                                bids.eventInfo(end+1,:) = { opt.eventtype 'type' };
-                            end                           
                             for iField = 1:length(eventData(1,:))
                                 if ~any(strcmpi(eventData{1,iField}, {'onset', 'duration', 'sample', opt.eventtype}))
                                     events(end).(eventData{1,iField}) = eventData{iEvent,iField};
                                     bids.eventInfo(end+1,:) = { eventData{1,iField} eventData{1,iField} };
                                 end
                             end
+                            if ~isempty(indTrial)
+                                events(end).type = eventData{iEvent,indTrial};
+                                bids.eventInfo(end+1,:) = { opt.eventtype 'type' };
+                            end                           
                             %                         if size(eventData,2) > 3 && strcmpi(eventData{1,4}, 'response_time') && ~strcmpi(eventData{iEvent,4}, 'n/a')
                             %                             events(end+1).type   = 'response';
                             %                             events(end).latency  = (eventData{iEvent,1}+eventData{iEvent,4})*EEG.srate+1; % convert to samples
@@ -434,6 +439,17 @@ for iSubject = 2:size(bids.participants,1)
                             %                         end
                         end
                         EEG.event = events;
+                        % import HED tags if exists
+                        if plugin_status('HEDTools') && ~isempty(eventDescFile)
+                            eventsJsonFile = fullfile(eventDescFile.folder, eventDescFile.name);
+                            if exist([ eegFileRaw(1:end-8) '_events.json' ], 'File')
+                                eventsJsonFile = [ eegFileRaw(1:end-8) '_events.json' ];
+                            end
+                            fMap = fieldMap.createfMapFromJson(eventsJsonFile);
+                            if fMap.hasAnnotation()
+                                EEG.etc.tags = fMap.getStruct();
+                            end
+                        end
                         EEG = eeg_checkset(EEG, 'eventconsistency');
                         
                         
