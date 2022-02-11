@@ -47,3 +47,5 @@ v5.3.1 - update documentation for tInfo.HardwareFilters; fix bug defaults fields
 v5.4 - fix issue with reading BIDS information when importing BIDS data to STUDY
 
 v6.0 - new examples and fixes for HED
+
+v6.1 - allow data with no events. Fix HED import/export. Fix history.
