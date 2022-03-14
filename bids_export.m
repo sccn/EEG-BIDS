@@ -267,7 +267,7 @@ opt = finputcheck(varargin, {
     'chanlookup' 'string' {}    '';
     'interactive' 'string'  {'on' 'off'}    'off';
     'defaced'   'string'  {'on' 'off'}    'on';
-    'createids' 'string'  {'on' 'off'}    'on';
+    'createids' 'string'  {'on' 'off'}    'off';
     'noevents'  'string'  {'on' 'off'}    'on';
     'individualEventsJson' 'string'  {'on' 'off'}    'off';
     'exportext' 'string'  { 'edf' 'eeglab' } 'eeglab';
