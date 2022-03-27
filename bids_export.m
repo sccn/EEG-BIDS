@@ -435,10 +435,13 @@ if ~isempty(opt.pInfo)
             participants{iSubj, 1} = sprintf('sub-%3.3d', iSubj-1);
         end
     end
-    if strcmp('participant_id', opt.pInfo{1,1})
-        opt.pInfo = opt.pInfo(:,2:end);
+    if size(opt.pInfo,2) > 1
+        if strcmp('participant_id', opt.pInfo{1,1})
+            participants(:,2:2+size(opt.pInfo,2)-1) = opt.pInfo(:,2:end);
+        else
+            participants(:,2:2+size(opt.pInfo,2)-1) = opt.pInfo;
+        end
     end
-    participants(:,2:2+size(opt.pInfo,2)-1) = opt.pInfo;
     
     writetsv(fullfile(opt.targetdir, 'participants.tsv'), participants);
 end
