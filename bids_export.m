@@ -268,7 +268,7 @@ opt = finputcheck(varargin, {
     'interactive' 'string'  {'on' 'off'}    'off';
     'defaced'   'string'  {'on' 'off'}    'on';
     'createids' 'string'  {'on' 'off'}    'off';
-    'noevents'  'string'  {'on' 'off'}    'on';
+    'noevents'  'string'  {'on' 'off'}    'off';
     'individualEventsJson' 'string'  {'on' 'off'}    'off';
     'exportext' 'string'  { 'edf' 'eeglab' } 'eeglab';
     'README'    'string'  {}    '';
@@ -817,19 +817,12 @@ if ~isempty(EEG.event)
         opt.eInfo(end+1,:) = { 'stim_file' '' };
     end
     
-    % reorder fields so it matches BIDS
-    fieldOrder = { 'onset' 'duration' 'sample' 'trial_type' 'response_time' 'stim_file' 'value'}; % 'HED' }; % remove HED from default column in events.tsv as HED tags should be put in events.json instead
-    newOrder = [];
+    % reorder fields to put required and default fields first
+    fieldOrder = { 'onset' 'duration' 'sample' 'value'}; % 'HED' }; % remove HED from default column in events.tsv as HED tags should be put in events.json instead
+                                                         %  'trial_type' 'response_time' 'stim_file' }; % no longer required by BIDS by default
+    newOrder = []; 
     for iField = 1:length(fieldOrder)
         ind = strmatch(fieldOrder{iField}, opt.eInfo(:,1)', 'exact');
-        if isempty(ind) % add unfound field to opt.eInfo, skipping HED
-            if ~strcmpi(fieldOrder{iField}, 'HED') % skip HED (create problem with validator)
-                opt.eInfo(end+1,1:2) = { fieldOrder{iField} 'n/a' }; % indicating that there's no column in eInfo matching fieldOrder{iField}
-                ind = size(opt.eInfo,1);
-            else
-                ind = [];
-            end
-        end
         newOrder = [ newOrder ind ];
     end
     remainingInd = setdiff([1:size(opt.eInfo,1)], newOrder);
