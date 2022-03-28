@@ -437,9 +437,9 @@ if ~isempty(opt.pInfo)
     end
     if size(opt.pInfo,2) > 1
         if strcmp('participant_id', opt.pInfo{1,1})
-            participants(:,2:2+size(opt.pInfo,2)-1) = opt.pInfo(:,2:end);
+            participants(:,2:size(opt.pInfo,2)) = opt.pInfo(:,2:end);
         else
-            participants(:,2:2+size(opt.pInfo,2)-1) = opt.pInfo;
+            participants(:,2:size(opt.pInfo,2)+1) = opt.pInfo;
         end
     end
     
