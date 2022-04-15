@@ -400,68 +400,26 @@ for iSubject = 2:size(bids.participants,1)
                     
                     % event data
                     % ----------
-                    eventData = loadfile( [ eegFileRaw(1:end-8) '_events.tsv' ], eventFile);
-                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
-                    eventDesc = loadfile( [ eegFileRaw(1:end-8) '_events.json' ], eventDescFile);
-                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
-                    bids.eventInfo = {}; % for eInfo. Default is empty. If replacing EEG.event with events.tsv, match field names accordingly
-%                     if strcmpi(opt.bidsevent, 'on')                        
-%                         if isempty(eventData)
-%                             error('bidsevent on but events.tsv not found');
-%                         else
-%                             events = struct([]);
-%                             indSample = strmatch('sample', lower(eventData(1,:)), 'exact');
-%                             indType      = strmatch('type', lower(eventData(1,:)), 'exact');
-%                             indTrialType = strmatch('trial_type', lower(eventData(1,:)), 'exact');
-%                             if ~isempty(indType) && isempty(indTrialType)
-%                                 eventData(1,indType) = { 'trial_type' }; % renaming type as trial_type because erased below
-%                             end
-%                             indTrial = strmatch( opt.eventtype, lower(eventData(1,:)), 'exact');
-%                             for iEvent = 2:size(eventData,1)
-%                                 events(end+1).latency  = eventData{iEvent,1}*EEG.srate+1; % convert to samples
-%                                 if EEG.trials > 1
-%                                     events(end).epoch = floor(events(end).latency/EEG.pnts)+1;
-%                                 end
-%                                 events(end).duration   = eventData{iEvent,2}*EEG.srate;   % convert to samples
-%                                 bids.eventInfo = {'onset' 'latency'; 'duration' 'duration'}; % order in events.tsv: onset duration
-%                                 if ~isempty(indSample)
-%                                     events(end).sample = eventData{iEvent,indSample} + 1;
-%                                     bids.eventInfo(end+1,:) = {'sample' 'sample'};
-%                                 end
-%                                 for iField = 1:length(eventData(1,:))
-%                                     if ~any(strcmpi(eventData{1,iField}, {'onset', 'duration', 'sample', opt.eventtype}))
-%                                         events(end).(eventData{1,iField}) = eventData{iEvent,iField};
-%                                         bids.eventInfo(end+1,:) = { eventData{1,iField} eventData{1,iField} };
-%                                     end
-%                                 end
-%                                 if ~isempty(indTrial)
-%                                     events(end).type = eventData{iEvent,indTrial};
-%                                     bids.eventInfo(end+1,:) = { opt.eventtype 'type' };
-%                                 end                           
-%                                 %                         if size(eventData,2) > 3 && strcmpi(eventData{1,4}, 'response_time') && ~strcmpi(eventData{iEvent,4}, 'n/a')
-%                                 %                             events(end+1).type   = 'response';
-%                                 %                             events(end).latency  = (eventData{iEvent,1}+eventData{iEvent,4})*EEG.srate+1; % convert to samples
-%                                 %                             events(end).duration = 0;
-%                                 %                         end
-%                             end
-%                             EEG.event = events;
-%                             % import HED tags if exists
-%                             if plugin_status('HEDTools') && ~isempty(eventDescFile)
-%                                 eventsJsonFile = fullfile(eventDescFile.folder, eventDescFile.name);
-%                                 if exist([ eegFileRaw(1:end-8) '_events.json' ], 'File')
-%                                     eventsJsonFile = [ eegFileRaw(1:end-8) '_events.json' ];
-%                                 end
-%                                 fMap = fieldMap.createfMapFromJson(eventsJsonFile);
-%                                 if fMap.hasAnnotation()
-%                                     EEG.etc.tags = fMap.getStruct();
-%                                 end
-%                             end
-%                             EEG = eeg_checkset(EEG, 'eventconsistency');
-%                         end    
-%                     end
-
                     if strcmpi(opt.bidsevent, 'on')
-                        [EEG, bids, eventData, eventDesc] = import_events_files(EEG, eegFileRaw, bids, eventFile, eventDescFile, opt.eventtype); 
+                        if exist([ eegFileRaw(1:end-8) '_events.tsv' ], 'file')
+                            eventfile = [ eegFileRaw(1:end-8) '_events.tsv' ]; 
+                        elseif exist(eventFile, 'file')
+                            eventfile = eventFile; 
+                        else
+                            error('bidsevent on but events.tsv not found');
+                        end
+                        if exist([ eegFileRaw(1:end-8) '_events.json' ], 'file')
+                            selected_eventdescfile = [ eegFileRaw(1:end-8) '_events.json' ]; 
+                        elseif exist(eventDescFile, 'file')
+                            selected_eventdescfile = eventDescFile; 
+                        else
+                            warning('No events.json found');
+                        end
+%                     
+                        [EEG, bids, eventData, eventDesc] = import_events_files(EEG, eventfile, 'bids', bids, 'eventDescFile', selected_eventdescfile, 'eventtype', opt.eventtype); 
+                        if isempty(eventData), error('bidsevent on but events.tsv has no data'); end
+                        bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
+                        bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
                     end
                     
                     % copy information inside dataset

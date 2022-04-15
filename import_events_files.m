@@ -1,27 +1,27 @@
 % import_events_files - create EEG.event from events.tsv 
 %
 % Usage:
-%    [EEG, ~, ~, ~] = import_events_files(EEG, eegFileRaw, [], '','','')
+%    [EEG, ~, ~, ~] = import_events_files(EEG, eventfile, 'key', value)
 %
 %  
 %
 % Inputs:
-%  'EEG'       - [struct] the EEG structure
+%  'EEG'        - [struct] the EEG structure to which event information will be imported
 %
-%  'eegFileRaw'   - [string] filepath of the .set file at the desired output
-%                location. To be used as the base path for the events
-%                files. e.g. ~/BIDS_EXPORT/sub-01/ses-01/eeg/sub-01_ses-01_task-GoNogo_eeg.set
+%  'eventfile'  - [string] path to the events.tsv file. 
+%                 e.g. ~/BIDS_EXPORT/sub-01/ses-01/eeg/sub-01_ses-01_task-GoNogo_events.tsv
 %
-%  'bids'       - [struct] structure that saves imported BIDS information
 %
-%  'globalEventFile'  - [string] path to top-level events.tsv file if applicable
+% Optional inputs:
+%  'bids'          - [struct] structure that saves imported BIDS information. Default is []
 %
-%  'globalEventDescFile' - [string] path to top-level events.json file if applicable
+%  'eventDescFile' - [string] path to events.json file if applicable. Default is empty
 %
-%  'eventtype'  - [string] BIDS event column to be used as type in EEG.event
+%  'eventtype'     - [string] BIDS event column to be used as type in EEG.event. Default is 'value'
 %
 % Outputs:
 %
+
 %   EEG     - [struct] the EEG structure with event info imported
 %
 %   bids    - [struct] structure that saves BIDS information with event information
@@ -31,18 +31,23 @@
 %   eventDesc - [struct] imported data from events.json
 %
 % Authors: Dung Truong, Arnaud Delorme, 2022
-function [EEG, bids, eventData, eventDesc] = import_events_files(EEG, eegFileRaw, bids, globalEventFile, globalEventDescFile, eventtype)
-% event data
+function [EEG, bids, eventData, eventDesc] = import_events_files(EEG, eventfile, varargin)
+g = finputcheck(varargin,  {'eventDescFile'   'string'   [] '';
+                            'bids'            'struct'   [] struct([]);
+                            'eventtype'       'string'   [] 'value' });
+if isstr(g), error(g); end
+bids = g.bids;
+                        
+% ---------
+% load files
+eventData = loadfile( eventfile, '');
+eventDesc = loadfile( g.eventDescFile, '');
+
 % ----------
-if isempty(bids), bids = []; end
-if isempty(eventtype), eventtype = 'value'; end
-eventData = loadfile( [ eegFileRaw(1:end-8) '_events.tsv' ], globalEventFile);
-% bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
-eventDesc = loadfile( [ eegFileRaw(1:end-8) '_events.json' ], globalEventDescFile);
-% bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
-bids.eventInfo = {}; % for eInfo. Default is empty. If replacing EEG.event with events.tsv, match field names accordingly
+% event data
+bids(1).eventInfo = {}; % for eInfo. Default is empty. If replacing EEG.event with events.tsv, match field names accordingly
 if isempty(eventData)
-    error('bidsevent on but events.tsv not found');
+    warning('No data found in events.tsv');
 else
     events = struct([]);
     indSample = strmatch('sample', lower(eventData(1,:)), 'exact');
@@ -51,7 +56,7 @@ else
     if ~isempty(indType) && isempty(indTrialType)
         eventData(1,indType) = { 'trial_type' }; % renaming type as trial_type because erased below
     end
-    indTrial = strmatch( eventtype, lower(eventData(1,:)), 'exact');
+    indTrial = strmatch( g.eventtype, lower(eventData(1,:)), 'exact');
     for iEvent = 2:size(eventData,1)
         events(end+1).latency  = eventData{iEvent,1}*EEG.srate+1; % convert to samples
         if EEG.trials > 1
@@ -64,14 +69,14 @@ else
             bids.eventInfo(end+1,:) = {'sample' 'sample'};
         end
         for iField = 1:length(eventData(1,:))
-            if ~any(strcmpi(eventData{1,iField}, {'onset', 'duration', 'sample', eventtype}))
+            if ~any(strcmpi(eventData{1,iField}, {'onset', 'duration', 'sample', g.eventtype}))
                 events(end).(eventData{1,iField}) = eventData{iEvent,iField};
                 bids.eventInfo(end+1,:) = { eventData{1,iField} eventData{1,iField} };
             end
         end
         if ~isempty(indTrial)
             events(end).type = eventData{iEvent,indTrial};
-            bids.eventInfo(end+1,:) = { eventtype 'type' };
+            bids.eventInfo(end+1,:) = { g.eventtype 'type' };
         end                           
         %                         if size(eventData,2) > 3 && strcmpi(eventData{1,4}, 'response_time') && ~strcmpi(eventData{iEvent,4}, 'n/a')
         %                             events(end+1).type   = 'response';
@@ -79,24 +84,19 @@ else
         %                             events(end).duration = 0;
         %                         end
     end
-    EEG.event = events;
-    % import HED tags if exists
-    if plugin_status('HEDTools')
-        eventsJsonFile = '';
-        if ~isempty(eventDescFile)
-            eventsJsonFile = fullfile(eventDescFile.folder, eventDescFile.name);
-        elseif exist([ eegFileRaw(1:end-8) '_events.json' ], 'File')
-            eventsJsonFile = [ eegFileRaw(1:end-8) '_events.json' ];
-        end
-        if ~isempty(eventsJsonFile)
-            fMap = fieldMap.createfMapFromJson(eventsJsonFile);
-            if fMap.hasAnnotation()
-                EEG.etc.tags = fMap.getStruct();
-            end
-        end
-    end
+    EEG.event = events; 
     EEG = eeg_checkset(EEG, 'eventconsistency');
 end    
+
+% import HED tags if exists
+if ~isempty(g.eventDescFile)
+    if plugin_status('HEDTools')
+        fMap = fieldMap.createfMapFromJson(g.eventDescFile);
+        if fMap.hasAnnotation()
+            EEG.etc.tags = fMap.getStruct();
+        end
+    end
+end
 
 % import JSON or TSV file
 % -----------------------
