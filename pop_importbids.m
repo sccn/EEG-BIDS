@@ -96,7 +96,8 @@ if nargin < 1
     [~,~,~,res] = inputgui( 'geometry', geometry, 'geomvert', [1 0.5, 1 1 1 0.5 1], 'uilist', promptstr, 'helpcom', 'pophelp(''pop_importbids'')', 'title', 'Import BIDS data -- pop_importbids()');
     if isempty(res), return; end
     
-    options = { 'eventtype' type_fields{res.typefield} };
+    if ~isempty(type_fields), options = { 'eventtype' type_fields{res.typefield} }; else options = {}; end
+%     options = { 'eventtype' type_fields{res.typefield} };
     if res.events,    options = { options{:} 'bidsevent' 'on' };   else options = { options{:} 'bidsevent' 'off' }; end
     if res.chanlocs,  options = { options{:} 'bidschanloc' 'on' }; else options = { options{:} 'bidschanloc' 'off' }; end
     if ~isempty(res.folder),  options = { options{:} 'outputdir' res.folder }; end
@@ -346,49 +347,21 @@ for iSubject = 2:size(bids.participants,1)
                     
                     % channel location data
                     % ---------------------
-                    channelData = loadfile([ eegFileRaw(1:end-8) '_channels.tsv' ], channelFile);
-                    elecData    = loadfile([ eegFileRaw(1:end-8) '_electrodes.tsv' ], elecFile);
-                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('chaninfo', { channelData }));
-                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('elecinfo', { elecData }));
                     if strcmpi(opt.bidschanloc, 'on')
-                        chanlocs = [];
-                        for iChan = 2:size(channelData,1)
-                            % the fields below are all required
-                            chanlocs(iChan-1).labels = channelData{iChan,1};
-                            chanlocs(iChan-1).type   = channelData{iChan,2};
-                            chanlocs(iChan-1).unit   = channelData{iChan,3};
-                            if size(channelData,2) > 3
-                                chanlocs(iChan-1).status = channelData{iChan,4};
-                            end
-                            
-                            if ~isempty(elecData) && iChan <= size(elecData,1)
-                                chanlocs(iChan-1).labels = elecData{iChan,1};
-                                chanlocs(iChan-1).X = elecData{iChan,2};
-                                chanlocs(iChan-1).Y = elecData{iChan,3};
-                                chanlocs(iChan-1).Z = elecData{iChan,4};
-                            end
+                        if exist([ eegFileRaw(1:end-8) '_channels.tsv' ], 'file')
+                            selected_chanfile = [ eegFileRaw(1:end-8) '_channels.tsv' ]; 
+                        elseif exist(channelFile, 'file')
+                            selected_chanfile = channelFile; 
                         end
-                        
-                        if length(chanlocs) ~= EEG.nbchan
-                            warning('Different number of channels in channel location file and EEG file');
-                            % check if the difference is due to non EEG channels
-                            % list here https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/03-electroencephalography.html
-                            keep = {'EEG','EOG','HEOG','VEOG'}; % keep all eeg related channels
-                            tsv_eegchannels  = arrayfun(@(x) sum(strcmpi(x.type,keep)),chanlocs,'UniformOutput',true);
-                            tmpchanlocs = chanlocs; tmpchanlocs(tsv_eegchannels==0)=[]; % remove non eeg related channels
-                            chanlocs = tmpchanlocs; clear tmpchanlocs
+                        if exist([ eegFileRaw(1:end-8) '_electrodes.tsv' ], 'file')
+                            selected_elecfile = [ eegFileRaw(1:end-8) '_electrodes.tsv' ]; 
+                        elseif exist(eventFile, 'file')
+                            selected_elecfile = elecFile; 
                         end
-                        
-                        if length(chanlocs) ~= EEG.nbchan
-                            error('channel location file and EEG file do not have the same number of channels');
-                        end
-                        
-                        if isfield(chanlocs, 'X')
-                            EEG.chanlocs = convertlocs(chanlocs, 'cart2all');
-                        else
-                            EEG.chanlocs = chanlocs;
-                        end
+                        [EEG, channelData, elecData] = eeg_importchanlocs(EEG, selected_chanfile, selected_elecfile);
                     else
+                        channelData = loadfile([ eegFileRaw(1:end-8) '_channels.tsv' ], channelFile);
+                        elecData    = loadfile([ eegFileRaw(1:end-8) '_electrodes.tsv' ], elecFile);
                         if isempty(EEG.chanlocs(1).theta) || isempty(EEG.chanlocs(1).X) || isempty(EEG.chanlocs(1).sph_theta)
                             dipfitdefs;
                             EEG = pop_chanedit(EEG, 'lookup', template_models(2).chanfile);
@@ -396,67 +369,31 @@ for iSubject = 2:size(bids.participants,1)
                             disp('The EEG file has channel locations associated with it, we are keeping them');
                         end
                     end
+                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('chaninfo', { channelData }));
+                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('elecinfo', { elecData }));
                     
                     % event data
                     % ----------
-                    eventData = loadfile( [ eegFileRaw(1:end-8) '_events.tsv' ], eventFile);
-                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
-                    eventDesc = loadfile( [ eegFileRaw(1:end-8) '_events.json' ], eventDescFile);
-                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
-                    bids.eventInfo = {}; % for eInfo. Default is empty. If replacing EEG.event with events.tsv, match field names accordingly
-                    if strcmpi(opt.bidsevent, 'on')                        
-                        if isempty(eventData)
-                            error('bidsevent on but events.tsv not found');
+                    if strcmpi(opt.bidsevent, 'on')
+                        if exist([ eegFileRaw(1:end-8) '_events.tsv' ], 'file')
+                            eventfile = [ eegFileRaw(1:end-8) '_events.tsv' ]; 
+                        elseif exist(eventFile, 'file')
+                            eventfile = eventFile; 
                         else
-                            events = struct([]);
-                            indSample = strmatch('sample', lower(eventData(1,:)), 'exact');
-                            indType      = strmatch('type', lower(eventData(1,:)), 'exact');
-                            indTrialType = strmatch('trial_type', lower(eventData(1,:)), 'exact');
-                            if ~isempty(indType) && isempty(indTrialType)
-                                eventData(1,indType) = { 'trial_type' }; % renaming type as trial_type because erased below
-                            end
-                            indTrial = strmatch( opt.eventtype, lower(eventData(1,:)), 'exact');
-                            for iEvent = 2:size(eventData,1)
-                                events(end+1).latency  = eventData{iEvent,1}*EEG.srate+1; % convert to samples
-                                if EEG.trials > 1
-                                    events(end).epoch = floor(events(end).latency/EEG.pnts)+1;
-                                end
-                                events(end).duration   = eventData{iEvent,2}*EEG.srate;   % convert to samples
-                                bids.eventInfo = {'onset' 'latency'; 'duration' 'duration'}; % order in events.tsv: onset duration
-                                if ~isempty(indSample)
-                                    events(end).sample = eventData{iEvent,indSample} + 1;
-                                    bids.eventInfo(end+1,:) = {'sample' 'sample'};
-                                end
-                                for iField = 1:length(eventData(1,:))
-                                    if ~any(strcmpi(eventData{1,iField}, {'onset', 'duration', 'sample', opt.eventtype}))
-                                        events(end).(eventData{1,iField}) = eventData{iEvent,iField};
-                                        bids.eventInfo(end+1,:) = { eventData{1,iField} eventData{1,iField} };
-                                    end
-                                end
-                                if ~isempty(indTrial)
-                                    events(end).type = eventData{iEvent,indTrial};
-                                    bids.eventInfo(end+1,:) = { opt.eventtype 'type' };
-                                end                           
-                                %                         if size(eventData,2) > 3 && strcmpi(eventData{1,4}, 'response_time') && ~strcmpi(eventData{iEvent,4}, 'n/a')
-                                %                             events(end+1).type   = 'response';
-                                %                             events(end).latency  = (eventData{iEvent,1}+eventData{iEvent,4})*EEG.srate+1; % convert to samples
-                                %                             events(end).duration = 0;
-                                %                         end
-                            end
-                            EEG.event = events;
-                            % import HED tags if exists
-                            if plugin_status('HEDTools') && ~isempty(eventDescFile)
-                                eventsJsonFile = fullfile(eventDescFile.folder, eventDescFile.name);
-                                if exist([ eegFileRaw(1:end-8) '_events.json' ], 'File')
-                                    eventsJsonFile = [ eegFileRaw(1:end-8) '_events.json' ];
-                                end
-                                fMap = fieldMap.createfMapFromJson(eventsJsonFile);
-                                if fMap.hasAnnotation()
-                                    EEG.etc.tags = fMap.getStruct();
-                                end
-                            end
-                            EEG = eeg_checkset(EEG, 'eventconsistency');
-                        end    
+                            error('bidsevent on but events.tsv not found');
+                        end
+                        if exist([ eegFileRaw(1:end-8) '_events.json' ], 'file')
+                            selected_eventdescfile = [ eegFileRaw(1:end-8) '_events.json' ]; 
+                        elseif exist(eventDescFile, 'file')
+                            selected_eventdescfile = eventDescFile; 
+                        else
+                            warning('No events.json found');
+                        end
+%                     
+                        [EEG, bids, eventData, eventDesc] = eeg_importeventsfiles(EEG, eventfile, 'bids', bids, 'eventDescFile', selected_eventdescfile, 'eventtype', opt.eventtype); 
+                        if isempty(eventData), error('bidsevent on but events.tsv has no data'); end
+                        bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
+                        bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
                     end
                     
                     % copy information inside dataset

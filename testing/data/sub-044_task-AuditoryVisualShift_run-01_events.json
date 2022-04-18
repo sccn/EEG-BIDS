@@ -1,0 +1,59 @@
+{
+  "duration": {
+    "LongName": "Event duration",
+    "Description": "Duration of the event (measured from onset) in seconds",
+    "Units": "second"
+  },
+  "trial_type": {
+    "Levels": {
+      "1": "Focus Auditory Block. Subjects ignore the 'Look' cues and attend only to the 'Hear' cues during the whole block",
+      "2": "Focus Visual Block. Subjects ignore the 'Hear' cues and attend only to the 'Look' cues during the whole block",
+      "3": "Shift Block. Subjects shifted their attention following the cue during the whole block"
+    }
+  },
+  "value": {
+    "LongName": "Event marker",
+    "Description": "Marker value associated with the event",
+    "Levels": {
+      "11": "Focus Auditory Block. A 200-ms word 'Hear' that instructs subjects to attend to the auditory modality is presented. Cue is attended to in this block.",
+      "202": "Pause recording.",
+      "12": "Focus Auditory Block. A 200-ms word 'Look' that instructs subjects to attend to the visual modality is presented. Cue is ignored in this block.",
+      "1201": "Focus Auditory Block. Button press. The subject presses a button in response to detecting the target in the specific modality he or she is attending to.",
+      "2201": "Focus Visual Block. Button press. The subject presses a button in response to detecting the target in the specific modality he or she is attending to.",
+      "3201": "Shift Condition Block. Button press. The subject presses a button in response to detecting the target in the specific modality he or she is attending to.",
+      "314": "Shift Condition Block. During the Shift Condition Block, subject ignores to the dark blue 8.4 cm2 filled square since cue was HEAR.",
+      "313": "Shift Condition Block. Shift Condition BlockDuring the Shift Condition Block, subject ignores to the 100-ms 500-Hz sine wave tone played since cue was LOOK.",
+      "312": "Shift Condition Block. During the Shift Condition Block, subject attends to the dark blue 8.4 cm2 filled square since cue was LOOK.",
+      "311": "Shift Condition Block. During the Shift Condition Block, subject attends to the 100-ms 500-Hz sine wave tone played since cue was HEAR.",
+      "310": "Shift Condition Block. During the Shift Condition Block, subject ignores to the light blue 8.4 cm2 filled square since cue was HEAR.",
+      "39": "Shift Condition Block. During the Shift Condition Block, subject ignores to the 100-ms 550-Hz sine wave tone played since cue was LOOK.",
+      "38": "Shift Condition Block. Visual target during the Shift Condition Block. Cue was LOOK. Subject attends to the light blue 8.4 cm2 filled square.",
+      "37": "Shift Condition Block. Auditory target during the Shift Condition Block. Cue was HEAR. Subject attends to the 100-ms 550-Hz sine wave tone played.",
+      "26": "Focus Visual Block. A dark-blue 8.4 cm2 filled square visual stimulus is presented. Attended to during the FV blocks and unattended to during the FA blocks.",
+      "25": "Focus Visual Block. A 500-Hz sine-wave tone, amplitude-modulated at 5 Hz, is played. Attended to during the FA blocks and unattended to during the FV blocks.",
+      "24": "Focus Visual Block. Visual target. A light blue 8.4 cm2 filled square visual stimulus is presented. Attended to during the FV blocks and unattended to during the FA blocks.",
+      "23": "Focus Visual Block. Auditory target. A 100-ms 550-Hz sine wave tone, amplitude modulated at 5-Hz, is played. Attended to during the FA blocks and unattended to during the FV blocks.",
+      "22": "Focus Visual Block. A 200-ms word 'Look' that instructs subjects to attend to the visual modality is presented. This cue is attended to in this block.",
+      "21": "Focus Visual Block. A 200-ms word 'Hear' that instructs subjects to attend to the auditory modality is presented. This cue is ignored in this block.",
+      "16": "Focus Auditory Block. A dark-blue 8.4 cm2 filled square visual stimulus is presented. Attended to during the FV blocks and unattended to during the FA blocks.",
+      "15": "Focus Auditory Block. A 500-Hz sine-wave tone, amplitude-modulated at 5 Hz, is played. Attended to during the FA blocks and unattended to during the FV blocks.",
+      "14": "Focus Auditory Block. Visual target. A light blue 8.4 cm2 filled square visual stimulus is presented. Attended to during the FV blocks and unattended to during the FA blocks.",
+      "13": "Focus Auditory Block. Auditory target. A 100-ms 550-Hz sine wave tone, amplitude modulated at 5-Hz, is played. Attended to during the FA blocks and unattended to during the FV blocks.",
+      "32": "Shift Condition Block. A 200-ms word 'Look' that instructs subjects to attend to the visual modality is presented. This cue is attended to in this block.",
+      "31": "Shift Condition Block. A 200-ms word 'Hear' that instructs subjects to attend to the auditory modality is presented. Cue is attended to."
+    }
+  },
+  "onset": {
+    "LongName": "Event onset",
+    "Description": "Onset of the event measured from the beginning of the acquisition of the first volume in the corresponding task imaging data file",
+    "Units": "millisecond"
+  },
+  "HED": {
+    "LongName": "Hierarchical Event Descriptor",
+    "Description": "Tags describing the nature of the event"
+  },
+  "sample": {
+    "LongName": "Sample offset",
+    "Description": "Onset of the event according to the sampling scheme of the recorded modality"
+  }
+}
