@@ -1,17 +1,16 @@
-% write_events_files - write events.tsv and (if toggled) events.json for individual dataset
+% eeg_writeeventsfiles - write events.tsv and (if toggled) events.json for individual dataset
 %                       from EEG dataset
 %
 % Usage:
-%    write_events_files(EEG, fileOut, varargin)
+%    eeg_writeeventsfiles(EEG, fileOut, varargin)
 %
 %  
 %
 % Inputs:
 %  'EEG'       - [struct] the EEG structure
 %
-%  'fileOut'   - [string] filepath of the .set file at the desired output
-%                location. To be used as the base path for the events
-%                files. e.g. ~/BIDS_EXPORT/sub-01/ses-01/eeg/sub-01_ses-01_task-GoNogo_eeg.set
+%  'fileOut'   - [string] filepath of the desired output location with file basename
+%                e.g. ~/BIDS_EXPORT/sub-01/ses-01/eeg/sub-01_ses-01_task-GoNogo
 %
 %  Optional inputs:
 %
@@ -59,7 +58,7 @@
 %                           top-level events.json file for the entire dataset
 %
 % Authors: Dung Truong, Arnaud Delorme, 2022
-function write_events_files(EEG, fileOut, varargin)
+function eeg_writeeventsfiles(EEG, fileOut, varargin)
 opt = finputcheck(varargin, {
     'stimuli'   'cell'    {}    {};
     'eInfo'     'cell'    {}    {};
@@ -77,11 +76,11 @@ if isstr(opt), error(opt); end
 fileOut = fullfile(folderOut,fileOut);
 if ~isempty(EEG.event)
     if strcmpi(opt.individualEventsJson,'on')
-        jsonwrite([ fileOut(1:end-3) 'events.json' ], opt.eInfoDesc,struct('indent','  '));
+        jsonwrite([ fileOut '_events.json' ], opt.eInfoDesc,struct('indent','  '));
     end
     % --- _events.tsv
     
-    fid = fopen( [ fileOut(1:end-3) 'events.tsv' ], 'w');
+    fid = fopen( [ fileOut '_events.tsv' ], 'w');
     
     % -- parse eInfo
     if isempty(opt.eInfo)

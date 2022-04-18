@@ -1,7 +1,7 @@
-% import_events_files - create EEG.event from events.tsv 
+% eeg_importeventsfiles - create EEG.event from events.tsv and optionally events.json files
 %
 % Usage:
-%    [EEG, ~, ~, ~] = import_events_files(EEG, eventfile, 'key', value)
+%    [EEG, ~, ~, ~] = eeg_importeventsfiles(EEG, eventfile, 'key', value)
 %
 %  
 %
@@ -31,7 +31,7 @@
 %   eventDesc - [struct] imported data from events.json
 %
 % Authors: Dung Truong, Arnaud Delorme, 2022
-function [EEG, bids, eventData, eventDesc] = import_events_files(EEG, eventfile, varargin)
+function [EEG, bids, eventData, eventDesc] = eeg_importeventsfiles(EEG, eventfile, varargin)
 g = finputcheck(varargin,  {'eventDescFile'   'string'   [] '';
                             'bids'            'struct'   [] struct([]);
                             'eventtype'       'string'   [] 'value' });
@@ -124,16 +124,6 @@ elseif ~isempty(globalFile)
             data = jsonread(fullfile(globalFile(1).folder, globalFile(1).name));
         end
     end
-end
-% set structure
-% -------------
-function sdata = setallfields(sdata, indices, newdata)
-if isempty(newdata), return; end
-if ~isstruct(newdata), error('Can only assign structures'); end
-if length(indices) < 3, error('Must have 3 indices'); end
-allFields = fieldnames(newdata);
-for iField = 1:length(allFields)
-    sdata(indices(1), indices(2), indices(3)).(allFields{iField}) = newdata.(allFields{iField});
 end
 
 % Import full text file
