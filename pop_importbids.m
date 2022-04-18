@@ -347,49 +347,21 @@ for iSubject = 2:size(bids.participants,1)
                     
                     % channel location data
                     % ---------------------
-                    channelData = loadfile([ eegFileRaw(1:end-8) '_channels.tsv' ], channelFile);
-                    elecData    = loadfile([ eegFileRaw(1:end-8) '_electrodes.tsv' ], elecFile);
-                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('chaninfo', { channelData }));
-                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('elecinfo', { elecData }));
                     if strcmpi(opt.bidschanloc, 'on')
-                        chanlocs = [];
-                        for iChan = 2:size(channelData,1)
-                            % the fields below are all required
-                            chanlocs(iChan-1).labels = channelData{iChan,1};
-                            chanlocs(iChan-1).type   = channelData{iChan,2};
-                            chanlocs(iChan-1).unit   = channelData{iChan,3};
-                            if size(channelData,2) > 3
-                                chanlocs(iChan-1).status = channelData{iChan,4};
-                            end
-                            
-                            if ~isempty(elecData) && iChan <= size(elecData,1)
-                                chanlocs(iChan-1).labels = elecData{iChan,1};
-                                chanlocs(iChan-1).X = elecData{iChan,2};
-                                chanlocs(iChan-1).Y = elecData{iChan,3};
-                                chanlocs(iChan-1).Z = elecData{iChan,4};
-                            end
+                        if exist([ eegFileRaw(1:end-8) '_channels.tsv' ], 'file')
+                            selected_chanfile = [ eegFileRaw(1:end-8) '_channels.tsv' ]; 
+                        elseif exist(channelFile, 'file')
+                            selected_chanfile = channelFile; 
                         end
-                        
-                        if length(chanlocs) ~= EEG.nbchan
-                            warning('Different number of channels in channel location file and EEG file');
-                            % check if the difference is due to non EEG channels
-                            % list here https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/03-electroencephalography.html
-                            keep = {'EEG','EOG','HEOG','VEOG'}; % keep all eeg related channels
-                            tsv_eegchannels  = arrayfun(@(x) sum(strcmpi(x.type,keep)),chanlocs,'UniformOutput',true);
-                            tmpchanlocs = chanlocs; tmpchanlocs(tsv_eegchannels==0)=[]; % remove non eeg related channels
-                            chanlocs = tmpchanlocs; clear tmpchanlocs
+                        if exist([ eegFileRaw(1:end-8) '_electrodes.tsv' ], 'file')
+                            selected_elecfile = [ eegFileRaw(1:end-8) '_electrodes.tsv' ]; 
+                        elseif exist(eventFile, 'file')
+                            selected_elecfile = elecFile; 
                         end
-                        
-                        if length(chanlocs) ~= EEG.nbchan
-                            error('channel location file and EEG file do not have the same number of channels');
-                        end
-                        
-                        if isfield(chanlocs, 'X')
-                            EEG.chanlocs = convertlocs(chanlocs, 'cart2all');
-                        else
-                            EEG.chanlocs = chanlocs;
-                        end
+                        [EEG, channelData, elecData] = eeg_importchanlocs(EEG, selected_chanfile, selected_elecfile);
                     else
+                        channelData = loadfile([ eegFileRaw(1:end-8) '_channels.tsv' ], channelFile);
+                        elecData    = loadfile([ eegFileRaw(1:end-8) '_electrodes.tsv' ], elecFile);
                         if isempty(EEG.chanlocs(1).theta) || isempty(EEG.chanlocs(1).X) || isempty(EEG.chanlocs(1).sph_theta)
                             dipfitdefs;
                             EEG = pop_chanedit(EEG, 'lookup', template_models(2).chanfile);
@@ -397,6 +369,8 @@ for iSubject = 2:size(bids.participants,1)
                             disp('The EEG file has channel locations associated with it, we are keeping them');
                         end
                     end
+                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('chaninfo', { channelData }));
+                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('elecinfo', { elecData }));
                     
                     % event data
                     % ----------
@@ -416,7 +390,7 @@ for iSubject = 2:size(bids.participants,1)
                             warning('No events.json found');
                         end
 %                     
-                        [EEG, bids, eventData, eventDesc] = import_events_files(EEG, eventfile, 'bids', bids, 'eventDescFile', selected_eventdescfile, 'eventtype', opt.eventtype); 
+                        [EEG, bids, eventData, eventDesc] = eeg_importeventsfiles(EEG, eventfile, 'bids', bids, 'eventDescFile', selected_eventdescfile, 'eventtype', opt.eventtype); 
                         if isempty(eventData), error('bidsevent on but events.tsv has no data'); end
                         bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
                         bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
