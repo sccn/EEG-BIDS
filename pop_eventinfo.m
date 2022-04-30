@@ -420,7 +420,7 @@ function [EEG, STUDY, command] = pop_eventinfo(EEG, STUDY, varargin)
                 end
                 % create UI
                 uicontrol(f, 'Style', 'text', 'String', ['Describing levels of ' field], 'Units', 'normalized', 'HorizontalAlignment', 'left', 'Position', [0.31 0.45 0.7 0.05],'FontWeight', 'bold','ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelEditMsg');
-                msg = 'BIDS allow you to describe the level for each of your categorical field. Describing levels help other researchers understand your experiment better';
+                msg = 'BIDS allows you to describe the levels for each of your categorical fields. Describing levels helps other researchers understand your experiment better';
                 uicontrol(f, 'Style', 'text', 'String', msg, 'Units', 'normalized', 'HorizontalAlignment', 'Left','Position', [0.01 0 0.3 0.4],'ForegroundColor', fg,'BackgroundColor', bg, 'Tag', 'levelMsg');
                 h = uitable(f, 'Data', t(:,2), 'ColumnName', {'Description'}, 'RowName', t(:,1), 'Units', 'normalized', 'Position', [0.31 0.07 0.68 0.38], 'FontSize', fontSize, 'Tag', 'levelEditTbl', 'CellEditCallback',{@levelEditCB,field},'ColumnEditable',true); 
                 h.ColumnWidth = {appWidth*0.68*0.8};
