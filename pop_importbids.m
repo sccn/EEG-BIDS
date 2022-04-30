@@ -67,7 +67,7 @@ if nargin < 1
         '   set(findobj(gcbf, ''tag'', ''folder''), ''string'', tmpfolder);' ...
         'end;' ...
         'clear tmpfolder;' ];
-    type_fields = { 'value' 'trial_type' 'event_kind' };
+    type_fields = { 'value' 'trial_type' 'event_kind' 'event_type' };
     
     % scan if multiple tasks are present
     disp('Scanning folders...');
