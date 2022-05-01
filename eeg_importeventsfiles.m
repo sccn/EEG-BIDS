@@ -58,10 +58,7 @@ else
     end
     
     for iField = 1:length(eventData(1,:))
-        stringcheck = [strfind(eventData{1,iField},'(') , strfind(eventData{1,iField},')')];
-        if ~isempty(stringcheck)
-            eventData{1,iField}(stringcheck) = [];
-        end
+        eventData{1,iField} = cleanvarname(eventData{1,iField});
     end
     indTrial = strmatch( g.eventtype, lower(eventData(1,:)), 'exact');
     for iEvent = 2:size(eventData,1)
