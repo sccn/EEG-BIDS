@@ -49,12 +49,19 @@ bids(1).eventInfo = {}; % for eInfo. Default is empty. If replacing EEG.event wi
 if isempty(eventData)
     warning('No data found in events.tsv');
 else
-    events = struct([]);
-    indSample = strmatch('sample', lower(eventData(1,:)), 'exact');
+    events       = struct([]);
+    indSample    = strmatch('sample', lower(eventData(1,:)), 'exact');
     indType      = strmatch('type', lower(eventData(1,:)), 'exact');
     indTrialType = strmatch('trial_type', lower(eventData(1,:)), 'exact');
     if ~isempty(indType) && isempty(indTrialType)
         eventData(1,indType) = { 'trial_type' }; % renaming type as trial_type because erased below
+    end
+    
+    for iField = 1:length(eventData(1,:))
+        stringcheck = [strfind(eventData{1,iField},'(') , strfind(eventData{1,iField},')')];
+        if ~isempty(stringcheck)
+            eventData{1,iField}(stringcheck) = [];
+        end
     end
     indTrial = strmatch( g.eventtype, lower(eventData(1,:)), 'exact');
     for iEvent = 2:size(eventData,1)
