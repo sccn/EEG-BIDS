@@ -356,7 +356,9 @@ for iSubject = 2:size(bids.participants,1)
                         end
                         if exist([ eegFileRaw(1:end-8) '_electrodes.tsv' ], 'file')
                             selected_elecfile = [ eegFileRaw(1:end-8) '_electrodes.tsv' ]; 
-                        elseif exist(eventFile, 'file')
+                        elseif  exist(fullfile(bidsFolder,[eegFileRaw(strfind(eegFileRaw,'task'):end-8) '_electrodes.tsv' ]), 'file')
+                            selected_elecfile = fullfile(bidsFolder,[eegFileRaw(strfind(eegFileRaw,'task'):end-8) '_electrodes.tsv' ]); 
+                        elseif exist(eventFile.name, 'file')
                             selected_elecfile = elecFile; 
                         end
                         [EEG, channelData, elecData] = eeg_importchanlocs(EEG, selected_chanfile, selected_elecfile);
@@ -385,6 +387,8 @@ for iSubject = 2:size(bids.participants,1)
                         end
                         if exist([ eegFileRaw(1:end-8) '_events.json' ], 'file')
                             selected_eventdescfile = [ eegFileRaw(1:end-8) '_events.json' ]; 
+                        elseif exist(fullfile(bidsFolder,[eegFileRaw(strfind(eegFileRaw,'task'):end-8) '_events.json' ]), 'file')
+                            selected_eventdescfile = fullfile(bidsFolder,[eegFileRaw(strfind(eegFileRaw,'task'):end-8) '_events.json' ]); 
                         elseif exist(eventDescFile, 'file')
                             selected_eventdescfile = eventDescFile; 
                         else
