@@ -248,7 +248,7 @@ opt = finputcheck(varargin, {
     'Authors'   'cell'    {}    {''};
     'ReferencesAndLinks' 'cell' {}    {''};
     'targetdir' 'string'  {}    fullfile(pwd, 'bidsexport');
-    'taskName'  'string'  {}    'Experiment';
+    'taskName'  'string'  {}    'task';
     'codefiles' 'cell'    {}    {};
     'stimuli'   'cell'    {}    {};
     'pInfo'     'cell'    {}    {};
@@ -392,18 +392,23 @@ for iSubj = 1:length(files)
     if length(files(iSubj).run) ~= length(files(iSubj).session)
         error(sprintf('Length of session and run differ for subject %s', iSubj));
     else
-        if ~isfield(files(iSubj), 'task')
-            uniq = files(iSubj).run*1000 + files(iSubj).session;
-            if length(uniq) ~= length(unique(uniq))
-                error(sprintf('Subject %s does not have unique session and runs for each file', iSubj));
-            end
-        else
-            for iVal = 1:length(files(iSubj).task)
-                strs = strcat(files(iSubj).task, strsplit(num2str(files(iSubj).run)), strsplit(num2str(files(iSubj).session)));
-            end
-            if length(strs) ~= length(unique(strs))
-                error(sprintf('Subject %s does not have unique task, session and runs for each file', iSubj));
-            end
+        if length(files(iSubj).task) ~= length(files(iSubj).session)
+            error(sprintf('Length of session and task differ for subject %s', iSubj));
+        end
+        if length(files(iSubj).notes) ~= length(files(iSubj).session)
+            error(sprintf('Length of session and notes differ for subject %s', iSubj));
+        end
+
+        % convert all runs and session to cell array of string
+        if ~iscell(files(iSubj).run)     files(iSubj).run = mattocell(files(iSubj).run); end
+        if ~iscell(files(iSubj).session) files(iSubj).session = mattocell(files(iSubj).session); end
+        for iVal = 1:length(files(iSubj).task)
+            files(iSubj).run{    iVal} = num2str(files(iSubj).run{    iVal});
+            files(iSubj).session{iVal} = num2str(files(iSubj).session{iVal});
+            strs{iVal} = strcat(files(iSubj).task{iVal}, files(iSubj).run{iVal}, files(iSubj).session{iVal});
+        end
+        if length(strs) ~= length(unique(strs))
+            error(sprintf('Subject %s does not have unique task, session and runs for each file', iSubj));
         end
     end
 end
@@ -589,14 +594,11 @@ elseif all(tmpsessrun == [1 0]) % Mult-Session Single-Run
 elseif all(tmpsessrun == [1 1]) % Mult-Session Mult-Run
     bidscase = 4;
 end
-
-if ~all(allsubjntasks == 1)
-    if bidscase == 1
-        bidscase = 5; % Mult Task: Single-Session Single-Run 
-    end
-    if bidscase == 3
-        bidscase = 6; % Mult Task: Mult-Session Single-Run 
-    end 
+if bidscase == 5
+    bidscase = 1; % Mult Task: Single-Session Single-Run
+end
+if bidscase == 6
+    bidscase = 3; % Mult Task: Mult-Session Single-Run
 end
 
 %--------------------------------------------------------------------------
@@ -630,18 +632,18 @@ for iSubj = 1:length(files)
     end
     
     switch bidscase
-        case 1 % Single-Session Single-Run
-            
-            [~,~,fileExt] = fileparts(files(iSubj).file{1});
-            fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr '_task-' char(files(iSubj).task) '_eeg' fileExt]);
-            %             copy_data_bids( files(iSubj).file{1}, fileOut, opt.eInfo, opt.tInfo, opt.trialtype, chanlocs{iSubj}, opt.copydata);
-            copy_data_bids( files(iSubj).file{1}, fileOut, files(iSubj).notes{1}, opt, files(iSubj).chanlocs{1}, opt.copydata, opt.exportext);
+        case 1 % Mult Task: Single-Session Single-Run 
+            for iTask = 1:length(files(iSubj).task)
+                [~,~,fileExt] = fileparts(files(iSubj).file{iTask});
+                fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iTask)) '_eeg' fileExt ]);
+                copy_data_bids( files(iSubj).file{iTask}, fileOut, files(iSubj).notes{iTask}, opt, files(iSubj).chanlocs{iTask}, opt.copydata, opt.exportext);
+            end
             
         case 2 % Single-Session Mult-Run
             
             for iRun = 1:length(files(iSubj).run)
                 [~,~,fileExt] = fileparts(files(iSubj).file{iRun});
-                fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' num2str(files(iSubj).run(iRun)) '_eeg' fileExt ]);
+                fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' files(iSubj).run{iRun} '_eeg' fileExt ]);
                 copy_data_bids( files(iSubj).file{iRun}, fileOut, files(iSubj).notes{iRun}, opt, files(iSubj).chanlocs{iRun}, opt.copydata, opt.exportext);
             end
             
@@ -649,38 +651,24 @@ for iSubj = 1:length(files)
             
             for iSess = 1:length(unique(files(iSubj).session))
                 [~,~,fileExt] = fileparts(files(iSubj).file{iSess});
-                fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task{iSess}) '_eeg' fileExt]);
+                fileOut = fullfile(opt.targetdir, subjectStr, [ 'ses-' files(iSubj).session{iSess} ], 'eeg', [ subjectStr '_ses-' files(iSubj).session{iSess} '_task-' char(files(iSubj).task{iSess}) '_eeg' fileExt]);
                 copy_data_bids( files(iSubj).file{iSess}, fileOut, files(iSubj).notes{iSess}, opt, files(iSubj).chanlocs{iSess}, opt.copydata, opt.exportext);
             end
             
-        case 4 % Mult-Session Mult-Run
+        case 4 % Mult-Task Mult-Session Mult-Run
             
-            for iSess = 1:length(unique(files(iSubj).session))
-                runindx = find(files(iSubj).session == iSess);
-                for iSet = runindx
-                    iRun = files(iSubj).run(iSet);
+            uniqueSess = unique(files(iSubj).session);
+            for iSess = 1:length(uniqueSess)
+                runindx = strmatch(uniqueSess{iSess}, files(iSubj).session, 'exact');
+                for iSet = runindx(:)'
                     [~,~,fileExt] = fileparts(files(iSubj).file{iSet});
-                    fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task(iRun)) '_run-' num2str(files(iSubj).run(iRun)) '_eeg' fileExt]);
+                    fileOut = fullfile(opt.targetdir, subjectStr, [ 'ses-', files(iSubj).session{iSet} ], 'eeg', [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} '_eeg' fileExt]);
                     copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, opt, files(iSubj).chanlocs{iSet}, opt.copydata, opt.exportext);
                 end
             end
-            
-        case 5 % Mult Task: Single-Session Single-Run 
-            for iTask = 1:length(files(iSubj).task)
-                [~,~,fileExt] = fileparts(files(iSubj).file{iTask});
-                fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iTask)) '_eeg' fileExt ]);
-                copy_data_bids( files(iSubj).file{iTask}, fileOut, files(iSubj).notes{iTask}, opt, files(iSubj).chanlocs{iTask}, opt.copydata, opt.exportext);
-            end
-            
-        case 6 % Mult Task: Mult-Session Single-Run 
-            for iSess = 1:length(unique(files(iSubj).session))
-                runindx = find(files(iSubj).session == iSess);
-                for iSet = runindx
-                    [~,~,fileExt] = fileparts(files(iSubj).file{iSet});
-                    fileOut = fullfile(opt.targetdir, subjectStr, sprintf('ses-%2.2d', iSess), 'eeg', [ subjectStr sprintf('_ses-%2.2d', iSess) '_task-' char(files(iSubj).task(iSet)) '_eeg' fileExt]);
-                    copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, opt, files(iSubj).chanlocs{iSet}, opt.copydata, opt.exportext);
-                end
-            end
+                        
+        otherwise
+            error('Case not supported')
     end
 end
 
