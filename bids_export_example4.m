@@ -14,8 +14,8 @@ data(end  ).notes   = { 'No notes' 'No notes' 'No notes' 'No notes' };
 
 %% participant information for participants.tsv file
 % -------------------------------------------------
-pInfo = { 'gender' 'age';
- 'M' 22 };
+pInfo = { 'participantID' 'gender' 'age';
+ 'NDARAB793GL3' 'M' 22 };
       
 %% Code Files used to preprocess and import to BIDS
 % -----------------------------------------------------|

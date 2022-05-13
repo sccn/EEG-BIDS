@@ -30,11 +30,11 @@
 function tasklist = bids_gettaskfromfolder(bidsFolder)
 
 tasklist = {};
-if exist(bidsFolder, 'dir') && bidsFolder(end) ~= '.'
-    files = dir(bidsFolder);
-    [files(:).folder] = deal(bidsFolder);
-    %fprintf('Scanning %s\n', bidsFolder);
-    for iFile = 1:length(files)
+files = dir(bidsFolder);
+[files(:).folder] = deal(bidsFolder);
+%fprintf('Scanning %s\n', bidsFolder);
+for iFile = 1:length(files)
+    if files(iFile).isdir && files(iFile).name(end) ~= '.'
         tasklistTmp = bids_gettaskfromfolder(fullfile(files(iFile).folder, fullfile(files(iFile).name)));
         if ~isempty(tasklistTmp)
             newTasks = tasklistTmp(~ismember(tasklistTmp, tasklist));
@@ -42,12 +42,15 @@ if exist(bidsFolder, 'dir') && bidsFolder(end) ~= '.'
                 tasklist = [ tasklist newTasks ];
             end
         end
-    end
-else
-    if ~isempty(strfind(bidsFolder, 'eeg')) && ~isempty(strfind(bidsFolder, 'task'))
-        pos = strfind(bidsFolder, 'task');
-        tmpStr = bidsFolder(pos+5:end);
-        underS = find(tmpStr == '_');
-        tasklist = { tmpStr(1:underS(1)-1) };
+    else
+        if ~isempty(strfind(files(iFile).name, 'eeg')) && ~isempty(strfind(files(iFile).name, 'task'))
+            pos = strfind(files(iFile).name, 'task');
+            tmpStr = files(iFile).name(pos+5:end);
+            underS = find(tmpStr == '_');
+            newTask = tmpStr(1:underS(1)-1);
+            if ~any(ismember(tasklist, newTask))
+                tasklist = [ tasklist { newTask } ];
+            end
+        end
     end
 end

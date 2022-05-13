@@ -75,6 +75,8 @@ if nargin < 1
     % scan for event fields
     type_fields = bids_geteventfieldsfromfolder(bidsFolder);
     bids_event_toggle = ~isempty(type_fields);
+    if isempty(type_fields) type_fields = { 'n/a' }; end
+    if isempty(tasklist) tasklist = { 'n/a' }; end
     
     cb_event = 'set(findobj(gcbf, ''userdata'', ''bidstype''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
     cb_task  = 'set(findobj(gcbf, ''userdata'', ''task''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
@@ -84,7 +86,7 @@ if nargin < 1
         {} ...
         { 'style'  'checkbox'   'string' 'Use BIDS electrode.tsv files (when present) for channel locations; off: look up locations using channel labels' 'tag' 'chanlocs' 'value' 1 } ...
         { 'style'  'checkbox'   'string' 'Use BIDS event.tsv files for events and use the following BIDS field for event type' 'tag' 'events' 'value' bids_event_toggle 'callback' cb_event } ...
-        { 'style'  'popupmenu'  'string' type_fields 'tag' 'typefield' 'value' 1 'userdata' 'bidstype'  'enable' 'on' } ...
+        { 'style'  'popupmenu'  'string' type_fields 'tag' 'typefield' 'value' 1 'userdata' 'bidstype'  'enable' fastif(bids_event_toggle, 'on', 'off') } ...
         { 'style'  'checkbox'   'string' 'Import only the following BIDS task from the BIDS archive' 'tag' 'bidstask' 'value' 0 'callback' cb_task } ...
         { 'style'  'popupmenu'  'string' tasklist 'tag' 'bidstaskstr' 'value' 1 'userdata' 'task'  'enable' 'off' } ...
         {} ...
@@ -97,13 +99,13 @@ if nargin < 1
     [~,~,~,res] = inputgui( 'geometry', geometry, 'geomvert', [1 0.5, 1 1 1 0.5 1], 'uilist', promptstr, 'helpcom', 'pophelp(''pop_importbids'')', 'title', 'Import BIDS data -- pop_importbids()');
     if isempty(res), return; end
     
-    if ~isempty(type_fields), options = { 'eventtype' type_fields{res.typefield} }; else options = {}; end
+    if ~isempty(type_fields) && ~strcmpi(type_fields{res.typefield}, 'n/a'), options = { 'eventtype' type_fields{res.typefield} }; else options = {}; end
 %     options = { 'eventtype' type_fields{res.typefield} };
     if res.events,    options = { options{:} 'bidsevent' 'on' };   else options = { options{:} 'bidsevent' 'off' }; end
     if res.chanlocs,  options = { options{:} 'bidschanloc' 'on' }; else options = { options{:} 'bidschanloc' 'off' }; end
     if ~isempty(res.folder),  options = { options{:} 'outputdir' res.folder }; end
     if ~isempty(res.studyName),  options = { options{:} 'studyName' res.studyName }; end
-    if res.bidstask,  options = { options{:} 'bidstask' tasklist{res.bidstaskstr} }; end
+    if res.bidstask && ~strcmpi(tasklist{res.bidstaskstr}, 'n/a'),  options = { options{:} 'bidstask' tasklist{res.bidstaskstr} }; end
 else
     options = varargin;
 end
@@ -181,6 +183,9 @@ count = 1;
 commands = {};
 task = [ 'task-' bidsFolder ];
 bids.data = [];
+bids.eventInfo = [];
+bids.data.eventdesc = [];
+bids.data.eventinfo = [];
 inconsistentChannels = 0;
 inconsistentEvents   = 0;
 for iSubject = 2:size(bids.participants,1)
@@ -426,7 +431,7 @@ for iSubject = 2:size(bids.participants,1)
                 end
                 
                 % building study command
-                commands = { commands{:} 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,1} 'session' iFold 'run' iRun };
+                commands = { commands{:} 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,1} 'session' iFold 'task' task(6:end) 'run' iRun };
                 
                 % custom fields
                 for iCol = 2:size(bids.participants,2)

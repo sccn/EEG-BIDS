@@ -31,20 +31,20 @@
 function fields = bids_geteventfieldsfromfolder(bidsFolder)
 
 fields = {};
-if exist(bidsFolder, 'dir') && bidsFolder(end) ~= '.'
-    files = dir(bidsFolder);
-    [files(:).folder] = deal(bidsFolder);
-    %fprintf('Scanning %s\n', bidsFolder);
-    for iFile = 1:length(files)
+files = dir(bidsFolder);
+[files(:).folder] = deal(bidsFolder);
+%fprintf('Scanning %s\n', bidsFolder);
+for iFile = 1:length(files)
+    if files(iFile).isdir && bidsFolder(end) ~= '.'
         fieldlistTmp = bids_geteventfieldsfromfolder(fullfile(files(iFile).folder, fullfile(files(iFile).name)));
         if ~isempty(fieldlistTmp)
-            fields = setdiff(fieldlistTmp, {'onset', 'duration', 'sample', 'stim_file', 'response_time'});
-            return
+            fieldsTmp = setdiff(fieldlistTmp, {'onset', 'duration', 'sample', 'stim_file', 'response_time'});
+            fields = union(fields, fieldsTmp);
         end
-    end
-else
-    if ~isempty(strfind(bidsFolder, 'events.tsv'))
-        res = loadtxt( bidsFolder, 'verbose', 'off', 'delim', 9);
-        fields = res(1,:);
+    else
+        if ~isempty(strfind(files(iFile).folder, 'events.tsv'))
+            res = loadtxt( files(iFile).folder, 'verbose', 'off', 'delim', 9);
+            fields = union(fields, res(1,:));
+        end
     end
 end
