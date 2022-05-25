@@ -402,13 +402,14 @@ for iSubj = 1:length(files)
         % convert all runs and session to cell array of string
         if ~iscell(files(iSubj).run)     files(iSubj).run = mattocell(files(iSubj).run); end
         if ~iscell(files(iSubj).session) files(iSubj).session = mattocell(files(iSubj).session); end
+        clear strs;
         for iVal = 1:length(files(iSubj).task)
             files(iSubj).run{    iVal} = num2str(files(iSubj).run{    iVal});
             files(iSubj).session{iVal} = num2str(files(iSubj).session{iVal});
             strs{iVal} = strcat(files(iSubj).task{iVal}, files(iSubj).run{iVal}, files(iSubj).session{iVal});
         end
         if length(strs) ~= length(unique(strs))
-            error(sprintf('Subject %s does not have unique task, session and runs for each file', iSubj));
+            error(sprintf('Subject %d does not have unique task, session and runs for each file', iSubj));
         end
     end
 end
