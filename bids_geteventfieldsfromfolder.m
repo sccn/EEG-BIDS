@@ -35,15 +35,15 @@ files = dir(bidsFolder);
 [files(:).folder] = deal(bidsFolder);
 %fprintf('Scanning %s\n', bidsFolder);
 for iFile = 1:length(files)
-    if files(iFile).isdir && bidsFolder(end) ~= '.'
+    if files(iFile).isdir && files(iFile).name(1) ~= '.'
         fieldlistTmp = bids_geteventfieldsfromfolder(fullfile(files(iFile).folder, fullfile(files(iFile).name)));
         if ~isempty(fieldlistTmp)
             fieldsTmp = setdiff(fieldlistTmp, {'onset', 'duration', 'sample', 'stim_file', 'response_time'});
             fields = union(fields, fieldsTmp);
         end
     else
-        if ~isempty(strfind(files(iFile).folder, 'events.tsv'))
-            res = loadtxt( files(iFile).folder, 'verbose', 'off', 'delim', 9);
+        if ~isempty(strfind(files(iFile).name, 'events.tsv'))
+            res = loadtxt( fullfile(files(iFile).folder, files(iFile).name), 'verbose', 'off', 'delim', 9);
             fields = union(fields, res(1,:));
         end
     end
