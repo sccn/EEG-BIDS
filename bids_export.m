@@ -193,6 +193,9 @@
 %               options is aimed to be used to speedup the troubleshooting
 %               of bids_export execution. Default: [1]
 %
+% 'importfunc' - [function handle or string] function to import raw data to
+%              EEG format. Default: auto.
+%
 % Validation:
 %  If the BIDS data created with this function fails to pass the BIDS
 %  validator (npm install -g https://github.com/bids-standard/bids-validator.git
@@ -273,10 +276,14 @@ opt = finputcheck(varargin, {
     'exportext' 'string'  { 'edf' 'eeglab' } 'eeglab';
     'README'    'string'  {}    '';
     'CHANGES'   'string'  {}    '' ;
+    'importfunc' ''  {}    '' ;
     'copydata'   'real'   [0 1] 1 }, 'bids_export');
 if isstr(opt), error(opt); end
 if size(opt.stimuli,1) == 1 || size(opt.stimuli,2) == 1
     opt.stimuli = reshape(opt.stimuli, [2 length(opt.stimuli)/2])';
+end
+if any(opt.taskName == '_')
+    error('Task name cannot contain underscore character(s)');
 end
 
 % deleting folder
@@ -430,6 +437,7 @@ if ~isempty(opt.pInfo)
     participants = { 'participant_id' };
     for iSubj=2:size(opt.pInfo)
         if strcmp('participant_id', opt.pInfo{1,1})
+            opt.pInfo{iSubj,1} = removeInvalidChar(opt.pInfo{iSubj,1});
             if length(opt.pInfo{iSubj,1}) > 3 && isequal('sub-', opt.pInfo{iSubj,1}(1:4))
                 participants{iSubj, 1} = opt.pInfo{iSubj,1};
             elseif strcmpi(opt.createids, 'off')
@@ -470,7 +478,15 @@ if ~isempty(opt.pInfo)
         if ~isfield(opt.pInfoDesc, fields{iField}), opt.pInfoDesc(1).(fields{iField}) = struct([]); end
         opt.pInfoDesc.(fields{iField}) = checkfields(opt.pInfoDesc.(fields{iField}), descFields, 'pInfoDesc');
     end
-    jsonwrite(fullfile(opt.targetdir, 'participants.json'), opt.pInfoDesc,struct('indent','  '));
+    % remove empty fields for BIDS compliance
+    for iField = 1:length(fields)
+        if isempty(opt.pInfoDesc.(fields{iField}))
+            opt.pInfoDesc = rmfield(opt.pInfoDesc, fields{iField});
+        end
+    end
+    if ~isempty(fieldnames(opt.pInfoDesc))
+        jsonwrite(fullfile(opt.targetdir, 'participants.json'), opt.pInfoDesc, struct('indent','  '));
+    end
 end
 
 % prepare event file information (_events.json)
@@ -684,11 +700,13 @@ end
 if ~exist(fileOut)
 end
 
-% if BDF file anonymize records
 tInfo = opt.tInfo;
 [~,~,ext] = fileparts(fileOut);
 fprintf('Processing file %s\n', fileOut);
-if strcmpi(ext, '.bdf')
+if ~isempty(opt.importfunc)
+    EEG = feval(opt.importfunc, fileIn);
+    pop_saveset(EEG, 'filename', fileOut);
+elseif strcmpi(ext, '.bdf') || strcmpi(ext, '.edf')
     fileIDIn  = fopen(fileIn,'rb','ieee-le');  % see sopen
     fileIDOut = fopen(fileOut,'wb','ieee-le');  % see sopen
     data = fread(fileIDIn, Inf);
@@ -696,8 +714,10 @@ if strcmpi(ext, '.bdf')
     fwrite(fileIDOut, data);
     fclose(fileIDIn);
     fclose(fileIDOut);
-    tInfo.EEGReference = 'CMS/DRL';
-    tInfo.Manufacturer = 'BIOSEMI';
+    if strcmpi(ext, '.bdf')
+        tInfo.EEGReference = 'CMS/DRL';
+        tInfo.Manufacturer = 'BIOSEMI';
+    end
     EEG = pop_biosig(fileOut);
 elseif strcmpi(ext, '.vhdr')
     rename_brainvision_files(fileIn, fileOut, 'rmf', 'off');
@@ -944,3 +964,14 @@ for iRow=1:size(matlabArray,1)
     fprintf(fid, '\n');
 end
 fclose(fid);
+
+% remove invalid Chars
+% --------------------       
+function strout = removeInvalidChar(str)
+    strout = str;
+    if any(strout == '-'), strout(strout == '-') = []; end
+    if any(strout == '_'), strout(strout == '_') = []; end
+    if ~isequal(str, strout)
+        disp('Removing invalid characters in subject ID');
+    end
+
