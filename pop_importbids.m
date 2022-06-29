@@ -365,6 +365,8 @@ for iSubject = 2:size(bids.participants,1)
                             selected_elecfile = fullfile(bidsFolder,[eegFileRaw(strfind(eegFileRaw,'task'):end-8) '_electrodes.tsv' ]); 
                         elseif exist(eventFile.name, 'file')
                             selected_elecfile = elecFile; 
+                        else
+                            selected_elecfile = ''; 
                         end
                         [EEG, channelData, elecData] = eeg_importchanlocs(EEG, selected_chanfile, selected_elecfile);
                     else
