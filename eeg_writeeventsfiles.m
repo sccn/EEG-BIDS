@@ -85,16 +85,16 @@ if ~isempty(EEG.event)
     % -- parse eInfo
     if isempty(opt.eInfo)
         if isfield(EEG.event, 'onset')          opt.eInfo(end+1,:) = { 'onset'    'onset' };
-        else                                opt.eInfo(end+1,:) = { 'onset'    'latency' }; end
+        else                                    opt.eInfo(end+1,:) = { 'onset'    'latency' }; end
+        opt.eInfo(end+1,:) = { 'duration'  'duration' };
         opt.eInfo(end+1,:) = { 'sample'    'latency' };
         if isfield(EEG.event, 'trial_type')     opt.eInfo(end+1,:) = { 'trial_type'    'trial_type' };
         elseif ~isempty(opt.trialtype)          opt.eInfo(end+1,:) = { 'trial_type'    'xxxx' }; end % to be filled with event type based on opt.trialtype mapping
-        if isfield(EEG.event, 'duration')       opt.eInfo(end+1,:) = { 'duration'      'duration' }; end
         if isfield(EEG.event, 'value')          opt.eInfo(end+1,:) = { 'value'         'value' };
-        else                                opt.eInfo(end+1,:) = { 'value'         'type' }; end
+        else                                    opt.eInfo(end+1,:) = { 'value'         'type' }; end
         if isfield(EEG.event, 'response_time'), opt.eInfo(end+1,:) = { 'response_time' 'response_time' }; end
         if isfield(EEG.event, 'stim_file'),     opt.eInfo(end+1,:) = { 'stim_file'     'stim_file' }; end
-        if isfield(EEG.event, 'HED'),      opt.eInfo(end+1,:) = { 'HED'           'HED' }; end
+        if isfield(EEG.event, 'HED'),           opt.eInfo(end+1,:) = { 'HED'           'HED' }; end
     else
         bids_fields = opt.eInfo(:,1);
         if ~any(strcmp(bids_fields,'onset'))
@@ -104,6 +104,7 @@ if ~isempty(EEG.event)
                 opt.eInfo(end+1,:) = { 'onset' 'latency' };
             end
         end
+        if ~any(strcmp(bids_fields,'duration')) opt.eInfo(end+1,:) = { 'duration' 'duration' }; end
         if ~any(strcmp(bids_fields,'sample')) && isfield(EEG.event, 'latency'), opt.eInfo(end+1,:) = { 'sample' 'latency' }; end
         if ~any(strcmp(bids_fields,'value'))
             if isfield(EEG.event, 'value')
@@ -247,7 +248,7 @@ if ~isempty(EEG.event)
                             elseif iscell(tmpVal)
                                 tmpVal = tmpVal{1};
                             end
-                            if isequal(tmpVal, 'NaN')
+                            if isequal(tmpVal, 'NaN') || isempty(tmpVal)
                                 tmpVal = 'n/a';
                             end
                         else

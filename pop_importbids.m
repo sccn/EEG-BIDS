@@ -369,12 +369,16 @@ for iSubject = 2:size(bids.participants,1)
                             selected_elecfile = ''; 
                         end
                         [EEG, channelData, elecData] = eeg_importchanlocs(EEG, selected_chanfile, selected_elecfile);
+                        if isempty(selected_elecfile) && (isempty(EEG.chanlocs) || ~isfield(EEG.chanlocs, 'theta') || any(~cellfun(@isempty, { EEG.chanlocs.theta })))
+                            dipfitdefs;
+                            EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
+                        end
                     else
                         channelData = loadfile([ eegFileRaw(1:end-8) '_channels.tsv' ], channelFile);
                         elecData    = loadfile([ eegFileRaw(1:end-8) '_electrodes.tsv' ], elecFile);
-                        if isempty(EEG.chanlocs(1).theta) || isempty(EEG.chanlocs(1).X) || isempty(EEG.chanlocs(1).sph_theta)
+                        if ~isfield(EEG.chanlocs, 'theta') || any(~cellfun(@isempty, { EEG.chanlocs.theta }))
                             dipfitdefs;
-                            EEG = pop_chanedit(EEG, 'lookup', template_models(2).chanfile);
+                            EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
                         else
                             disp('The EEG file has channel locations associated with it, we are keeping them');
                         end
