@@ -12,6 +12,7 @@
 %
 % Optional inputs:
 %  'studyName'   - [string] name of the STUDY
+%  'subjects'    - [integer array] indices of subjects to process
 %  'bidsevent'   - ['on'|'off'] import events from BIDS .tsv file and
 %                  ignore events in raw binary EEG files.
 %  'bidschanloc' - ['on'|'off'] import channel location from BIDS .tsv file
@@ -115,6 +116,7 @@ opt = finputcheck(options, { ...
     'bidsevent'      'string'    { 'on' 'off' }    'on';  ...
     'bidschanloc'    'string'    { 'on' 'off' }    'on'; ...
     'bidstask'       'string'    {}                ''; ...
+    'subjects'       'integer'   {}                []; ...
     'metadata'       'string'    { 'on' 'off' }    'off'; ...
     'eventtype'      'string'    {  }              'value'; ...
     'outputdir'      'string'    { } fullfile(bidsFolder, 'derivatives', 'eeglab'); ...
@@ -188,7 +190,12 @@ bids.data.eventdesc = [];
 bids.data.eventinfo = [];
 inconsistentChannels = 0;
 inconsistentEvents   = 0;
-for iSubject = 2:size(bids.participants,1)
+if isempty(opt.subjects)
+    opt.subjects = 2:size(bids.participants,1);
+else
+    opt.subjects = opt.subjects+1;
+end
+for iSubject = opt.subjects
     
     parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,1});
     outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,1});
