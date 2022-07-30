@@ -193,6 +193,9 @@
 %               options is aimed to be used to speedup the troubleshooting
 %               of bids_export execution. Default: [1]
 %
+% 'importfunc' - [function handle or string] function to import raw data to
+%              EEG format. Default: auto.
+%
 % Validation:
 %  If the BIDS data created with this function fails to pass the BIDS
 %  validator (npm install -g https://github.com/bids-standard/bids-validator.git
@@ -273,10 +276,14 @@ opt = finputcheck(varargin, {
     'exportext' 'string'  { 'edf' 'eeglab' } 'eeglab';
     'README'    'string'  {}    '';
     'CHANGES'   'string'  {}    '' ;
+    'importfunc' ''  {}    '' ;
     'copydata'   'real'   [0 1] 1 }, 'bids_export');
 if isstr(opt), error(opt); end
 if size(opt.stimuli,1) == 1 || size(opt.stimuli,2) == 1
     opt.stimuli = reshape(opt.stimuli, [2 length(opt.stimuli)/2])';
+end
+if any(opt.taskName == '_')
+    error('Task name cannot contain underscore character(s)');
 end
 
 % deleting folder
@@ -360,6 +367,13 @@ for iSubj = 1:length(files)
         end
     end
     
+    % behavioral data
+    if isfield(files(iSubj), 'beh')
+        if ~iscell(files(iSubj).beh)
+            files(iSubj).beh = { files(iSubj).beh };
+        end
+    end
+    
     % run and sessions and tasks
     if ~isfield(files(iSubj), 'run') || isempty(files(iSubj).run)
         files(iSubj).run = ones(1, length(files(iSubj).file));
@@ -430,6 +444,7 @@ if ~isempty(opt.pInfo)
     participants = { 'participant_id' };
     for iSubj=2:size(opt.pInfo)
         if strcmp('participant_id', opt.pInfo{1,1})
+            opt.pInfo{iSubj,1} = removeInvalidChar(opt.pInfo{iSubj,1});
             if length(opt.pInfo{iSubj,1}) > 3 && isequal('sub-', opt.pInfo{iSubj,1}(1:4))
                 participants{iSubj, 1} = opt.pInfo{iSubj,1};
             elseif strcmpi(opt.createids, 'off')
@@ -470,7 +485,15 @@ if ~isempty(opt.pInfo)
         if ~isfield(opt.pInfoDesc, fields{iField}), opt.pInfoDesc(1).(fields{iField}) = struct([]); end
         opt.pInfoDesc.(fields{iField}) = checkfields(opt.pInfoDesc.(fields{iField}), descFields, 'pInfoDesc');
     end
-    jsonwrite(fullfile(opt.targetdir, 'participants.json'), opt.pInfoDesc,struct('indent','  '));
+    % remove empty fields for BIDS compliance
+    for iField = 1:length(fields)
+        if isempty(opt.pInfoDesc.(fields{iField}))
+            opt.pInfoDesc = rmfield(opt.pInfoDesc, fields{iField});
+        end
+    end
+    if ~isempty(fieldnames(opt.pInfoDesc))
+        jsonwrite(fullfile(opt.targetdir, 'participants.json'), opt.pInfoDesc, struct('indent','  '));
+    end
 end
 
 % prepare event file information (_events.json)
@@ -551,6 +574,14 @@ if length(unique([files(:).task])) == 1
     opt.tInfo(1).TaskName = files(1).task{1};
 else
     opt.tInfo(1).TaskName = 'mixed';
+end
+
+% set beh info (behavioral)
+% ------------
+if ~isfield(files(1), 'beh')
+    for iSubj = 1:length(files)
+        files(iSubj).beh = cell(1,length(files(iSubj).file));
+    end
 end
 
 % load channel information
@@ -636,24 +667,30 @@ for iSubj = 1:length(files)
         case 1 % Mult Task: Single-Session Single-Run 
             for iTask = 1:length(files(iSubj).task)
                 [~,~,fileExt] = fileparts(files(iSubj).file{iTask});
-                fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iTask)) '_eeg' fileExt ]);
-                copy_data_bids( files(iSubj).file{iTask}, fileOut, files(iSubj).notes{iTask}, opt, files(iSubj).chanlocs{iTask}, opt.copydata, opt.exportext);
+                fileOut    = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iTask)) '_eeg' fileExt ]);
+                fileOutBeh = fullfile(opt.targetdir, subjectStr, 'beh', [ subjectStr  '_task-' char(files(iSubj).task(iTask)) '_beh.tsv' ]);
+                copy_data_bids( files(iSubj).file{iTask}, fileOut, files(iSubj).notes{iTask}, files(iSubj).chanlocs{iTask}, opt);
+                eeg_writebehfiles(files(iSubj).beh{iTask}, fileOutBeh);
             end
             
         case 2 % Single-Session Mult-Run
             
             for iRun = 1:length(files(iSubj).run)
                 [~,~,fileExt] = fileparts(files(iSubj).file{iRun});
-                fileOut = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' files(iSubj).run{iRun} '_eeg' fileExt ]);
-                copy_data_bids( files(iSubj).file{iRun}, fileOut, files(iSubj).notes{iRun}, opt, files(iSubj).chanlocs{iRun}, opt.copydata, opt.exportext);
+                fileOut    = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' files(iSubj).run{iRun} '_eeg' fileExt ]);
+                fileOutBeh = fullfile(opt.targetdir, subjectStr, 'beh', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' files(iSubj).run{iRun} '_beh.tsv' ]);
+                copy_data_bids( files(iSubj).file{iRun}, fileOut, files(iSubj).notes{iRun}, files(iSubj).chanlocs{iRun}, opt);
+                eeg_writebehfiles(files(iSubj).beh{iRun}, fileOutBeh);
             end
             
         case 3 % Mult-Session Single-Run
             
             for iSess = 1:length(unique(files(iSubj).session))
                 [~,~,fileExt] = fileparts(files(iSubj).file{iSess});
-                fileOut = fullfile(opt.targetdir, subjectStr, [ 'ses-' files(iSubj).session{iSess} ], 'eeg', [ subjectStr '_ses-' files(iSubj).session{iSess} '_task-' char(files(iSubj).task{iSess}) '_eeg' fileExt]);
-                copy_data_bids( files(iSubj).file{iSess}, fileOut, files(iSubj).notes{iSess}, opt, files(iSubj).chanlocs{iSess}, opt.copydata, opt.exportext);
+                fileOut    = fullfile(opt.targetdir, subjectStr, [ 'ses-' files(iSubj).session{iSess} ], 'eeg', [ subjectStr '_ses-' files(iSubj).session{iSess} '_task-' char(files(iSubj).task{iSess}) '_eeg' fileExt ]);
+                fileOutBeh = fullfile(opt.targetdir, subjectStr, [ 'ses-' files(iSubj).session{iSess} ], 'beh', [ subjectStr '_ses-' files(iSubj).session{iSess} '_task-' char(files(iSubj).task{iSess}) '_beh.tsv' ]);
+                copy_data_bids( files(iSubj).file{iSess}, fileOut, files(iSubj).notes{iSess}, files(iSubj).chanlocs{iSess}, opt);
+                eeg_writebehfiles(files(iSubj).beh{iSess}, fileOutBeh);
             end
             
         case 4 % Mult-Task Mult-Session Mult-Run
@@ -663,8 +700,10 @@ for iSubj = 1:length(files)
                 runindx = strmatch(uniqueSess{iSess}, files(iSubj).session, 'exact');
                 for iSet = runindx(:)'
                     [~,~,fileExt] = fileparts(files(iSubj).file{iSet});
-                    fileOut = fullfile(opt.targetdir, subjectStr, [ 'ses-', files(iSubj).session{iSet} ], 'eeg', [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} '_eeg' fileExt]);
-                    copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, opt, files(iSubj).chanlocs{iSet}, opt.copydata, opt.exportext);
+                    fileOut    = fullfile(opt.targetdir, subjectStr, [ 'ses-', files(iSubj).session{iSet} ], 'eeg', [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} '_eeg' fileExt ]);
+                    fileOutBeh = fullfile(opt.targetdir, subjectStr, [ 'ses-', files(iSubj).session{iSet} ], 'beh', [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} '_beh.tsv' ]);
+                    copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, files(iSubj).chanlocs{iSet}, files(iSubj).beh{iSet}, opt);
+                    eeg_writebehfiles(files(iSubj).beh{iSet}, fileOutBeh);
                 end
             end
                         
@@ -676,19 +715,25 @@ end
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
 %function copy_data_bids(fileIn, fileOut, eInfo, tInfo, trialtype, chanlocs, copydata)
-function copy_data_bids(fileIn, fileOut, notes, opt, chanlocs, copydata, exportExt)
+function copy_data_bids(fileIn, fileOut, notes, chanlocs, opt)
 folderOut = fileparts(fileOut);
+
+copydata = opt.copydata;
+exportExt = opt.exportext;
+
 if ~exist(folderOut)
     mkdir(folderOut);
 end
 if ~exist(fileOut)
 end
 
-% if BDF file anonymize records
 tInfo = opt.tInfo;
 [~,~,ext] = fileparts(fileOut);
 fprintf('Processing file %s\n', fileOut);
-if strcmpi(ext, '.bdf')
+if ~isempty(opt.importfunc)
+    EEG = feval(opt.importfunc, fileIn);
+    pop_saveset(EEG, 'filename', fileOut);
+elseif strcmpi(ext, '.bdf') || strcmpi(ext, '.edf')
     fileIDIn  = fopen(fileIn,'rb','ieee-le');  % see sopen
     fileIDOut = fopen(fileOut,'wb','ieee-le');  % see sopen
     data = fread(fileIDIn, Inf);
@@ -696,8 +741,10 @@ if strcmpi(ext, '.bdf')
     fwrite(fileIDOut, data);
     fclose(fileIDIn);
     fclose(fileIDOut);
-    tInfo.EEGReference = 'CMS/DRL';
-    tInfo.Manufacturer = 'BIOSEMI';
+    if strcmpi(ext, '.bdf')
+        tInfo.EEGReference = 'CMS/DRL';
+        tInfo.Manufacturer = 'BIOSEMI';
+    end
     EEG = pop_biosig(fileOut);
 elseif strcmpi(ext, '.vhdr')
     rename_brainvision_files(fileIn, fileOut, 'rmf', 'off');
@@ -767,7 +814,6 @@ eeg_writeeventsfiles(EEG, fileOut(1:end-8), 'eInfo', opt.eInfo, 'eInfoDesc', opt
 % Note: Consider using here electrodes_to_tsv.m
 % fid = fopen( [ fileOut(1:end-8) 'channels.tsv' ], 'w');
 % miscChannels = 0;
-
 if ~isempty(chanlocs)
     EEG.chanlocs = chanlocs;
     if ischar(EEG.chanlocs)
@@ -944,3 +990,14 @@ for iRow=1:size(matlabArray,1)
     fprintf(fid, '\n');
 end
 fclose(fid);
+
+% remove invalid Chars
+% --------------------       
+function strout = removeInvalidChar(str)
+    strout = str;
+    if any(strout == '-'), strout(strout == '-') = []; end
+    if any(strout == '_'), strout(strout == '_') = []; end
+    if ~isequal(str, strout)
+        disp('Removing invalid characters in subject ID');
+    end
+
