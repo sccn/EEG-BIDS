@@ -508,20 +508,25 @@ if strcmpi(opt.metadata, 'off')
         commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'');', bidsFolder);
     end
 end
-%{
-% import HED tags if exists
+
+% import HED tags if exists in top level events.json
 % -----------------------------
-if ~isempty(eventDescFile)
+% scan for top level events.json
+top_level_eventsjson = dir(fullfile(bidsFolder, '*_events.json'));
+if ~isempty(top_level_eventsjson) && numel(top_level_eventsjson) == 1
+    top_level_eventsjson = fullfile(top_level_eventsjson.folder, top_level_eventsjson.name);
     if plugin_status('HEDTools')
-        fMap = fieldMap.createfMapFromJson(eventDescFile);
-        if fMap.hasAnnotation()
-            STUDY.etc.tags = fMap.getStruct();
-            % import STUDY design if exist
-            STUDY.design = hed2studydesign(fMap);
+        try 
+            fMap = fieldMap.createfMapFromJson(top_level_eventsjson);
+            if fMap.hasAnnotation()
+                STUDY.etc.tags = fMap.getStruct();
+            end
+        catch ME
+            warning('Found top-level events.json file and tried importing HED tags but failed');
         end
     end
 end
-%}
+
 % check BIDS data field present
 % -----------------------------
 function res = checkBIDSfield(bids, fieldName)
