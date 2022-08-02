@@ -12,6 +12,7 @@
 %
 % Optional inputs:
 %  'studyName'   - [string] name of the STUDY
+%  'subjects'    - [integer array] indices of subjects to process
 %  'bidsevent'   - ['on'|'off'] import events from BIDS .tsv file and
 %                  ignore events in raw binary EEG files.
 %  'bidschanloc' - ['on'|'off'] import channel location from BIDS .tsv file
@@ -67,13 +68,16 @@ if nargin < 1
         '   set(findobj(gcbf, ''tag'', ''folder''), ''string'', tmpfolder);' ...
         'end;' ...
         'clear tmpfolder;' ];
-     
+    type_fields = { 'value' 'trial_type' 'event_kind' 'event_type' };
+    
     disp('Scanning folders...');
     % scan if multiple tasks are present
     tasklist = bids_gettaskfromfolder(bidsFolder);
     % scan for event fields
     type_fields = bids_geteventfieldsfromfolder(bidsFolder);
     bids_event_toggle = ~isempty(type_fields);
+    if isempty(type_fields) type_fields = { 'n/a' }; end
+    if isempty(tasklist) tasklist = { 'n/a' }; end
     
     cb_event = 'set(findobj(gcbf, ''userdata'', ''bidstype''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
     cb_task  = 'set(findobj(gcbf, ''userdata'', ''task''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
@@ -83,7 +87,7 @@ if nargin < 1
         {} ...
         { 'style'  'checkbox'   'string' 'Use BIDS electrode.tsv files (when present) for channel locations; off: look up locations using channel labels' 'tag' 'chanlocs' 'value' 1 } ...
         { 'style'  'checkbox'   'string' 'Use BIDS event.tsv files for events and use the following BIDS field for event type' 'tag' 'events' 'value' bids_event_toggle 'callback' cb_event } ...
-        { 'style'  'popupmenu'  'string' type_fields 'tag' 'typefield' 'value' 1 'userdata' 'bidstype'  'enable' 'on' } ...
+        { 'style'  'popupmenu'  'string' type_fields 'tag' 'typefield' 'value' 1 'userdata' 'bidstype'  'enable' fastif(bids_event_toggle, 'on', 'off') } ...
         { 'style'  'checkbox'   'string' 'Import only the following BIDS task from the BIDS archive' 'tag' 'bidstask' 'value' 0 'callback' cb_task } ...
         { 'style'  'popupmenu'  'string' tasklist 'tag' 'bidstaskstr' 'value' 1 'userdata' 'task'  'enable' 'off' } ...
         {} ...
@@ -96,13 +100,12 @@ if nargin < 1
     [~,~,~,res] = inputgui( 'geometry', geometry, 'geomvert', [1 0.5, 1 1 1 0.5 1], 'uilist', promptstr, 'helpcom', 'pophelp(''pop_importbids'')', 'title', 'Import BIDS data -- pop_importbids()');
     if isempty(res), return; end
     
-    if ~isempty(type_fields), options = { 'eventtype' type_fields{res.typefield} }; else, options = {}; end
-%     options = { 'eventtype' type_fields{res.typefield} };
+    if ~isempty(type_fields) && ~strcmpi(type_fields{res.typefield}, 'n/a'), options = { 'eventtype' type_fields{res.typefield} }; else options = {}; end
     if res.events,    options = { options{:} 'bidsevent' 'on' };   else options = { options{:} 'bidsevent' 'off' }; end
     if res.chanlocs,  options = { options{:} 'bidschanloc' 'on' }; else options = { options{:} 'bidschanloc' 'off' }; end
     if ~isempty(res.folder),  options = { options{:} 'outputdir' res.folder }; end
     if ~isempty(res.studyName),  options = { options{:} 'studyName' res.studyName }; end
-    if res.bidstask,  options = { options{:} 'bidstask' tasklist{res.bidstaskstr} }; end
+    if res.bidstask && ~strcmpi(tasklist{res.bidstaskstr}, 'n/a'),  options = { options{:} 'bidstask' tasklist{res.bidstaskstr} }; end
 else
     options = varargin;
 end
@@ -112,6 +115,7 @@ opt = finputcheck(options, { ...
     'bidsevent'      'string'    { 'on' 'off' }    'on';  ...
     'bidschanloc'    'string'    { 'on' 'off' }    'on'; ...
     'bidstask'       'string'    {}                ''; ...
+    'subjects'       'integer'   {}                []; ...
     'metadata'       'string'    { 'on' 'off' }    'off'; ...
     'eventtype'      'string'    {  }              'value'; ...
     'outputdir'      'string'    { } fullfile(bidsFolder, 'derivatives', 'eeglab'); ...
@@ -180,9 +184,17 @@ count = 1;
 commands = {};
 task = [ 'task-' bidsFolder ];
 bids.data = [];
+bids.eventInfo = [];
+bids.data.eventdesc = [];
+bids.data.eventinfo = [];
 inconsistentChannels = 0;
 inconsistentEvents   = 0;
-for iSubject = 2:size(bids.participants,1)
+if isempty(opt.subjects)
+    opt.subjects = 2:size(bids.participants,1);
+else
+    opt.subjects = opt.subjects+1;
+end
+for iSubject = opt.subjects
     
     parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,1});
     outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,1});
@@ -355,16 +367,24 @@ for iSubject = 2:size(bids.participants,1)
                         end
                         if exist([ eegFileRaw(1:end-8) '_electrodes.tsv' ], 'file')
                             selected_elecfile = [ eegFileRaw(1:end-8) '_electrodes.tsv' ]; 
-                        elseif exist(eventFile, 'file')
+                        elseif  exist(fullfile(bidsFolder,[eegFileRaw(strfind(eegFileRaw,'task'):end-8) '_electrodes.tsv' ]), 'file')
+                            selected_elecfile = fullfile(bidsFolder,[eegFileRaw(strfind(eegFileRaw,'task'):end-8) '_electrodes.tsv' ]); 
+                        elseif exist(eventFile.name, 'file')
                             selected_elecfile = elecFile; 
+                        else
+                            selected_elecfile = ''; 
                         end
                         [EEG, channelData, elecData] = eeg_importchanlocs(EEG, selected_chanfile, selected_elecfile);
+                        if isempty(selected_elecfile) && (isempty(EEG.chanlocs) || ~isfield(EEG.chanlocs, 'theta') || any(~cellfun(@isempty, { EEG.chanlocs.theta })))
+                            dipfitdefs;
+                            EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
+                        end
                     else
                         channelData = loadfile([ eegFileRaw(1:end-8) '_channels.tsv' ], channelFile);
                         elecData    = loadfile([ eegFileRaw(1:end-8) '_electrodes.tsv' ], elecFile);
-                        if isempty(EEG.chanlocs(1).theta) || isempty(EEG.chanlocs(1).X) || isempty(EEG.chanlocs(1).sph_theta)
+                        if ~isfield(EEG.chanlocs, 'theta') || any(~cellfun(@isempty, { EEG.chanlocs.theta }))
                             dipfitdefs;
-                            EEG = pop_chanedit(EEG, 'lookup', template_models(2).chanfile);
+                            EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
                         else
                             disp('The EEG file has channel locations associated with it, we are keeping them');
                         end
@@ -427,7 +447,7 @@ for iSubject = 2:size(bids.participants,1)
                 end
                 
                 % building study command
-                commands = { commands{:} 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,1} 'session' iFold 'run' iRun };
+                commands = { commands{:} 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,1} 'session' iFold 'task' task(6:end) 'run' iRun };
                 
                 % custom fields
                 for iCol = 2:size(bids.participants,2)

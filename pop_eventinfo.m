@@ -41,12 +41,13 @@ function [EEG, STUDY, command] = pop_eventinfo(EEG, STUDY, varargin)
     end
     
     % perform check to make sure EEG.event is consistent across EEG
-    if isempty(EEG(1).event)
-        errordlg2('EEG.event is empty for first dataset');
-        return  
-    end
     try
-       eventFields = fieldnames([EEG.event]);
+        allEvents = [EEG.event];
+        if ~isempty(allEvents)
+            eventFields = fieldnames(allEvents);
+        else
+            return; % empty
+        end
     catch ME
         if (strcmp(ME.identifier, 'MATLAB:catenate:structFieldBad'))
             numFields = cellfun(@(x) numel(fieldnames(x)), {EEG.event});
