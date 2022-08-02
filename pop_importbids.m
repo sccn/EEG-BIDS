@@ -413,8 +413,8 @@ for iSubject = 2:size(bids.participants,1)
                     BIDS.gInfo.README = bids.README;
                     BIDS.pInfo = [bids.participants(1,:); bids.participants(iSubject,:)]; % header -> iSubject info
                     BIDS.pInfoDesc = bids.participantsJSON;
-                    %BIDS.eInfo = bids.eventInfo;
-                    %BIDS.eInfoDesc = bids.data.eventdesc;
+                    BIDS.eInfo = bids.eventInfo;
+                    BIDS.eInfoDesc = bids.data.eventdesc;
                     BIDS.tInfo = infoData;
                     EEG.BIDS = BIDS;
                     
