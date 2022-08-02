@@ -96,7 +96,7 @@ if nargin < 1
     [~,~,~,res] = inputgui( 'geometry', geometry, 'geomvert', [1 0.5, 1 1 1 0.5 1], 'uilist', promptstr, 'helpcom', 'pophelp(''pop_importbids'')', 'title', 'Import BIDS data -- pop_importbids()');
     if isempty(res), return; end
     
-    if ~isempty(type_fields), options = { 'eventtype' type_fields{res.typefield} }; else options = {}; end
+    if ~isempty(type_fields), options = { 'eventtype' type_fields{res.typefield} }; else, options = {}; end
 %     options = { 'eventtype' type_fields{res.typefield} };
     if res.events,    options = { options{:} 'bidsevent' 'on' };   else options = { options{:} 'bidsevent' 'off' }; end
     if res.chanlocs,  options = { options{:} 'bidschanloc' 'on' }; else options = { options{:} 'bidschanloc' 'off' }; end
@@ -384,8 +384,14 @@ for iSubject = 2:size(bids.participants,1)
                         end
                         if exist([ eegFileRaw(1:end-8) '_events.json' ], 'file')
                             selected_eventdescfile = [ eegFileRaw(1:end-8) '_events.json' ]; 
-                        elseif exist(eventDescFile, 'file')
-                            selected_eventdescfile = eventDescFile; 
+                        elseif ~isempty(eventDescFile)
+                            if ischar(eventDescFile) && exist(eventDescFile, 'file')
+                                selected_eventdescfile = eventDescFile;
+                            elseif isstruct(eventDescFile) && isfield(eventDescFile, 'folder') && isfield(eventDescFile, 'name') % sanity check
+                                if exist(fullfile(eventDescFile.folder, eventDescFile.name), 'file')
+                                    selected_eventdescfile = fullfile(eventDescFile.folder, eventDescFile.name); 
+                                end
+                            end
                         else
                             warning('No events.json found');
                         end
@@ -407,8 +413,8 @@ for iSubject = 2:size(bids.participants,1)
                     BIDS.gInfo.README = bids.README;
                     BIDS.pInfo = [bids.participants(1,:); bids.participants(iSubject,:)]; % header -> iSubject info
                     BIDS.pInfoDesc = bids.participantsJSON;
-                    BIDS.eInfo = bids.eventInfo;
-                    BIDS.eInfoDesc = bids.data.eventdesc;
+                    %BIDS.eInfo = bids.eventInfo;
+                    %BIDS.eInfoDesc = bids.data.eventdesc;
                     BIDS.tInfo = infoData;
                     EEG.BIDS = BIDS;
                     
@@ -438,13 +444,14 @@ for iSubject = 2:size(bids.participants,1)
                         inconsistentChannels = inconsistentChannels+1;
                     end
                 end
+                %{
                 if ~isempty(bData.eventinfo)
                     if size(bData.eventinfo,1)-1 ~= length(bData.EEG.event)
                         fprintf(2, 'Warning: inconsistency detected, %d events in BIDS file vs %d in EEG file for %s\n', size(bData.eventinfo,1)-1, length(bData.EEG.event), [tmpFileName,fileExt]);
                         inconsistentEvents = inconsistentEvents+1;
                     end
                 end
-                
+                %}
             end % end for eegFileRaw
         end
     end
@@ -501,7 +508,20 @@ if strcmpi(opt.metadata, 'off')
         commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'');', bidsFolder);
     end
 end
-
+%{
+% import HED tags if exists
+% -----------------------------
+if ~isempty(eventDescFile)
+    if plugin_status('HEDTools')
+        fMap = fieldMap.createfMapFromJson(eventDescFile);
+        if fMap.hasAnnotation()
+            STUDY.etc.tags = fMap.getStruct();
+            % import STUDY design if exist
+            STUDY.design = hed2studydesign(fMap);
+        end
+    end
+end
+%}
 % check BIDS data field present
 % -----------------------------
 function res = checkBIDSfield(bids, fieldName)
