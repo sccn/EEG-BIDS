@@ -190,7 +190,7 @@ bids.data.eventinfo = [];
 inconsistentChannels = 0;
 inconsistentEvents   = 0;
 if isempty(opt.subjects)
-    opt.subjects = 2:size(bids.participants,1);
+    opt.subjects = 2:size(bids.participants,1); % indices into the participants.tsv file, ignoring first header row
 else
     opt.subjects = opt.subjects+1;
 end
