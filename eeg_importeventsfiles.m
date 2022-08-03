@@ -3,34 +3,24 @@
 % Usage:
 %    [EEG, ~, ~, ~] = eeg_importeventsfiles(EEG, eventfile, 'key', value)
 %
-%  
-%
 % Inputs:
 %  'EEG'        - [struct] the EEG structure to which event information will be imported
-%
 %  'eventfile'  - [string] path to the events.tsv file. 
 %                 e.g. ~/BIDS_EXPORT/sub-01/ses-01/eeg/sub-01_ses-01_task-GoNogo_events.tsv
 %
-%
 % Optional inputs:
 %  'bids'          - [struct] structure that saves imported BIDS information. Default is []
-%
 %  'eventDescFile' - [string] path to events.json file if applicable. Default is empty
-%
 %  'eventtype'     - [string] BIDS event column to be used as type in EEG.event. Default is 'value'
 %
 % Outputs:
-%
-
 %   EEG     - [struct] the EEG structure with event info imported
-%
 %   bids    - [struct] structure that saves BIDS information with event information
-%
 %   eventData - [cell array] imported data from events.tsv
-%
 %   eventDesc - [struct] imported data from events.json
 %
 % Authors: Dung Truong, Arnaud Delorme, 2022
+
 function [EEG, bids, eventData, eventDesc] = eeg_importeventsfiles(EEG, eventfile, varargin)
 g = finputcheck(varargin,  {'eventDescFile'   'string'   [] '';
                             'bids'            'struct'   [] struct([]);
