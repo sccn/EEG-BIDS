@@ -55,7 +55,7 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
     uicontrol('Style', 'text', 'string', 'Task name (no space)','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top tfWidth tfHeight]);
     uicontrol('Style', 'edit', 'string', '', 'tag', 'TaskName','fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
     top = top - tfHeight - 0.01;
-    uicontrol('Style', 'text', 'string', 'For several tasks, use bids_export.m from the command line', 'BackgroundColor',bg,'fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
+    uicontrol('Style', 'text', 'string', 'For several tasks, script using bids_export', 'BackgroundColor',bg,'fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
     top = top - tfHeight - 0.01;
     uicontrol('Style', 'text', 'string', 'README (short introduction to the experiment):','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight]);
     top = top - tfHeight*2.2;

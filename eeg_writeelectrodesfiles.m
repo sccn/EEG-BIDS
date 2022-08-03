@@ -22,7 +22,7 @@ if isfield(EEG.chaninfo, 'filename')
     end
 end
 
-if ~isTemplate && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && length(EEG.chanlocs) > 1 && ~isempty(EEG.chanlocs(2).X)
+if ~isTemplate && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && any(cellfun(@(x)~isempty(x), { EEG.chanlocs.X }))
     fid = fopen( [ fileOut '_electrodes.tsv' ], 'w');
     fprintf(fid, 'name\tx\ty\tz\n');
     
