@@ -19,6 +19,7 @@
 %
 %  'eventtype'     - [string] BIDS event column to be used as type in EEG.event. Default is 'value'
 %
+%  'usevislab'     - [string] Whether to use VisLab's functions. Default 'off'
 % Outputs:
 %
 
@@ -34,8 +35,15 @@
 function [EEG, bids, eventData, eventDesc] = eeg_importeventsfiles(EEG, eventfile, varargin)
 g = finputcheck(varargin,  {'eventDescFile'   'string'   [] '';
                             'bids'            'struct'   [] struct([]);
-                            'eventtype'       'string'   [] 'value' });
+                            'eventtype'       'string'   [] 'value' ;
+                            'usevislab'       'string'   { 'on' 'off'} 'off' }, 'eeg_importeventsfiles', 'ignore');
 if isstr(g), error(g); end
+
+if strcmpi(g.usevislab, 'on')
+    [EEG, bids, eventData, eventDesc] = eeg_importeventsfiles(EEG, eventfile, varargin{:}); %change to Kay's function
+    return;
+end
+    
 bids = g.bids;
                         
 % ---------
@@ -89,15 +97,20 @@ else
         %                         end
     end
     EEG.event = events; 
+    EEG = eeg_checkset(EEG, 'makeur'); % add urevent
     EEG = eeg_checkset(EEG, 'eventconsistency');
 end    
 
 % import HED tags if exists
 if ~isempty(g.eventDescFile)
     if plugin_status('HEDTools')
-        fMap = fieldMap.createfMapFromJson(g.eventDescFile);
-        if fMap.hasAnnotation()
-            EEG.etc.tags = fMap.getStruct();
+        try 
+            fMap = fieldMap.createfMapFromJson(g.eventDescFile);
+            if fMap.hasAnnotation()
+                EEG.etc.tags = fMap.getStruct();
+            end
+        catch ME
+            warning('Unable to import HED tags. Check your _events.json file');
         end
     end
 end
