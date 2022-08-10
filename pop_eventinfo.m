@@ -31,7 +31,7 @@ function [EEG, STUDY, command] = pop_eventinfo(EEG, STUDY, varargin)
         return
     end
     
-    command = '[EEG, [], command] = pop_eventinfo(EEG)';
+    command = ''; %'[EEG, [], command] = pop_eventinfo(EEG)';
     %% if STUDY is provided, check for consistency
     hasSTUDY = false;
     if exist('STUDY','var') && ~isempty(STUDY)

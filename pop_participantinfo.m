@@ -46,7 +46,7 @@
 % ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 % THE POSSIBILITY OF SUCH DAMAGE.
 function [EEG, STUDY, command] = pop_participantinfo(EEG,STUDY, varargin)
-    command = '[EEG, [], command] = pop_participantinfo(EEG);';
+    command = ''; %[EEG, [], command] = pop_participantinfo(EEG);';
     
     %% check if there's already an opened window
     if ~isempty(findobj('Tag','pInfoTable'))
