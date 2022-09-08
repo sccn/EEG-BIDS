@@ -364,6 +364,7 @@ for iSubject = opt.subjects
                         otherwise
                             error('No EEG data found for subject/session %s', subjectFolder{iFold});
                     end
+                    EEG = eeg_checkset(EEG);
                     EEGnodata = EEG;
                     EEGnodata.data = [];
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('EEG', EEGnodata));
