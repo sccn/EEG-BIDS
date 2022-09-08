@@ -95,7 +95,7 @@ if nargin < 1
         { 'style'  'edit'       'string' fullfile(bidsFolder, 'derivatives', 'eeglab') 'tag' 'folder' 'HorizontalAlignment' 'left' } ...
         { 'style'  'pushbutton' 'string' '...' 'callback' cb_select } ...
         };
-    geometry = {[2 1.5], 1, 1,[1 0.25],[1 0.25],1,[1 2 0.5]};
+    geometry = {[2 1.5], 1, 1,[1 0.35],[1 0.35],1,[1 2 0.5]};
     
     [~,~,~,res] = inputgui( 'geometry', geometry, 'geomvert', [1 0.5, 1 1 1 0.5 1], 'uilist', promptstr, 'helpcom', 'pophelp(''pop_importbids'')', 'title', 'Import BIDS data -- pop_importbids()');
     if isempty(res), return; end
@@ -232,6 +232,9 @@ for iSubject = opt.subjects
             if isempty(eegFile)
                 eegFile     = searchparent(subjectFolder{iFold}, '*_meg.*');
             end
+            if isempty(eegFile)
+                eegFile     = searchparent(subjectFolder{iFold}, '*_ieeg.*');
+            end
             infoFile      = searchparent(subjectFolder{iFold}, '*_eeg.json');
             channelFile   = searchparent(subjectFolder{iFold}, '*_channels.tsv');
             elecFile      = searchparent(subjectFolder{iFold}, '*_electrodes.tsv');
@@ -270,7 +273,10 @@ for iSubject = opt.subjects
                             if isempty(ind)
                                 ind = strmatch( '.gz', cellfun(@(x)x(end-2:end), allFiles, 'uniformoutput', false) ); % FIF
                                 if isempty(ind) && ~isempty(allFiles)
-                                    fprintf(2, 'No EEG file found for subject %s\n', bids.participants{iSubject,1});
+                                    ind = strmatch( '.mefd', cellfun(@(x)x(end-4:end), allFiles, 'uniformoutput', false) ); % MEFD
+                                    if isempty(ind) && ~isempty(allFiles)
+                                        fprintf(2, 'No EEG file found for subject %s\n', bids.participants{iSubject,1});
+                                    end
                                 end
                             end
                         end
@@ -350,6 +356,11 @@ for iSubject = opt.subjects
                             EEG = pop_fileio(eegFileRaw(1:end-3)); % fif folder
                         case '.ds'
                             EEG = pop_fileio(eegFileRaw); % fif folder
+                        case '.mefd'
+                            if ~exist('pop_matmef', 'file')
+                                error('MEF plugin not present, please install the MATMEF plugin first')
+                            end
+                            EEG = pop_matmef(eegFileRaw); % fif folder
                         otherwise
                             error('No EEG data found for subject/session %s', subjectFolder{iFold});
                     end
@@ -359,29 +370,17 @@ for iSubject = opt.subjects
                     
                     % channel location data
                     % ---------------------
+                    selected_chanfile = bids_get_file(eegFileRaw(1:end-8), '_channels.tsv', channelFile);
+                    selected_elecfile = bids_get_file(eegFileRaw(1:end-8), '_electrodes.tsv', elecFile);
                     if strcmpi(opt.bidschanloc, 'on')
-                        if exist([ eegFileRaw(1:end-8) '_channels.tsv' ], 'file')
-                            selected_chanfile = [ eegFileRaw(1:end-8) '_channels.tsv' ]; 
-                        elseif exist(channelFile, 'file')
-                            selected_chanfile = channelFile; 
-                        end
-                        if exist([ eegFileRaw(1:end-8) '_electrodes.tsv' ], 'file')
-                            selected_elecfile = [ eegFileRaw(1:end-8) '_electrodes.tsv' ]; 
-                        elseif  exist(fullfile(bidsFolder,[eegFileRaw(strfind(eegFileRaw,'task'):end-8) '_electrodes.tsv' ]), 'file')
-                            selected_elecfile = fullfile(bidsFolder,[eegFileRaw(strfind(eegFileRaw,'task'):end-8) '_electrodes.tsv' ]); 
-                        elseif exist(eventFile.name, 'file')
-                            selected_elecfile = elecFile; 
-                        else
-                            selected_elecfile = ''; 
-                        end
                         [EEG, channelData, elecData] = eeg_importchanlocs(EEG, selected_chanfile, selected_elecfile);
                         if isempty(selected_elecfile) && (isempty(EEG.chanlocs) || ~isfield(EEG.chanlocs, 'theta') || any(~cellfun(@isempty, { EEG.chanlocs.theta })))
                             dipfitdefs;
                             EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
                         end
                     else
-                        channelData = loadfile([ eegFileRaw(1:end-8) '_channels.tsv' ], channelFile);
-                        elecData    = loadfile([ eegFileRaw(1:end-8) '_electrodes.tsv' ], elecFile);
+                        channelData = loadfile(selected_chanfile);
+                        elecData    = loadfile(selected_elecfile);
                         if ~isfield(EEG.chanlocs, 'theta') || any(~cellfun(@isempty, { EEG.chanlocs.theta }))
                             dipfitdefs;
                             EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
@@ -395,26 +394,8 @@ for iSubject = opt.subjects
                     % event data
                     % ----------
                     if strcmpi(opt.bidsevent, 'on')
-                        if exist([ eegFileRaw(1:end-8) '_events.tsv' ], 'file')
-                            eventfile = [ eegFileRaw(1:end-8) '_events.tsv' ]; 
-                        elseif exist(eventFile, 'file')
-                            eventfile = eventFile; 
-                        else
-                            error('bidsevent on but events.tsv not found');
-                        end
-                        if exist([ eegFileRaw(1:end-8) '_events.json' ], 'file')
-                            selected_eventdescfile = [ eegFileRaw(1:end-8) '_events.json' ]; 
-                        elseif ~isempty(eventDescFile)
-                            if ischar(eventDescFile) && exist(eventDescFile, 'file')
-                                selected_eventdescfile = eventDescFile;
-                            elseif isstruct(eventDescFile) && isfield(eventDescFile, 'folder') && isfield(eventDescFile, 'name') % sanity check
-                                if exist(fullfile(eventDescFile.folder, eventDescFile.name), 'file')
-                                    selected_eventdescfile = fullfile(eventDescFile.folder, eventDescFile.name); 
-                                end
-                            end
-                        else
-                            warning('No events.json found');
-                        end
+                        eventfile              = bids_get_file(eegFileRaw(1:end-8), '_events.tsv', eventFile);
+                        selected_eventdescfile = bids_get_file(eegFileRaw(1:end-8), '_events.json', eventDescFile);
 %                     
                         [EEG, bids, eventData, eventDesc] = eeg_importeventsfiles(EEG, eventfile, 'bids', bids, 'eventDescFile', selected_eventdescfile, 'eventtype', opt.eventtype); 
                         if isempty(eventData), error('bidsevent on but events.tsv has no data'); end
@@ -575,7 +556,7 @@ function outFile = searchparent(folder, fileName)
 % only get exact match and filter out hidden file
 outFile = '';
 parent = folder;
-while ~any(arrayfun(@(x) strcmp(lower(x.name),'dataset_description.json'), dir(parent))) && isempty(outFile) % README indicates root BIDS folder
+while ~any(arrayfun(@(x) strcmp(lower(x.name),'dataset_description.json'), dir(parent))) && isempty(outFile) % dataset_description indicates root BIDS folder
     outFile = filterHiddenFile(folder, dir(fullfile(parent, fileName)));
     parent = fileparts(parent);
 end
@@ -670,6 +651,20 @@ for iCol = 1:size(res,2)
         elseif ~all(~testNumeric)
             % Convert numerical value back to string
             res(:,iCol) = cellfun(@num2str, res(:,iCol), 'uniformoutput', false);
+        end
+    end
+end
+
+% get BIDS file
+function filestr = bids_get_file(baseName, ext, alternateFile)
+filestr = '';
+if exist([ baseName ext ], 'file')
+    filestr = [ baseName ext ];
+else
+    if isfield(alternateFile, 'folder') && isfield(alternateFile, 'name')
+        tmpFile = fullfile(alternateFile(1).folder, alternateFile(1).name);
+        if exist(tmpFile, 'file')
+            filestr = tmpFile;
         end
     end
 end
