@@ -995,7 +995,7 @@ fclose(fid);
 % --------------------       
 function strout = removeInvalidChar(str)
     strout = str;
-    if any(strout == '-'), strout(strout == '-') = []; end
+    %if any(strout == '-'), strout(strout == '-') = []; end
     if any(strout == '_'), strout(strout == '_') = []; end
     if ~isequal(str, strout)
         disp('Removing invalid characters in subject ID');
