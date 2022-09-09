@@ -12,7 +12,8 @@
 %
 % Optional inputs:
 %  'studyName'   - [string] name of the STUDY
-%  'subjects'    - [integer array] indices of subjects to process
+%  'subjects'    - [integer array] indices of subjects to import
+%  'sessions'    - [cell] sessions to import
 %  'bidsevent'   - ['on'|'off'] import events from BIDS .tsv file and
 %                  ignore events in raw binary EEG files.
 %  'bidschanloc' - ['on'|'off'] import channel location from BIDS .tsv file
@@ -116,6 +117,7 @@ opt = finputcheck(options, { ...
     'bidschanloc'    'string'    { 'on' 'off' }    'on'; ...
     'bidstask'       'string'    {}                ''; ...
     'subjects'       'integer'   {}                []; ...
+    'sessions'       'cell'      {}                {}; ...
     'metadata'       'string'    { 'on' 'off' }    'off'; ...
     'eventtype'      'string'    {  }              'value'; ...
     'outputdir'      'string'    { } fullfile(bidsFolder, 'derivatives', 'eeglab'); ...
@@ -205,18 +207,22 @@ for iSubject = opt.subjects
         subjectFolderOut = { fullfile(outputSubjectFolder, 'eeg') };
     else
         subFolders = dir(fullfile(parentSubjectFolder, 'ses*'));
+        subFolders = { subFolders.name };
         subjectFolder    = {};
         subjectFolderOut = {};
+        if ~isempty(opt.sessions)
+            subFolders = intersect(subFolders, opt.sessions);
+        end
         
         for iFold = 1:length(subFolders)
-            subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders(iFold).name, 'eeg');
-            subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders(iFold).name, 'eeg');
+            subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'eeg');
+            subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders{iFold}, 'eeg');
             if ~exist(subjectFolder{iFold},'dir')
-                subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders(iFold).name, 'meg');
-                subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders(iFold).name, 'meg');
+                subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'meg');
+                subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders{iFold}, 'meg');
                 if ~exist(subjectFolder{iFold},'dir')
-                    subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders(iFold).name, 'ieeg');
-                    subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders(iFold).name, 'ieeg');
+                    subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'ieeg');
+                    subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders{iFold}, 'ieeg');
                 end
             end
         end
@@ -225,8 +231,10 @@ for iSubject = opt.subjects
     % import data
     for iFold = 1:length(subjectFolder) % scan sessions
         if ~exist(subjectFolder{iFold},'dir')
-            fprintf(2, 'No EEG data folder for subject %s session %s\n', bids.participants{iSubject,1}, subFolders(iFold).name);
+            fprintf(2, 'No EEG data folder for subject %s session %s\n', bids.participants{iSubject,1}, subFolders{iFold});
         else
+            % MEG, EEG, iEEG or BEH
+            
             % which raw data - with folder inheritance
             eegFile     = searchparent(subjectFolder{iFold}, '*eeg.*');
             if isempty(eegFile)
@@ -237,6 +245,12 @@ for iSubject = opt.subjects
             elecFile      = searchparent(subjectFolder{iFold}, '*_electrodes.tsv');
             eventFile     = searchparent(subjectFolder{iFold}, '*_events.tsv');
             eventDescFile = searchparent(subjectFolder{iFold}, '*_events.json');
+            behFile       = searchparent(fullfile(subjectFolder{iFold}, '..', 'beh'), '*_beh.tsv');
+            
+            % remove BEH files which are have runs (treated separately)
+            if ~isempty(behFile) && (contains(behFile(1).name, 'run') || contains(behFile(1).name, 'task'))
+                behFile = {};
+            end
             
             % check the task
             if ~isempty(opt.bidstask)
@@ -279,6 +293,13 @@ for iSubject = opt.subjects
                 eegFileRawAll  = allFiles(ind);
             end
             
+            if ~isempty(behFile) % should be a single file
+                if length(behFile) > 1
+                    fprintf(2, 'More than 1 BEH file for a given subject, do not know what to do with it\n');
+                end
+                behData = readtable(fullfile(behFile(1).folder, behFile(1).name),'FileType','text');
+            end
+            
             % skip most import if set file with no need for modication
             for iFile = 1:length(eegFileRawAll)
                 
@@ -299,6 +320,27 @@ for iSubject = opt.subjects
                         if isnan(iRun) || iRun == 0
                             error('Problem converting run information'); 
                         end
+                    end
+                    % check for BEH file
+                    filePathTmp = fileparts(eegFileRaw);
+                    behFileTmp = fullfile(filePathTmp,'..', 'beh', [eegFileRaw(1:ind(1)-1) '_beh.tsv' ]);
+                    if exist(behFileTmp, 'file')
+                        behData = readtable(behFileTmp,'FileType','text');
+                    else
+                        behData = [];
+                    end
+                else
+                    % check for BEH file
+                    [filePathTmp, fileBaseTmp ] = fileparts(eegFileRaw);
+                    behFileTmp = fullfile(filePathTmp, '..', 'beh', [fileBaseTmp(1:end-4) '_beh.tsv' ]);
+                    if exist(behFileTmp, 'file')
+                        try
+                            behData = readtable(behFileTmp,'FileType','text');
+                        catch
+                            disp('Warning: could not load BEH file');
+                        end
+                    else
+                        behData = [];
                     end
                 end
                 
@@ -436,6 +478,10 @@ for iSubject = opt.subjects
                     BIDS.eInfo = bids.eventInfo;
                     BIDS.eInfoDesc = bids.data.eventdesc;
                     BIDS.tInfo = infoData;
+                    if ~isempty(behData)
+                        behData = table2struct(behData);
+                    end
+                    BIDS.behavioral = behData;
                     EEG.BIDS = BIDS;
                     
                     if strcmpi(opt.metadata, 'off')
@@ -447,13 +493,18 @@ for iSubject = opt.subjects
                 end
                 
                 % building study command
-                commands = { commands{:} 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,1} 'session' iFold 'task' task(6:end) 'run' iRun };
+                commands = [ commands { 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,1} 'session' iFold 'task' task(6:end) 'run' iRun } ];
                 
-                % custom fields
+                % custom numerical fields
                 for iCol = 2:size(bids.participants,2)
-                    commands = { commands{:} bids.participants{1,iCol} num2str(bids.participants{iSubject,iCol}) };
+                    commands = [ commands { bids.participants{1,iCol} bids.participants{iSubject,iCol} } ];
                 end
-                
+                if isstruct(behData) && ~isempty(behData)
+                    behFields = fieldnames(behData);
+                    for iFieldBeh = 1:length(behFields)
+                        commands = [ commands { behFields{iFieldBeh} behData.(behFields{iFieldBeh}) } ];
+                    end
+                end
                 count = count+1;
                 
                 % check dataset consistency
@@ -473,6 +524,7 @@ for iSubject = opt.subjects
                 end
                 %}
             end % end for eegFileRaw
+            fclose all;
         end
     end
 end
