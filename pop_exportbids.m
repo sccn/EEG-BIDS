@@ -26,9 +26,9 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-function [STUDY,EEG,com] = pop_exportbids(STUDY, EEG, varargin)
+function [STUDY,EEG,comOut] = pop_exportbids(STUDY, EEG, varargin)
 
-com = '';
+comOut = '';
 if isempty(STUDY)
     error('BIDS export can only export EEGLAB studies');
 end
@@ -188,8 +188,10 @@ disp('Done');
 
 % history
 % -------
-if nargin < 1
-    com = sprintf('pop_exportbids(STUDY, %s);', vararg2str(options));
+if nargin < 3
+    % Issue: README file and other inserted as plain text
+    % The history should have the relevant fields
+    % comOut = sprintf('pop_exportbids(STUDY, %s);', vararg2str(options));
 end
 
 end
