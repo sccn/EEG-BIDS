@@ -233,7 +233,7 @@ for iSubject = opt.subjects
         if ~exist(subjectFolder{iFold},'dir')
             fprintf(2, 'No EEG data folder for subject %s session %s\n', bids.participants{iSubject,1}, subFolders{iFold});
         else
-            % MEG, EEG, iEEG or BEH
+            % MEG, EEG, iEEG, Motion, or BEH
             
             % which raw data - with folder inheritance
             eegFile     = searchparent(subjectFolder{iFold}, '*eeg.*');
@@ -249,12 +249,13 @@ for iSubject = opt.subjects
             eventFile     = searchparent(subjectFolder{iFold}, '*_events.tsv');
             eventDescFile = searchparent(subjectFolder{iFold}, '*_events.json');
             behFile       = searchparent(fullfile(subjectFolder{iFold}, '..', 'beh'), '*_beh.tsv');
+            motionFile    = searchparent(fullfile(subjectFolder{iFold}, '..', 'motion'), '*_motion.tsv');
             
-            % remove BEH files which are have runs (treated separately)
+            % remove BEH & motion files which are have runs (treated separately)
             if ~isempty(behFile) && (contains(behFile(1).name, 'run') || contains(behFile(1).name, 'task'))
                 behFile = {};
             end
-            
+
             % check the task
             if ~isempty(opt.bidstask)
                 eegFile       = filterFiles(eegFile      , opt.bidstask);
@@ -304,6 +305,13 @@ for iSubject = opt.subjects
                     fprintf(2, 'More than 1 BEH file for a given subject, do not know what to do with it\n');
                 end
                 behData = readtable(fullfile(behFile(1).folder, behFile(1).name),'FileType','text');
+            end
+            
+            motionData = {}; % can be multiple files
+            if ~isempty(motionFile) 
+                for iMotion = 1:numel(motionFile)
+                    motionData{iMotion} =  readtable(fullfile(motionFile(iMotion).folder, motionFile(iMotion).name),'FileType','text');
+                end
             end
             
             % skip most import if set file with no need for modication
