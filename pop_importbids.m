@@ -233,7 +233,28 @@ for iSubject = opt.subjects
         if ~exist(subjectFolder{iFold},'dir')
             fprintf(2, 'No EEG data folder for subject %s session %s\n', bids.participants{iSubject,1}, subFolders{iFold});
         else
-            % MEG, EEG, iEEG, Motion, or BEH
+            
+            % scans.tsv for time synch information
+            %-------------------------------------
+            try
+                try
+                    scansFile     = searchparent(fileparts(subjectFolder{iFold}), '*_scans.tsv');
+                catch
+                    % for some reason parent search not working - a quick workaround
+                    scansFile       = searchparent(fileparts(fileparts(subjectFolder{iFold})), '*_scans.tsv');
+                end
+            catch
+            end
+            
+            if exist('scansFile', 'var')
+                useScans = true;
+                scans = loadfile( scansFile.name, scansFile);
+                bids.data = setallfields(bids.data, [iSubject-1,iFold,1], struct('scans', {scans}));
+            else
+                useScans = false;
+            end
+            
+            % MEG, EEG, iEEG, Motion, Physio, or BEH
             
             % which raw data - with folder inheritance
             eegFile     = searchparent(subjectFolder{iFold}, '*eeg.*');
