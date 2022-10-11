@@ -43,8 +43,11 @@ for iFile = 1:length(files)
         end
     else
         if ~isempty(strfind(files(iFile).name, 'events.tsv'))
-            res = loadtxt( fullfile(files(iFile).folder, files(iFile).name), 'verbose', 'off', 'delim', 9);
-            fields = union(fields, res(1,:));
+             res = loadtxt( fullfile(files(iFile).folder, files(iFile).name), 'verbose', 'off', 'delim', 9, 'convert', 'off');
+             fields = union(fields, res(1,:));
+%             % other solutions
+%             res = readtable( fullfile(files(iFile).folder, files(iFile).name), 'filetype', 'delimitedtext', 'delimiter', char(9));
+%             fields = union(fields, fieldnames(res)); % has additional fields Properties, Rows and Variables that need to be removeds
         end
     end
 end
