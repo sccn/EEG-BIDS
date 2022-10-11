@@ -1,6 +1,12 @@
-# bids-matlab-tools
+# BIDS-MATLAB-tools
 
 This repository contains a collection of functions to import and export BIDS-formated experiments. The code is tailored for use as an [EEGLAB](http://eeglab.org) plugin but may also be used independently of EEGLAB. Conversion of data format from non-supported BIDS binary format requires that EEGLAB be installed (supported formats are EEGLAB .set files, EDF files, BDF files, and Brain Vision Exchange Format files).
+
+# BIDS-MATLAB vs EEG2BIDS vs BIDS-MATLAB-tools
+
+[BIDS-MATLAB](https://bids-matlab.readthedocs.io/en/latest/) is a project to import BIDS data. BIDS-MATLAB maps the BIDS directory architectures to MATLAB structures but does not import or convert data like BIDS-MATLAB-tools. In theory, BIDS-MATLAB-tools could use BIDS-MATLAB to get the BIDS directory architectures into MATLAB, then convert it to an EEGLAB STUDY. However, in 2021, BIDS-MATLAB could not yet import all the relevant EEG, MEG, and iEEG files. 
+
+[EEG2BIDS](https://github.com/aces/EEG2BIDS) is a Python base executable to format a collection of EDF files to the BIDS format. EEG2BIDS requires users to create JSON files for meta-data. It is a tool designed to archive data as part of a lab protocol where JSON files have been prepared in advance and are suited for technicians organizing data. BIDS-MATLAB-tools export capabilities are more suited for researchers managing their data and are agnostic regarding the original data format.
 
 # Cloning
 
