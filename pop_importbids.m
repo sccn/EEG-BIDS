@@ -714,7 +714,7 @@ filestr = '';
 if exist([ baseName ext ], 'file')
     filestr = [ baseName ext ];
 else
-    if isfield(alternateFile, 'folder') && isfield(alternateFile, 'name')
+    if ~isempty(alternateFile) && isfield(alternateFile, 'folder') && isfield(alternateFile, 'name')
         tmpFile = fullfile(alternateFile(1).folder, alternateFile(1).name);
         if exist(tmpFile, 'file')
             filestr = tmpFile;
