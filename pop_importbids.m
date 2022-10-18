@@ -571,205 +571,31 @@ for iSubject = opt.subjects
                 %}
             end % end for eegFileRaw
             
-            
-            for iModality = 1:numel(otherModality)
-                
-                datatype = otherModality{iModality};
-                disp(['Processing ' datatype ' data'])
-                
-                % copy motionFile or physioFile struct to a generic dataFile variable so that shared processing steps can be done for both
-                dataFile    = eval([datatype 'File']);
-                dataRaw     = eval([datatype 'Data']); % cell array containing tables
-                
-                for iDat = 1:numel(dataFile)
-                    
-                    % replace extension tsv with set
-                    [~,fileName,fileExt] = fileparts(dataFile(iDat).name);
-                    dataFileName  = [fileName '.set'];
-                    dataFileJSON  = [fileName '.json'];
-                    dataFileOut   = fullfile(subjectFolderOut{iFold}(1:end-3), datatype, dataFileName);
-                    
-                    % JSON information file
-                    infoFile        = searchparent([subjectFolder{iFold}(1:end-3), datatype], dataFileJSON);
-                    infoData        = loadfile(infoFile.name, infoFile);
-                    
-                    % check or construct needed channel files according to the data type
-                    switch datatype
-                        case 'motion'
-                            channelFileMotion   = [fileName(1:end-6) 'channels.tsv']; % replace _motion with _channels
-                            channelFile         = searchparent([subjectFolder{iFold}(1:end-3), datatype], channelFileMotion);
-                            channelData         = loadfile(channelFile(1).name, channelFile); 
-                        case 'physio'
-                            % channel file (for physio data, hidden in json file as 'columns')
-                            channelData = {'name', 'type', 'units'};
-                            for Ci = 1:numel(infoData.Columns)
-                                channelData{end + 1,1} = [char(infoData.Columns{Ci})] ;
-                            end
-                    end
-                    
-                    switch lower(fileExt)
-                        case '.set' % do nothing
-                            if strcmpi(opt.metadata, 'on')
-                                DATA = pop_loadset( 'filename', dataFile(iDat).name, 'loadmode', 'info' );
-                            else
-                                DATA = pop_loadset( 'filename', dataFile(iDat).name );
-                            end
-                        case '.tsv'
-                            DATA        = eeg_emptyset;
-                            DATA.data   = table2array(dataRaw{iDat})';
-                              
-                            if strcmp(datatype,'motion')
-                                DATA.srate                  = infoData.SamplingFrequencyEffective;
-                                DATA.etc.nominal_srate      = infoData.SamplingFrequency;
-                            else
-                                try
-                                    DATA.srate  = infoData.SamplingFrequencyEffective; % Actual sampling rate used in motion data. Note that the unit of the time must be in second.
-                                catch
-                                    DATA.srate  = infoData.SamplingFrequency; % Generic physio data
-                                end
-                            end
-                            
-                            % find latency channel 
-                            headers     = motionData{1}.Properties.VariableNames; 
-                            
-                            useLatency = 0;
-                            if strcmp(datatype,'motion')
-                                latencyInd = find(strcmpi(channelData(:,strcmp(channelData(1,:),'type')), 'latency'));
-                                useLatency = ~isempty(latencyInd);
-                                if useLatency
-                                    latencyHeader   = channelData{latencyInd,strcmp(channelData(1,:),'name')};
-                                    latencyRowInData = find(strcmp(headers, latencyHeader));
-                                end
-                            elseif strcmp(datatype,'physio')
-                                % check if the tracking system comes with latency
-                                latencyInd      = find(contains(channelData(:,strcmp(channelData(1,:),'name')), 'latency'));
-                                useLatency = ~isempty(latencyInd);
-                                if useLatency
-                                    latencyHeader   = channelData{latencyInd,strcmp(channelData(1,:),'name')};
-                                    latencyRowInData = find(strcmp(headers, latencyHeader));
-                                end
-                            end
-                            
-                            % reconstruct time : use scans.tsv for synching
-                            % it computes offset between motion and eeg data
-                            if useScans
-                                
-                                scansData   = bids.data(iSubject-1,iFold,1).scans;
-                                for Coli = 1:size(scansData, 2)
-                                    if strcmp(scansData{1,Coli}, 'acq_time')
-                                        acqTimeColi = Coli;
-                                    elseif strcmp(scansData{1,Coli}, 'filename')
-                                        fNameColi = Coli;
-                                    end
-                                end
-                                
-                                for Rowi = 1:size(scansData, 1)
-                                    
-                                    sesString = '';
-                                    taskString = '';
-                                    runString = '';
-                                    trackSysString = '';
-                                    
-                                    if exist('tracksys', 'var') && ~isempty(tracksys)
-                                        trackSysString = tracksys;
-                                    end
-                                    
-                                    splitName       = regexp(dataFileOut,'_','split');
-                                    for SNi = 1:numel(splitName)
-                                        if contains(splitName{SNi}, 'ses-')
-                                            sesString = splitName{SNi}(5:end);
-                                        elseif contains(splitName{SNi}, 'task-')
-                                            taskString = splitName{SNi}(6:end);
-                                        elseif contains(splitName{SNi}, 'run-')
-                                            runString = splitName{SNi}(5:end);
-                                        end
-                                    end
-                                    
-                                    [~,rawName] = fileparts(dataFileOut);
-                                    % find files that matches in session, task, tracking system (in case it is motion data), and run
-                                    if contains(scansData{Rowi,fNameColi}, 'eeg.') &&...
-                                            contains(scansData(Rowi,fNameColi), sesString) && contains(scansData(Rowi,fNameColi), taskString) &&...
-                                            contains(scansData(Rowi,fNameColi), runString)
-                                        eegAcqTime      = scansData(Rowi,acqTimeColi);
-                                    elseif contains(scansData(Rowi,fNameColi), sesString) && contains(scansData(Rowi,fNameColi), taskString) &&...
-                                            contains(scansData(Rowi,fNameColi), runString) && contains(scansData(Rowi,fNameColi), trackSysString) &&...
-                                            contains(scansData(Rowi,fNameColi), datatype)
-                                        otherAcqTime    = scansData(Rowi,acqTimeColi);
-                                    end
-                                end
-                                
-                                startTime = seconds(datetime(otherAcqTime{1}, 'InputFormat', 'yyyy-MM-dd''T''HH:mm:ss.SSS') - datetime(eegAcqTime{1}, 'InputFormat', 'yyyy-MM-dd''T''HH:mm:ss.SSS'));
-                                
-                            else
-                                if isfield(infoData, 'StartTime')
-                                    if isnumeric(infoData.StartTime)
-                                        startTime  = infoData.StartTime;
-                                    else
-                                        startTime = 0;
-                                        disp('Field Start time in motion json file is non-numeric - assume no offset to eeg data')
-                                    end
-                                else
-                                    startTime = 0;
-                                    disp('Field Start time in motion json file is empty - assume no offset to eeg data')
-                                end
-                            end
-                            
-                            DATA.etc.starttime = startTime;
-                            
-                            if useLatency
-                                DATA.times = (DATA.data(latencyRowInData,:) - DATA.data(latencyRowInData,1))*1000;
-                                DATA.data(latencyRowInData,:)   = [];
-                            else
-                                if isfield(infoData, 'TrackingSystems')
-                                    % tsi should have been defined above when srate was being read in
-                                    DATA.times  = (0:1000/infoData.TrackingSystems(tsi).SamplingFrequencyEffective:infoData.TrackingSystems(tsi).RecordingDuration*1000); % time is in ms
-                                elseif isfield(infoData, 'RecordingDuration')
-                                    DATA.times  = (0:1000/infoData.SamplingFrequency:infoData.RecordingDuration*1000); % time is in ms
-                                else
-                                    DATA.times  = (0:1000/infoData.SamplingFrequency:(size(DATA.data,2)/infoData.SamplingFrequency)*1000); % time is in ms
-                                end
-                            end
-                            
-                            DATA.nbchan = size(DATA.data,1);
-                            DATA.pnts   = size(DATA.data,2);
-                            
-                        otherwise
-                            error(['No ' datatype 'data found for subject/session ' subjectFolder{iFold}]);
-                    end
+            % import data of other tpyes than EEG, MEG, iEEG
+            for iMod = 1:numel(otherModality)
+
+                dataType    = otherModality{iMod}; 
+                dataFile    = eval([dataType 'File']);
+                dataRaw     = eval([dataType 'Data']); % cell array containing tables
+                subjectID   = bids.participants{iSubject,1}; 
+                subjectDataFolder       = subjectFolder{iFold}(1:end-3);
+                subjectDataFolderOut    = subjectFolderOut{iFold}(1:end-3); 
+                 
+                if isfield(bids.data(iSubject-1,iFold,1), 'scans')
+                    scansRaw  = bids.data(iSubject-1,iFold,1).scans;
+                else
+                    scansRaw = [];
                 end
                 
-                 if strcmpi(opt.bidschanloc, 'on')
-                    chanlocs = [];
-                    for iChan = 2:size(channelData,1)
-                        % the fields below are all required
-                        for iField = 1:size(channelData,2)
-                            fName = string(channelData(1,iField));
-                            if strcmp(fName, 'name')
-                                fName = 'labels';
-                            end
-                            chanlocs(iChan-1).(fName)   = channelData{iChan,iField};
-                        end
-                        if size(channelData,2) > 3
-                            chanlocs(iChan-1).status = channelData{iChan,4};
-                        end
-                    end
-                    if useLatency
-                        chanlocs(latencyRowInData)   = [];
-                    end
-                end
-                
-                % copy information inside dataset
-                DATA.subject = bids.participants{iSubject,1};
-                DATA.session = iFold;
-                DATA.chanlocs = chanlocs;
+                [DATA, dataFileOut] = import_noneeg(dataType, dataFile, dataRaw, subjectID, scansRaw, iFold, strcmpi(opt.metadata, 'on'), strcmpi(opt.bidschanloc, 'on'), useScans, subjectDataFolder, subjectDataFolderOut);
                 
                 if strcmpi(opt.metadata, 'off')
-                    if exist([subjectFolderOut{iFold}(1:end-3), datatype],'dir') ~= 7
-                        mkdir(subjectFolderOut{iFold}(1:end-3), datatype);
+                    if exist([subjectFolderOut{iFold}(1:end-3), dataType],'dir') ~= 7
+                        mkdir(subjectFolderOut{iFold}(1:end-3), dataType);
                     end
-                    DATA = pop_saveset(DATA, dataFileOut);
+                    pop_saveset(DATA, dataFileOut);
                 end
-            end % end for iteration over non-EEG data modalities
+            end
             
             fclose all;
         end
@@ -986,3 +812,190 @@ else
         end
     end
 end
+
+% format other data types than EEG, MEG, iEEG
+%--------------------------------------------
+function [DATA, dataFileOut] = import_noneeg(dataType, dataFile, dataRaw, subject, scansData, session, onlyMetadata, useChanlocs, useScans, subjectFolder, subjectDataFolderOut)
+
+disp(['Processing ' dataType ' data'])
+
+for iDat = 1:numel(dataFile)
+    
+    % replace extension tsv with set
+    [~,fileName,fileExt] = fileparts(dataFile(iDat).name);
+    dataFileOut   = fullfile(subjectDataFolderOut, dataType, [fileName '.set']);
+    dataFileJSON  = [fileName '.json'];
+    
+    % JSON information file
+    infoFile        = searchparent([subjectFolder, dataType], dataFileJSON);
+    infoData        = loadfile(infoFile.name, infoFile);
+    
+    % check or construct needed channel files according to the data type
+    switch dataType
+        case 'motion'
+            channelFileMotion   = [fileName(1:end-6) 'channels.tsv']; % replace _motion with _channels
+            channelFile         = searchparent([subjectFolder, dataType], channelFileMotion);
+            channelData         = loadfile(channelFile(1).name, channelFile);
+        case 'physio'
+            % channel file (for physio data, hidden in json file as 'columns')
+            channelData = {'name', 'type', 'units'};
+            for Ci = 1:numel(infoData.Columns)
+                channelData{end + 1,1} = [char(infoData.Columns{Ci})] ;
+            end
+    end
+    
+    switch lower(fileExt)
+        case '.set' % do nothing
+            if onlyMetadata 
+                DATA = pop_loadset( 'filename', dataFile(iDat).name, 'loadmode', 'info' );
+            else
+                DATA = pop_loadset( 'filename', dataFile(iDat).name );
+            end
+        case '.tsv'
+            DATA        = eeg_emptyset;
+            DATA.data   = table2array(dataRaw{iDat})';
+            
+            if strcmp(dataType,'motion')
+                DATA.srate                  = infoData.SamplingFrequencyEffective;
+                DATA.etc.nominal_srate      = infoData.SamplingFrequency;
+            else
+                try
+                    DATA.srate  = infoData.SamplingFrequencyEffective; % Actual sampling rate used in motion data. Note that the unit of the time must be in second.
+                catch
+                    DATA.srate  = infoData.SamplingFrequency; % Generic physio data
+                end
+            end
+            
+            % find latency channel
+            headers     = dataRaw{1}.Properties.VariableNames;
+            
+            useLatency = 0;
+            if strcmp(dataType,'motion')
+                latencyInd = find(strcmpi(channelData(:,strcmp(channelData(1,:),'type')), 'latency'));
+                useLatency = ~isempty(latencyInd);
+                if useLatency
+                    latencyHeader   = channelData{latencyInd,strcmp(channelData(1,:),'name')};
+                    latencyRowInData = find(strcmp(headers, latencyHeader));
+                end
+            elseif strcmp(dataType,'physio')
+                % check if the tracking system comes with latency
+                latencyInd      = find(contains(channelData(:,strcmp(channelData(1,:),'name')), 'latency'));
+                useLatency = ~isempty(latencyInd);
+                if useLatency
+                    latencyHeader   = channelData{latencyInd,strcmp(channelData(1,:),'name')};
+                    latencyRowInData = find(strcmp(headers, latencyHeader));
+                end
+            end
+            
+            % reconstruct time : use scans.tsv for synching
+            % it computes offset between motion and eeg data
+            if useScans
+                
+                for Coli = 1:size(scansData, 2)
+                    if strcmp(scansData{1,Coli}, 'acq_time')
+                        acqTimeColi = Coli;
+                    elseif strcmp(scansData{1,Coli}, 'filename')
+                        fNameColi = Coli;
+                    end
+                end
+                
+                for Rowi = 1:size(scansData, 1)
+                    
+                    sesString = '';
+                    taskString = '';
+                    runString = '';
+                    trackSysString = '';
+                    
+                    if exist('tracksys', 'var') && ~isempty(tracksys)
+                        trackSysString = tracksys;
+                    end
+                    
+                    splitName       = regexp(dataFileOut,'_','split');
+                    for SNi = 1:numel(splitName)
+                        if contains(splitName{SNi}, 'ses-')
+                            sesString = splitName{SNi}(5:end);
+                        elseif contains(splitName{SNi}, 'task-')
+                            taskString = splitName{SNi}(6:end);
+                        elseif contains(splitName{SNi}, 'run-')
+                            runString = splitName{SNi}(5:end);
+                        end
+                    end
+                    
+                    % find files that matches in session, task, tracking system (in case it is motion data), and run
+                    if contains(scansData{Rowi,fNameColi}, 'eeg.') &&...
+                            contains(scansData(Rowi,fNameColi), sesString) && contains(scansData(Rowi,fNameColi), taskString) &&...
+                            contains(scansData(Rowi,fNameColi), runString)
+                        eegAcqTime      = scansData(Rowi,acqTimeColi);
+                    elseif contains(scansData(Rowi,fNameColi), sesString) && contains(scansData(Rowi,fNameColi), taskString) &&...
+                            contains(scansData(Rowi,fNameColi), runString) && contains(scansData(Rowi,fNameColi), trackSysString) &&...
+                            contains(scansData(Rowi,fNameColi), dataType)
+                        otherAcqTime    = scansData(Rowi,acqTimeColi);
+                    end
+                end
+                
+                startTime = seconds(datetime(otherAcqTime{1}, 'InputFormat', 'yyyy-MM-dd''T''HH:mm:ss.SSS') - datetime(eegAcqTime{1}, 'InputFormat', 'yyyy-MM-dd''T''HH:mm:ss.SSS'));
+                
+            else
+                if isfield(infoData, 'StartTime')
+                    if isnumeric(infoData.StartTime)
+                        startTime  = infoData.StartTime;
+                    else
+                        startTime = 0;
+                        disp('Field Start time in motion json file is non-numeric - assume no offset to eeg data')
+                    end
+                else
+                    startTime = 0;
+                    disp('Field Start time in motion json file is empty - assume no offset to eeg data')
+                end
+            end
+            
+            DATA.etc.starttime = startTime;
+            
+            if useLatency
+                DATA.times = (DATA.data(latencyRowInData,:) - DATA.data(latencyRowInData,1))*1000;
+                DATA.data(latencyRowInData,:)   = [];
+            else
+                if isfield(infoData, 'TrackingSystems')
+                    % tsi should have been defined above when srate was being read in
+                    DATA.times  = (0:1000/infoData.TrackingSystems(tsi).SamplingFrequencyEffective:infoData.TrackingSystems(tsi).RecordingDuration*1000); % time is in ms
+                elseif isfield(infoData, 'RecordingDuration')
+                    DATA.times  = (0:1000/infoData.SamplingFrequency:infoData.RecordingDuration*1000); % time is in ms
+                else
+                    DATA.times  = (0:1000/infoData.SamplingFrequency:(size(DATA.data,2)/infoData.SamplingFrequency)*1000); % time is in ms
+                end
+            end
+            
+            DATA.nbchan = size(DATA.data,1);
+            DATA.pnts   = size(DATA.data,2);
+            
+        otherwise
+            error(['No ' dataType 'data found for subject/session ' subjectFolder{iFold}]);
+    end
+end
+
+if useChanlocs
+    chanlocs = [];
+    for iChan = 2:size(channelData,1)
+        % the fields below are all required
+        for iField = 1:size(channelData,2)
+            fName = string(channelData(1,iField));
+            if strcmp(fName, 'name')
+                fName = 'labels';
+            end
+            chanlocs(iChan-1).(fName)   = channelData{iChan,iField};
+        end
+        if size(channelData,2) > 3
+            chanlocs(iChan-1).status = channelData{iChan,4};
+        end
+    end
+    if useLatency
+        chanlocs(latencyRowInData)   = [];
+    end
+end
+
+% copy information inside dataset
+DATA.subject = subject;
+DATA.session = session;
+DATA.chanlocs = chanlocs;
+
+
