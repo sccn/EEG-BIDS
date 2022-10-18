@@ -478,28 +478,22 @@ for iSubject = opt.subjects
                     % channel location data
                     % ---------------------
                     selected_chanfile = bids_get_file(eegFileRaw(1:end-8), '_channels.tsv', channelFile);
-                    if ~isempty(elecFile)
-                        selected_elecfile = bids_get_file(eegFileRaw(1:end-8), '_electrodes.tsv', elecFile);
-                        if strcmpi(opt.bidschanloc, 'on')
-                            [EEG, channelData, elecData] = eeg_importchanlocs(EEG, selected_chanfile, selected_elecfile);
-                            if isempty(selected_elecfile) && (isempty(EEG.chanlocs) || ~isfield(EEG.chanlocs, 'theta') || any(~cellfun(@isempty, { EEG.chanlocs.theta })))
-                                dipfitdefs;
-                                EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
-                            end
-                        else
-                            channelData = loadfile(selected_chanfile);
-                            elecData    = loadfile(selected_elecfile);
-                            if ~isfield(EEG.chanlocs, 'theta') || any(~cellfun(@isempty, { EEG.chanlocs.theta }))
-                                dipfitdefs;
-                                EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
-                            else
-                                disp('The EEG file has channel locations associated with it, we are keeping them');
-                            end
+                    selected_elecfile = bids_get_file(eegFileRaw(1:end-8), '_electrodes.tsv', elecFile);
+                    if strcmpi(opt.bidschanloc, 'on')
+                        [EEG, channelData, elecData] = eeg_importchanlocs(EEG, selected_chanfile, selected_elecfile);
+                        if isempty(selected_elecfile) && (isempty(EEG.chanlocs) || ~isfield(EEG.chanlocs, 'theta') || any(~cellfun(@isempty, { EEG.chanlocs.theta })))
+                            dipfitdefs;
+                            EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
                         end
                     else
-                        warning('No electrodes.tsv file found')
                         channelData = loadfile(selected_chanfile);
-                        elecData = []; 
+                        elecData    = loadfile(selected_elecfile);
+                        if ~isfield(EEG.chanlocs, 'theta') || any(~cellfun(@isempty, { EEG.chanlocs.theta }))
+                            dipfitdefs;
+                            EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
+                        else
+                            disp('The EEG file has channel locations associated with it, we are keeping them');
+                        end
                     end
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('chaninfo', { channelData }));
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('elecinfo', { elecData }));
