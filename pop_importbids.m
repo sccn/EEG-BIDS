@@ -25,6 +25,7 @@
 %                  Default is 'value'.
 %  'bidstask'    - [string] value of a key task- allowing to analyze some
 %                  tasks only
+%  'metadata'    - ['on'|'off'] only import metadata. Default 'off'.
 %
 % Outputs:
 %   STUDY   - EEGLAB STUDY structure
@@ -73,15 +74,22 @@ if nargin < 1
     
     disp('Scanning folders...');
     % scan if multiple tasks are present
-    tasklist = bids_gettaskfromfolder(bidsFolder);
+    [tasklist,sessions,runs] = bids_getinfofromfolder(bidsFolder);
     % scan for event fields
     type_fields = bids_geteventfieldsfromfolder(bidsFolder);
+    indVal = strmatch('value', type_fields);
+    if ~isempty(indVal)
+        type_fields(indVal) = [];
+        type_fields = {'value' type_fields{:} };
+    end
+
     bids_event_toggle = ~isempty(type_fields);
     if isempty(type_fields) type_fields = { 'n/a' }; end
     if isempty(tasklist) tasklist = { 'n/a' }; end
     
     cb_event = 'set(findobj(gcbf, ''userdata'', ''bidstype''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
     cb_task  = 'set(findobj(gcbf, ''userdata'', ''task''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
+    cb_sess  = 'set(findobj(gcbf, ''userdata'', ''sessions''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
     promptstr    = { ...
         { 'style'  'text'       'string' 'Enter study name (default is BIDS folder name)' } ...
         { 'style'  'edit'       'string' '' 'tag' 'studyName' } ...
@@ -89,16 +97,24 @@ if nargin < 1
         { 'style'  'checkbox'   'string' 'Use BIDS electrode.tsv files (when present) for channel locations; off: look up locations using channel labels' 'tag' 'chanlocs' 'value' 1 } ...
         { 'style'  'checkbox'   'string' 'Use BIDS event.tsv files for events and use the following BIDS field for event type' 'tag' 'events' 'value' bids_event_toggle 'callback' cb_event } ...
         { 'style'  'popupmenu'  'string' type_fields 'tag' 'typefield' 'value' 1 'userdata' 'bidstype'  'enable' fastif(bids_event_toggle, 'on', 'off') } ...
-        { 'style'  'checkbox'   'string' 'Import only the following BIDS task from the BIDS archive' 'tag' 'bidstask' 'value' 0 'callback' cb_task } ...
-        { 'style'  'popupmenu'  'string' tasklist 'tag' 'bidstaskstr' 'value' 1 'userdata' 'task'  'enable' 'off' } ...
+        { 'style'  'checkbox'   'string' 'Import only the following BIDS tasks' 'tag' 'bidstask' 'value' 0 'callback' cb_task } ...
+        { 'style'  'popupmenu'  'string' tasklist 'tag' 'bidstaskstr' 'value' 1 'userdata' 'task'  'enable' 'off' } {} ...
+        { 'style'  'checkbox'   'string' 'Import only the following sessions' 'tag' 'bidssessions' 'value' 0 'callback' cb_sess }  ...
+        { 'style'  'listbox'    'string' sessions 'tag' 'bidsessionstr' 'max' 2 'value' [] 'userdata' 'sessions'  'enable' 'off' } {} ...
         {} ...
         { 'style'  'text'       'string' 'Study output folder' } ...
         { 'style'  'edit'       'string' fullfile(bidsFolder, 'derivatives', 'eeglab') 'tag' 'folder' 'HorizontalAlignment' 'left' } ...
         { 'style'  'pushbutton' 'string' '...' 'callback' cb_select } ...
         };
-    geometry = {[2 1.5], 1, 1,[1 0.35],[1 0.35],1,[1 2 0.5]};
+    geometry = {[2 1.5], 1, 1,[1 0.35],[0.6 0.35 0.5],[0.6 0.35 0.5],1,[1 2 0.5]};
+    geomvert = [1 0.5, 1 1 1 1.5 0.5 1];
+    if isempty(sessions)
+        promptstr(10:12) = [];
+        geometry(6) = [];
+        geomvert(6) = [];
+    end
     
-    [~,~,~,res] = inputgui( 'geometry', geometry, 'geomvert', [1 0.5, 1 1 1 0.5 1], 'uilist', promptstr, 'helpcom', 'pophelp(''pop_importbids'')', 'title', 'Import BIDS data -- pop_importbids()');
+    [~,~,~,res] = inputgui( 'geometry', geometry, 'geomvert', geomvert, 'uilist', promptstr, 'helpcom', 'pophelp(''pop_importbids'')', 'title', 'Import BIDS data -- pop_importbids()');
     if isempty(res), return; end
     
     if ~isempty(type_fields) && ~strcmpi(type_fields{res.typefield}, 'n/a'), options = { 'eventtype' type_fields{res.typefield} }; else options = {}; end
@@ -106,7 +122,10 @@ if nargin < 1
     if res.chanlocs,  options = { options{:} 'bidschanloc' 'on' }; else options = { options{:} 'bidschanloc' 'off' }; end
     if ~isempty(res.folder),  options = { options{:} 'outputdir' res.folder }; end
     if ~isempty(res.studyName),  options = { options{:} 'studyName' res.studyName }; end
-    if res.bidstask && ~strcmpi(tasklist{res.bidstaskstr}, 'n/a'),  options = { options{:} 'bidstask' tasklist{res.bidstaskstr} }; end
+    if res.bidstask     && ~strcmpi(tasklist{res.bidstaskstr}, 'n/a'),  options = { options{:} 'bidstask' tasklist{res.bidstaskstr} }; end
+    if isfield(res, 'bidssessions')
+        if res.bidssessions && ~isempty(res.bidsessionstr),  options = { options{:} 'sessions' sessions(res.bidsessionstr) }; end
+    end
 else
     options = varargin;
 end
@@ -663,7 +682,7 @@ if ~isempty(localFile)
             data = jsonread(fullfile(localFile(1).folder, localFile(1).name));
         end
     end        
-elseif ~isempty(globalFile)
+elseif nargin > 1 && ~isempty(globalFile)
     if strcmpi(ext, '.tsv')
         data = importtsv( fullfile(globalFile(1).folder, globalFile(1).name));
     else
@@ -714,7 +733,7 @@ filestr = '';
 if exist([ baseName ext ], 'file')
     filestr = [ baseName ext ];
 else
-    if isfield(alternateFile, 'folder') && isfield(alternateFile, 'name')
+    if ~isempty(alternateFile) && isfield(alternateFile, 'folder') && isfield(alternateFile, 'name')
         tmpFile = fullfile(alternateFile(1).folder, alternateFile(1).name);
         if exist(tmpFile, 'file')
             filestr = tmpFile;
