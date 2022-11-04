@@ -36,6 +36,7 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
     tfHeight = 0.035;
     
     f = figure('MenuBar', 'None', 'ToolBar', 'None', 'Name', 'BIDS task information -- pop_taskinfo()', 'Color', bg, 'IntegerHandle','off');
+    f.Position(2) = 0;
     f.Position(3) = 1200;
     f.Position(4) = 900;
     halfWidth = 0.5;
@@ -238,7 +239,9 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
             for i=1:numel(objs)
                 if ~isempty(objs(i).Tag) && isfield(prevtInfo, objs(i).Tag)
                     if strcmp(objs(i).Style, 'popupmenu') % dropdown
-                        objs(i).Value = find(strcmp(objs(i).String, num2str(prevtInfo.(objs(i).Tag)))); % set position of dropdown menu to the appropriate string
+                        if ~isnan(prevtInfo.(objs(i).Tag))
+                            objs(i).Value = find(strcmp(objs(i).String, num2str(prevtInfo.(objs(i).Tag)))); % set position of dropdown menu to the appropriate string
+                        end
                     elseif strcmp(objs(i).Tag, 'HardwareFilters') || strcmp(objs(i).Tag, 'SoftwareFilters')
                         if ischar(prevtInfo.(objs(i).Tag)) % accommodate previous code
                             objs(i).String = prevtInfo.(objs(i).Tag);
