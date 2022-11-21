@@ -87,6 +87,21 @@ if nargin < 3 && ~ischar(STUDY)
         EEG = pop_participantinfo(EEG, STUDY, 'default');
         EEG = pop_taskinfo(EEG, 'default');
     end
+    if ~isfield(EEG(1).BIDS.tInfo, 'PowerLineFrequency') || isnan(EEG(1).BIDS.tInfo.PowerLineFrequency)
+        uiList = { { 'style' 'text' 'string' 'You must specify power line frequency' } ...
+                   { 'style' 'popupmenu' 'string' {'50' '60' }} };
+        res = inputgui('uilist', uiList, 'geometry', {[ 1 0.4 ]});
+        if isempty(res), return; end
+        for iEEG = 1:length(EEG)
+            if res{1} == 1
+                EEG(iEEG).BIDS.tInfo.PowerLineFrequency = 50;
+            else
+                EEG(iEEG).BIDS.tInfo.PowerLineFrequency = 60;
+            end
+            EEG(iEEG).saved = 'no';
+        end
+    end
+
 elseif ischar(STUDY)
     command = STUDY;
     fig = EEG;
@@ -149,10 +164,34 @@ if isfield(EEG(1), 'BIDS') && isfield(EEG(1).BIDS,'pInfo')
     pInfo = EEG(1).BIDS.pInfo(1,:);
 end
 subjects = struct('file',{}, 'session', [], 'run', [], 'task', {});
+
+% duration field (mandatory)
+if ~isempty(EEG(1).event) && ~isfield(EEG(1).event, 'duration')
+    for iEEG = 1:length(EEG)
+        EEG(iEEG).event(1).duration = [];
+        EEG(iEEG).saved = 'no';
+    end
+end
+
+% resave dataset
+fileAbsent = any(cellfun(@isempty, { EEG.filename }));
+if fileAbsent
+    error('Datasets need to be saved before being exported');
+end
+saved = any(cellfun(@(x)isequal(x, 'no'), { EEG.saved }));
+if saved && nargin < 3
+    res = questdlg2('Some datasets need to be resaved. Do you want to resaved them now?', 'Save datasets', 'Cancel', 'Continue', 'Continue');
+    if ~strcmpi(res, 'Continue')
+        return;
+    end
+    EEG = pop_saveset(EEG, 'savemode', 'resave');
+end
+
 for iSubj = 1:length(uniqueSubjects)
     indS = strmatch( uniqueSubjects{iSubj}, allSubjects, 'exact' );
     for iFile = 1:length(indS)
         subjects(iSubj).file{iFile} = fullfile( EEG(indS(iFile)).filepath, EEG(indS(iFile)).filename);
+
         if isfield(EEG(indS(iFile)), 'session') && ~isempty(EEG(indS(iFile)).session)
             subjects(iSubj).session(iFile) = EEG(indS(iFile)).session;
         else
@@ -167,7 +206,7 @@ for iSubj = 1:length(uniqueSubjects)
             subjects(iSubj).task{iFile} = EEG(indS(iFile)).task; 
             % blank task field will be filled in bids_export.m
         end
-        if isfield(EEG(indS(iFile)).BIDS.tInfo, 'SubjectArtefactDescription')...
+        if isfield(EEG(indS(iFile)).BIDS, 'tInfo') && isfield(EEG(indS(iFile)).BIDS.tInfo, 'SubjectArtefactDescription')...
                 && ~isempty(EEG(indS(iFile)).BIDS.tInfo.SubjectArtefactDescription)
             subjects(iSubj).notes{iFile} = EEG(indS(iFile)).BIDS.tInfo.SubjectArtefactDescription;
         end
