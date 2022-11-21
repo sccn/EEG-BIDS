@@ -728,7 +728,7 @@ if ~exist(fileOut)
 end
 
 tInfo = opt.tInfo;
-[~,~,ext] = fileparts(fileOut);
+[~,~,ext] = fileparts(fileIn);
 fprintf('Processing file %s\n', fileOut);
 if ~isempty(opt.importfunc)
     EEG = feval(opt.importfunc, fileIn);
@@ -934,6 +934,9 @@ if ~isempty(diffFields)
     s = rmfield(s, diffFields);
 end
 for iRow = 1:size(f,1)
+    if strcmp(structName,'tInfo') && strcmp(f{iRow,1}, 'EEGReference') && ~isa(s.(f{iRow,1}), 'char')
+        s.(f{iRow,1}) = char(s.(f{iRow,1}));
+    end
     if isempty(s) || ~isfield(s, f{iRow,1})
         if strcmpi(f{iRow,2}, 'required') % required or optional
             if ~iscell(f{iRow,4})
