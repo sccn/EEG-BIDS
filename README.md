@@ -59,3 +59,6 @@ v6.1 - allow data with no events. Fix HED import/export. Fix history.
 v7.0 - split code into different functions. Support for behavioral data. Various bug fixes.
 
 v7.2 - fix issue with missing file.
+
+v7.3 - various minor fixes (EEG reference as string; add duration if not present; resave datasets)
+

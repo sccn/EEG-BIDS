@@ -4,8 +4,6 @@
 % Usage:
 %    eeg_writeeventsfiles(EEG, fileOut, varargin)
 %
-%  
-%
 % Inputs:
 %  'EEG'       - [struct] the EEG structure
 %
