@@ -38,7 +38,7 @@ else
         end
         % Unit
         if strcmpi(type, 'eeg')
-            unit = 'mV';
+            unit = 'uV';
         else
             unit = 'n/a';
         end
