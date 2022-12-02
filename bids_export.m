@@ -702,7 +702,7 @@ for iSubj = 1:length(files)
                     [~,~,fileExt] = fileparts(files(iSubj).file{iSet});
                     fileOut    = fullfile(opt.targetdir, subjectStr, [ 'ses-', files(iSubj).session{iSet} ], 'eeg', [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} '_eeg' fileExt ]);
                     fileOutBeh = fullfile(opt.targetdir, subjectStr, [ 'ses-', files(iSubj).session{iSet} ], 'beh', [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} '_beh.tsv' ]);
-                    copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, files(iSubj).chanlocs{iSet}, files(iSubj).beh{iSet}, opt);
+                    copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, files(iSubj).chanlocs{iSet}, opt);
                     eeg_writebehfiles(files(iSubj).beh{iSet}, fileOutBeh);
                 end
             end
