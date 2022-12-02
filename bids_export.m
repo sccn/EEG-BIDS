@@ -287,6 +287,7 @@ if any(opt.taskName == '_')
 end
 
 % deleting folder
+% ---------------
 fprintf('Exporting data to %s...\n', opt.targetdir);
 if exist(opt.targetdir,'dir') 
     if strcmpi(opt.interactive, 'on')
@@ -464,7 +465,16 @@ if ~isempty(opt.pInfo)
             participants(:,2:size(opt.pInfo,2)+1) = opt.pInfo;
         end
     end
-    
+
+    % remove empty columns
+    for iInfo = size(participants,2):-1:1
+        if all(cellfun(@isempty, participants(2:end,iInfo)))
+            if isfield(opt.pInfoDesc, participants{1,iInfo})
+                opt.pInfoDesc = rmfield(opt.pInfoDesc, participants{1,iInfo});
+            end
+            participants(:,iInfo) = [];
+        end
+    end
     writetsv(fullfile(opt.targetdir, 'participants.tsv'), participants);
 end
 

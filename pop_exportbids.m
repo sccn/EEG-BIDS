@@ -152,7 +152,8 @@ if ~isempty(STUDY.datasetinfo(1).session)
 else
     allSessions = { EEG.session };
 end
-uniqueSubjects = unique(allSubjects);
+[~,inds] = unique(allSubjects);
+uniqueSubjects = allSubjects(sort(inds));
 allSessions(cellfun(@isempty, allSessions)) = { 1 };
 allSessions = cellfun(@num2str, allSessions, 'uniformoutput', false);
 uniqueSessions = unique(allSessions);
