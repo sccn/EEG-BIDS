@@ -62,3 +62,4 @@ v7.2 - fix issue with missing file.
 
 v7.3 - various minor fixes (EEG reference as string; add duration if not present; resave datasets)
 
+v7.4 - fix version issues for HED and BIDS. Export subjects in order. Remove unused columns in participants.tsv file
