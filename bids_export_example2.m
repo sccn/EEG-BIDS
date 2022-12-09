@@ -175,9 +175,9 @@ CHANGES = sprintf([ 'Version 1.0 - 4 Aug 2020\n' ...
 
 % Task information for xxxx-eeg.json file
 % ---------------------------------------
-tInfo.InstitutionAddress = 'Pavillon Baudot CHU Purpan, BP 25202, 31052 Toulouse Cedex';
-tInfo.InstitutionName = 'Paul Sabatier Universite';
-tInfo.InstitutionalDepartmentName = 'Centre de Recherche Cerveau et Cognition';
+tInfo.InstitutionAddress = '';
+tInfo.InstitutionName = '';
+tInfo.InstitutionalDepartmentName = '';
 tInfo.PowerLineFrequency = 50;
 tInfo.ManufacturersModelName = 'Biosemi Active 2';
 

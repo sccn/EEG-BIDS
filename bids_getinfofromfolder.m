@@ -45,14 +45,14 @@ for iFile = 1:length(files)
         sessions = union(sessions, sessionTmp);
         runs     = union(runs    , runsTmp);
      else
-        if ~isempty(strfind(files(iFile).name, 'eeg')) && ~isempty(strfind(files(iFile).name, 'task'))
+        if (~isempty(strfind(files(iFile).name, 'eeg')) || ~isempty(strfind(files(iFile).name, 'meg'))) && ~isempty(strfind(files(iFile).name, 'task'))
             pos = strfind(files(iFile).name, 'task');
             tmpStr = files(iFile).name(pos+5:end);
             underS = find(tmpStr == '_');
             newTask = tmpStr(1:underS(1)-1);
             tasklist = union( tasklist, { newTask });
         end
-        if ~isempty(strfind(files(iFile).name, 'eeg')) && ~isempty(strfind(files(iFile).name, 'run'))
+        if (~isempty(strfind(files(iFile).name, 'eeg')) || ~isempty(strfind(files(iFile).name, 'meg')))  && ~isempty(strfind(files(iFile).name, 'run'))
             pos = strfind(files(iFile).name, 'run');
             tmpStr = files(iFile).name(pos+4:end);
             underS = find(tmpStr == '_');
