@@ -13,7 +13,8 @@
 % Optional inputs:
 %  'studyName'   - [string] name of the STUDY
 %  'subjects'    - [integer array] indices of subjects to import
-%  'sessions'    - [cell] sessions to import
+%  'sessions'    - [cell array] session numbers or names to import
+%  'runs'        - [integer array] run numbers to import
 %  'bidsevent'   - ['on'|'off'] import events from BIDS .tsv file and
 %                  ignore events in raw binary EEG files.
 %  'bidschanloc' - ['on'|'off'] import channel location from BIDS .tsv file
@@ -88,8 +89,9 @@ if nargin < 1
     if isempty(tasklist) tasklist = { 'n/a' }; end
     
     cb_event = 'set(findobj(gcbf, ''userdata'', ''bidstype''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
-    cb_task  = 'set(findobj(gcbf, ''userdata'', ''task''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
+    cb_task  = 'set(findobj(gcbf, ''userdata'', ''task''    ), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
     cb_sess  = 'set(findobj(gcbf, ''userdata'', ''sessions''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
+    cb_run   = 'set(findobj(gcbf, ''userdata'', ''runs''    ), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
     promptstr    = { ...
         { 'style'  'text'       'string' 'Enter study name (default is BIDS folder name)' } ...
         { 'style'  'edit'       'string' '' 'tag' 'studyName' } ...
@@ -101,13 +103,20 @@ if nargin < 1
         { 'style'  'popupmenu'  'string' tasklist 'tag' 'bidstaskstr' 'value' 1 'userdata' 'task'  'enable' 'off' } {} ...
         { 'style'  'checkbox'   'string' 'Import only the following sessions' 'tag' 'bidssessions' 'value' 0 'callback' cb_sess }  ...
         { 'style'  'listbox'    'string' sessions 'tag' 'bidsessionstr' 'max' 2 'value' [] 'userdata' 'sessions'  'enable' 'off' } {} ...
+        { 'style'  'checkbox'   'string' 'Import only the following runs' 'tag' 'bidsruns' 'value' 0 'callback' cb_run }  ...
+        { 'style'  'listbox'    'string' runs 'tag' 'bidsrunsstr' 'max' 2 'value' [] 'userdata' 'runs'  'enable' 'off' } {} ...
         {} ...
         { 'style'  'text'       'string' 'Study output folder' } ...
         { 'style'  'edit'       'string' fullfile(bidsFolder, 'derivatives', 'eeglab') 'tag' 'folder' 'HorizontalAlignment' 'left' } ...
         { 'style'  'pushbutton' 'string' '...' 'callback' cb_select } ...
         };
-    geometry = {[2 1.5], 1, 1,[1 0.35],[0.6 0.35 0.5],[0.6 0.35 0.5],1,[1 2 0.5]};
-    geomvert = [1 0.5, 1 1 1 1.5 0.5 1];
+    geometry = {[2 1.5], 1, 1,[1 0.35],[0.6 0.35 0.5],[0.6 0.35 0.5],[0.6 0.35 0.5],1,[1 2 0.5]};
+    geomvert = [1 0.5, 1 1 1 1.5 1.5 0.5 1];
+    if isempty(runs)
+        promptstr(13:15) = [];
+        geometry(7) = [];
+        geomvert(7) = [];
+    end
     if isempty(sessions)
         promptstr(10:12) = [];
         geometry(6) = [];
@@ -126,6 +135,9 @@ if nargin < 1
     if isfield(res, 'bidssessions')
         if res.bidssessions && ~isempty(res.bidsessionstr),  options = { options{:} 'sessions' sessions(res.bidsessionstr) }; end
     end
+    if isfield(res, 'bidsruns')
+        if res.bidsruns && ~isempty(res.bidsruns),  options = { options{:} 'runs' str2double(runs(res.bidsrunsstr)) }; end
+    end
 else
     options = varargin;
 end
@@ -137,6 +149,7 @@ opt = finputcheck(options, { ...
     'bidstask'       'string'    {}                ''; ...
     'subjects'       'integer'   {}                []; ...
     'sessions'       'cell'      {}                {}; ...
+    'runs'           'integer'   {}                []; ...
     'metadata'       'string'    { 'on' 'off' }    'off'; ...
     'eventtype'      'string'    {  }              'value'; ...
     'outputdir'      'string'    { } fullfile(bidsFolder, 'derivatives', 'eeglab'); ...
@@ -246,7 +259,7 @@ for iSubject = opt.subjects
             end
         end
     end
-    
+
     % import data
     for iFold = 1:length(subjectFolder) % scan sessions
         if ~exist(subjectFolder{iFold},'dir')
@@ -267,6 +280,7 @@ for iSubject = opt.subjects
             elecFile      = searchparent(subjectFolder{iFold}, '*_electrodes.tsv');
             eventFile     = searchparent(subjectFolder{iFold}, '*_events.tsv');
             eventDescFile = searchparent(subjectFolder{iFold}, '*_events.json');
+            coordFile     = searchparent(subjectFolder{iFold}, '*_coordsystem.json');
             behFile       = searchparent(fullfile(subjectFolder{iFold}, '..', 'beh'), '*_beh.tsv');
             
             % remove BEH files which are have runs (treated separately)
@@ -280,7 +294,21 @@ for iSubject = opt.subjects
                 infoFile      = filterFiles(infoFile     , opt.bidstask);
                 channelFile   = filterFiles(channelFile  , opt.bidstask);
                 elecFile      = filterFiles(elecFile     , opt.bidstask);
+                eventFile     = filterFiles(eventFile    , opt.bidstask);
                 eventDescFile = filterFiles(eventDescFile, opt.bidstask);
+                coordFile     = filterFiles(coordFile    , opt.bidstask);
+                behFile       = filterFiles(behFile      , opt.bidstask);
+            end
+            
+            % check the task
+            if ~isempty(opt.runs)
+                eegFile       = filterFilesRun(eegFile      , opt.runs);
+                infoFile      = filterFilesRun(infoFile     , opt.runs);
+                channelFile   = filterFilesRun(channelFile  , opt.runs);
+                elecFile      = filterFilesRun(elecFile     , opt.runs);
+                eventFile     = filterFilesRun(eventFile    , opt.runs);
+                eventDescFile = filterFilesRun(eventDescFile, opt.runs);
+                % no runs for BEH or coordsystem
             end
             
             % raw data
@@ -465,6 +493,17 @@ for iSubject = opt.subjects
                         bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
                     end
                     
+                    % coordsystem file
+                    % ----------------
+                    if strcmpi(opt.bidscoord, 'on')
+                        eventfile              = bids_get_file(eegFileRaw(1:end-8), '_coordsystem.json', coordFile);
+%                     
+                        [EEG, bids, eventData, eventDesc] = eeg_importeventsfiles(EEG, eventfile, 'bids', bids, 'eventDescFile', selected_eventdescfile, 'eventtype', opt.eventtype); 
+                        if isempty(eventData), error('bidsevent on but events.tsv has no data'); end
+                        bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
+                        bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
+                    end
+
                     % copy information inside dataset
                     EEG.subject = bids.participants{iSubject,1};
                     EEG.session = iFold;
@@ -657,11 +696,26 @@ fileList = fileList(isGoodFile);
 % Filter files
 % ------------
 function fileList = filterFiles(fileList, taskList)
-
 keepInd = zeros(1,length(fileList));
 for iFile = 1:length(fileList)
     if ~isempty(strfind(fileList(iFile).name, taskList))
         keepInd(iFile) = 1;
+    end
+end
+fileList = fileList(logical(keepInd));
+
+% Filter file runs
+% ----------------
+function fileList = filterFilesRun(fileList, runs)
+keepInd = zeros(1,length(fileList));
+for iFile = 1:length(fileList)
+    runInd = strfind(fileList(iFile).name, '_run-');
+    if ~isempty(runInd)
+        strTmp = fileList(iFile).name(runInd+5:end);
+        underScore = find(strTmp == '_');
+        if any(runs == str2double(strTmp(1:underScore(1)-1)))
+            keepInd(iFile) = 1;
+        end
     end
 end
 fileList = fileList(logical(keepInd));
