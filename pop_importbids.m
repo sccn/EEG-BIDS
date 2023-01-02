@@ -492,6 +492,9 @@ for iSubject = opt.subjects
                         if isempty(eventData), error('bidsevent on but events.tsv has no data'); end
                         bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
                         bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
+                    else
+                        EEG = eeg_checkset(EEG, 'makeur'); % add urevent, assuming it will do nothing if urevent already exists
+                        EEG = eeg_checkset(EEG, 'eventconsistency');
                     end
                     
                     % coordsystem file
