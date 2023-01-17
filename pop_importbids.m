@@ -517,7 +517,7 @@ for iSubject = opt.subjects
                     else
                         channelData = loadfile(selected_chanfile);
                         elecData    = loadfile(selected_elecfile);
-                        if ~isfield(EEG.chanlocs, 'theta') || any(~cellfun(@isempty, { EEG.chanlocs.theta }))
+                        if ~isfield(EEG.chanlocs, 'theta') || all(cellfun(@isempty, { EEG.chanlocs.theta }))
                             dipfitdefs;
                             EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
                         else
