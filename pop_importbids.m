@@ -235,28 +235,27 @@ for iSubject = opt.subjects
     outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,1});
     
     % find folder containing eeg
-    if exist(fullfile(parentSubjectFolder, 'eeg'),'dir')
-        subjectFolder = { fullfile(parentSubjectFolder, 'eeg') };
-        subjectFolderOut = { fullfile(outputSubjectFolder, 'eeg') };
-    else
-        subFolders = dir(fullfile(parentSubjectFolder, 'ses*'));
+    subFolders = dir(fullfile(parentSubjectFolder, 'ses*'));
+    if ~isempty(subFolders)
         subFolders = { subFolders.name };
-        subjectFolder    = {};
-        subjectFolderOut = {};
-        if ~isempty(opt.sessions)
-            subFolders = intersect(subFolders, opt.sessions);
-        end
-        
-        for iFold = 1:length(subFolders)
-            subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'eeg');
-            subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders{iFold}, 'eeg');
+    else
+        subFolders = {''};
+    end
+    subjectFolder    = {};
+    subjectFolderOut = {};
+    if ~isempty(opt.sessions)
+        subFolders = intersect(subFolders, opt.sessions);
+    end
+
+    for iFold = 1:length(subFolders)
+        subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'eeg');
+        subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders{iFold}, 'eeg');
+        if ~exist(subjectFolder{iFold},'dir')
+            subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'meg');
+            subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders{iFold}, 'meg');
             if ~exist(subjectFolder{iFold},'dir')
-                subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'meg');
-                subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders{iFold}, 'meg');
-                if ~exist(subjectFolder{iFold},'dir')
-                    subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'ieeg');
-                    subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders{iFold}, 'ieeg');
-                end
+                subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'ieeg');
+                subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders{iFold}, 'ieeg');
             end
         end
     end
