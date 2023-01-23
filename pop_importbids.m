@@ -278,7 +278,7 @@ for iSubject = opt.subjects
             catch
             end
             
-            if exist('scansFile', 'var')
+            if exist('scansFile', 'var') && ~isempty(scansFile)
                 useScans = true;
                 scans = loadfile( scansFile.name, scansFile);
                 bids.data = setallfields(bids.data, [iSubject-1,iFold,1], struct('scans', {scans}));
