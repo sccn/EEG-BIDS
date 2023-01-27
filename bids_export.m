@@ -26,13 +26,13 @@
 %                 subject(1).file    = {'subj-1_ss-1-run1' 'subj-1_ss-1-run2' 'subj-1_ss-2-run1' 'subj-1_ss-2-run2'};
 %                 subject(1).session = [ 1 1 2 2 ];
 %                 subject(1).run     = [ 1 2 1 2 ];
-%                 subject(1).task    = { 'go-no task' 'control task' 'go-no task' 'control task' };
+%                 subject(1).task    = { 'go-nogo' 'control' 'go-nogo' 'control' };
 %                 subject(1).instructions = { 'Press button when you see an animal' 'Look passively at the images' 'Press button when you see an animal' 'Look passively at the images'  };
 %                 subject(1).chanlocs = {'subj-1_ss-1-run1.elp' 'subj-1_ss-1-run2.elp' 'subj-1_ss-2-run1.elp' 'subj-1_ss-2-run2.elp'};
 %                 subject(2).file    = {'subj-2_ss-1-run1' 'subj-2_ss-1-run2' 'subj-2_ss-2-run1' 'subj-2_ss-2-run2'};
 %                 subject(2).session = [ 1 1 2 2 ];
 %                 subject(2).run     = [ 1 2 1 2 ];
-%                 subject(2).task    = { 'go-no task' 'control task' 'go-no task' 'control task' };
+%                 subject(2).task    = { 'go-nogo' 'control' 'go-nogo' 'control' };
 %                 subject(2).instructions = { 'Press button when you see an animal' 'Look passively at the images' 'Press button when you see an animal' 'Look passively at the images'  };
 %                 subject(2).chanlocs = {'subj-2_ss-1-run1.elp' 'subj-2_ss-1-run2.elp' 'subj-2_ss-2-run1.elp' 'subj-2_ss-2-run2.elp'};
 %
@@ -40,13 +40,13 @@
 %                 subject(1).file(1).file = 'subj-1_ss-1-run1';
 %                 subject(1).file(1).session = 1;
 %                 subject(1).file(1).run     = 1;
-%                 subject(1).file(1).task    = 'go-no task';
+%                 subject(1).file(1).task    = 'go-nogo';
 %                 subject(1).file(1).instructions = 'Press button when you see an animal';
 %                 subject(1).file(1).chanlocs = 'subj-1_ss-1-run1.elp';
 %                 subject(1).file(2).file = 'subj-1_ss-1-run2';
 %                 subject(1).file(2).session = 1;
 %                 subject(1).file(2).run     = 2;
-%                 subject(1).file(2).task    = 'control task';
+%                 subject(1).file(2).task    = 'control';
 %                 subject(1).file(2).instructions = 'Look passively at the images';
 %                 subject(1).file(2).chanlocs = 'subj-1_ss-1-run2.elp';
 %                 ...
@@ -251,7 +251,7 @@ opt = finputcheck(varargin, {
     'Authors'   'cell'    {}    {''};
     'ReferencesAndLinks' 'cell' {}    {''};
     'targetdir' 'string'  {}    fullfile(pwd, 'bidsexport');
-    'taskName'  'string'  {}    'task';
+    'taskName'  'string'  {}    'unnamed';
     'codefiles' 'cell'    {}    {};
     'stimuli'   'cell'    {}    {};
     'pInfo'     'cell'    {}    {};
@@ -282,8 +282,8 @@ if isstr(opt), error(opt); end
 if size(opt.stimuli,1) == 1 || size(opt.stimuli,2) == 1
     opt.stimuli = reshape(opt.stimuli, [2 length(opt.stimuli)/2])';
 end
-if any(opt.taskName == '_')
-    error('Task name cannot contain underscore character(s)');
+if any(contains(opt.taskName, '_')) || any(contains(opt.taskName, ' '))
+    error('Task name cannot contain underscore or space character(s)');
 end
 
 % deleting folder
