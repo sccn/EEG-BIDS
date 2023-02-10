@@ -67,6 +67,7 @@ while ~feof(fid1)
     [~, ~, x] = fileparts(olddatafile);
     newdatafile = [baseNameOut switchcase('.eeg')]; % must be .eeg
     line = sprintf('DataFile=%s', newdatafile);
+  else
   end
   fprintf(fid2, '%s\r\n', line);
 end
@@ -78,27 +79,32 @@ if exist('oldmarkerfile', 'var')
     newmarkerfile = fullfile(pathOut, newmarkerfile);
     assert(exist(newmarkerfile, 'file')==0, 'the file %s already exists', newmarkerfile);
     fid1 = fopen(oldmarkerfile, 'r');
-    fid2 = fopen(newmarkerfile, 'w');
 
-    while ~feof(fid1)
-        line = fgetl(fid1);
-        if ~isempty(regexp(line, '^HeaderFile', 'once'))
-            [~, rem] = strtok(line, '=');
-            oldheaderfile = rem(2:end);
-            [~, ~, x] = fileparts(oldheaderfile);
-            newheaderfile = [baseNameOut switchcase(x)];
-            line = sprintf('HeaderFile=%s', newheaderfile);
-        elseif ~isempty(regexp(line, '^DataFile', 'once'))
-            [~, rem] = strtok(line, '=');
-            olddatafile = rem(2:end);
-            [~, ~, x] = fileparts(olddatafile);
-            newdatafile = [baseNameOut switchcase('.eeg')];
-            line = sprintf('DataFile=%s', newdatafile);
+    if fid1 == -1
+        warning('Marker file specified but not found')
+    else
+        fid2 = fopen(newmarkerfile, 'w');
+    
+        while ~feof(fid1)
+            line = fgetl(fid1);
+            if ~isempty(regexp(line, '^HeaderFile', 'once'))
+                [~, rem] = strtok(line, '=');
+                oldheaderfile = rem(2:end);
+                [~, ~, x] = fileparts(oldheaderfile);
+                newheaderfile = [baseNameOut switchcase(x)];
+                line = sprintf('HeaderFile=%s', newheaderfile);
+            elseif ~isempty(regexp(line, '^DataFile', 'once'))
+                [~, rem] = strtok(line, '=');
+                olddatafile = rem(2:end);
+                [~, ~, x] = fileparts(olddatafile);
+                newdatafile = [baseNameOut switchcase('.eeg')];
+                line = sprintf('DataFile=%s', newdatafile);
+            end
+            fprintf(fid2, '%s\r\n', line);
         end
-        fprintf(fid2, '%s\r\n', line);
+        fclose(fid1);
+        fclose(fid2);
     end
-    fclose(fid1);
-    fclose(fid2);
 end
 
 olddatafile = fullfile(pathIn , olddatafile);
