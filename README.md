@@ -64,4 +64,4 @@ v7.3 - various minor fixes (EEG reference as string; add duration if not present
 
 v7.4 - fix version issues for HED and BIDS. Export subjects in order. Remove unused columns in participants.tsv file
 
-v7.5 - adding support for coordsystem files, and for loading specific runs
+v7.5 - adding support for coordsystem files, and for loading specific runs, support for motion files
