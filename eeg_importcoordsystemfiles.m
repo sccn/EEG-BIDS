@@ -31,20 +31,61 @@ bids = g.bids;
                         
 % coordinate information
 bids(1).coordsystem = loadfile( coordfile, '');
+if ~isfield(EEG.chaninfo, 'nodatchans')
+    EEG.chaninfo.nodatchans = [];
+end
+EEG.chaninfo.bids = bids(1).coordsystem;
 
+% import anatomical landmark
+% --------------------------
 if isfield(bids.coordsystem, 'AnatomicalLandmarkCoordinates') && ~isempty(bids.coordsystem.AnatomicalLandmarkCoordinates)
+    factor = checkunit(EEG.chaninfo, 'AnatomicalLandmarkCoordinateUnits');
     fieldNames = fieldnames(bids.coordsystem.AnatomicalLandmarkCoordinates);
-    if ~isfield(EEG.chaninfo, 'nodatchans')
-        EEG.chaninfo.nodatchans = [];
-    end
     for iField = 1:length(fieldNames)
         EEG.chaninfo.nodatchans(end+1).labels = fieldNames{iField};
-        EEG.chaninfo.nodatchans(end).X = bids.coordsystem.AnatomicalLandmarkCoordinates.(fieldNames{iField})(1);
-        EEG.chaninfo.nodatchans(end).Y = bids.coordsystem.AnatomicalLandmarkCoordinates.(fieldNames{iField})(2);
-        EEG.chaninfo.nodatchans(end).Z = bids.coordsystem.AnatomicalLandmarkCoordinates.(fieldNames{iField})(3);
+        EEG.chaninfo.nodatchans(end).type   = 'FID';
+        EEG.chaninfo.nodatchans(end).X = bids.coordsystem.AnatomicalLandmarkCoordinates.(fieldNames{iField})(1)*factor;
+        EEG.chaninfo.nodatchans(end).Y = bids.coordsystem.AnatomicalLandmarkCoordinates.(fieldNames{iField})(2)*factor;
+        EEG.chaninfo.nodatchans(end).Z = bids.coordsystem.AnatomicalLandmarkCoordinates.(fieldNames{iField})(3)*factor;
     end
     EEG.chaninfo.nodatchans = convertlocs(EEG.chaninfo.nodatchans);
 end
+
+% import head position
+% --------------------
+if isfield(bids.coordsystem, 'DigitizedHeadPoints') && ~isempty(bids.coordsystem.DigitizedHeadPoints)
+    factor = checkunit(EEG.chaninfo, 'DigitizedHeadPointsCoordinateUnits');
+    try
+        headpos = readlocs(bids.coordsystem.DigitizedHeadPoints, 'filetype', 'sfp');
+        for iPoint = 1:length(headpos)
+            EEG.chaninfo.nodatchans(end+1).labels = headpos{iField};
+            EEG.chaninfo.nodatchans(end).type   = 'HeadPoint';
+            EEG.chaninfo.nodatchans(end).X = headpos(iPoint).X*factor;
+            EEG.chaninfo.nodatchans(end).Y = headpos(iPoint).Y*factor;
+            EEG.chaninfo.nodatchans(end).Z = headpos(iPoint).Z*factor;
+        end
+        EEG.chaninfo.nodatchans = convertlocs(EEG.chaninfo.nodatchans);
+    catch 
+        if ischar(bids.coordsystem.DigitizedHeadPoints)
+           fprintf('Could not read head points file %s\n', bids.coordsystem.DigitizedHeadPoints);
+        end
+    end
+end
+
+% coordinate transform factor
+% ---------------------------
+function factor = checkunit(chaninfo, field)
+    if isfield(chaninfo.bids, field) && isfield(chaninfo, 'unit')
+        if isequal(chaninfo.bids.(field), 'mm') && isequal(chaninfo.unit, 'cm')
+            factor = 1/10;
+        elseif isequal(chaninfo.bids.(field), 'cm') && isequal(chaninfo.unit, 'mm')
+            factor = 10;
+        elseif isequal(chaninfo.bids.(field), chaninfo.unit)
+            factor = 1;
+        else
+            error('Unit not supported')
+        end
+    end
 
 % import JSON or TSV file
 % -----------------------
