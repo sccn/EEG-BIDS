@@ -747,6 +747,8 @@ if ~isempty(opt.importfunc)
 elseif strcmpi(ext, '.bdf') || strcmpi(ext, '.edf')
     fileIDIn  = fopen(fileIn,'rb','ieee-le');  % see sopen
     fileIDOut = fopen(fileOut,'wb','ieee-le');  % see sopen
+    if fileIDIn  == -1, error('Cannot read file %s', fileIn); end
+    if fileIDOut == -1, error('Cannot write file %s', fileOut); end
     data = fread(fileIDIn, Inf);
     data(9:9+160-1) = ' '; % remove potential identity
     fwrite(fileIDOut, data);
@@ -803,27 +805,13 @@ if strcmpi(opt.noevents, 'on')
     EEG.event = [];
 end
 
-% write event file information
-% ----_events.json and _events.tsv
-% Getting events latency
-% insertEpoch = false;
-% if EEG.trials > 1
-%     % get TLE events
-%     insertEpoch = true;
-%     eventlat = abs(eeg_point2lat( [ EEG.event.latency ], [ EEG.event.epoch ], EEG.srate, [EEG.xmin EEG.xmax]));
-%     indtle    = find(eventlat == 0);
-%     if length(indtle) < EEG.trials
-%         indtle    = find(eventlat < 0.02);
-%     end
-%     if length(indtle) ~= EEG.trials
-%         insertEpoch = false;
-%     end
-% end
-eeg_writeeventsfiles(EEG, fileOut(1:end-8), 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, 'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse);
+indExt = find(fileOut == '_');
+fileOutRed = fileOut(1:indExt(end)-1);
+eeg_writeeventsfiles(EEG, fileOutRed, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, 'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse);
 
 % Write channel file information (channels.tsv)
 % Note: Consider using here electrodes_to_tsv.m
-% fid = fopen( [ fileOut(1:end-8) 'channels.tsv' ], 'w');
+% fid = fopen( [ fileOutRed 'channels.tsv' ], 'w');
 % miscChannels = 0;
 if ~isempty(chanlocs)
     EEG.chanlocs = chanlocs;
@@ -842,10 +830,10 @@ end
 if ischar(opt.chanlookup) && ~isempty(opt.chanlookup)
     EEG=pop_chanedit(EEG, 'lookup', opt.chanlookup);
 end
-channelsCount = eeg_writechanfile(EEG, fileOut(1:end-8));
+channelsCount = eeg_writechanfile(EEG, fileOutRed);
 
 % Write electrode file information (electrodes.tsv and coordsystem.json)
-eeg_writeelectrodesfiles(EEG, fileOut(1:end-8));
+eeg_writeelectrodesfiles(EEG, fileOutRed);
 
 % Write task information (eeg.json) Note: depends on channels
 % requiredChannelTypes: 'EEG', 'EOG', 'ECG', 'EMG', 'MISC'. Other channel
@@ -920,7 +908,7 @@ tInfoFields = {...
     'SubjectArtefactDescription' 'OPTIONAL' 'char' '' };
 tInfo = checkfields(tInfo, tInfoFields, 'tInfo');
 
-jsonwrite([fileOut(1:end-8) '_eeg.json' ], tInfo,struct('indent','  '));
+jsonwrite([fileOutRed '_eeg.json' ], tInfo,struct('indent','  '));
 
 % write channel information
 %     cInfo.name.LongName = 'Channel name';
