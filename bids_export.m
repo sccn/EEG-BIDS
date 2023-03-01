@@ -11,6 +11,14 @@
 %                and 'run' will contain the session index and the run index
 %                within the session for the corresponding data file in the
 %                same index. 'notes' can contain notes about the recording.
+%                The optional 'eventtype', 'eventindex' 'timeoffset' allow
+%                selecting portions of files. For example 'timeoffset' of
+%                [0 1800] selects the first 30 minutes of a file. Default 
+%                'timeoffset' is 0. Add 'eventype' equals to { 'beg' 'end' } 
+%                and 'eventindex' of [1 1] and the portion of data between the 
+%                first 'beg' event and 1800 seconds after the first 'end' event
+%                is selected. If 'eventtype' is not specified, then events of
+%                all types are considered.
 %
 %                See example below for a case with 2 subjects with
 %                2 sessions and 2 run each:
@@ -23,16 +31,22 @@
 %
 %                See example below for a case with 2 subjects with
 %                2 sessions and 2 runs each:
-%                 subject(1).file    = {'subj-1_ss-1-run1' 'subj-1_ss-1-run2' 'subj-1_ss-2-run1' 'subj-1_ss-2-run2'};
-%                 subject(1).session = [ 1 1 2 2 ];
-%                 subject(1).run     = [ 1 2 1 2 ];
-%                 subject(1).task    = { 'go-nogo' 'control' 'go-nogo' 'control' };
+%                 subject(1).file       = {'subj-1_ss-1-run1'   'subj-1_ss-1-run2' 'subj-1_ss-2-run1' 'subj-1_ss-2-run2'};
+%                 subject(1).eventtype  = { {'beg' 'end'}       {'beg' 'end'}      {'beg' 'end'}      {'beg' 'end'}    };
+%                 subject(1).eventindex = { [1 1]               [1 1]              [1 1]              [1 1]             };
+%                 subject(1).timeoffset = { [0 1000]            [0 1000]           [0 1000]           [0 1000] };
+%                 subject(1).session    = [ 1 1 2 2 ];
+%                 subject(1).run        = [ 1 2 1 2 ];
+%                 subject(1).task       = { 'go-nogo' 'control' 'go-nogo' 'control' };
 %                 subject(1).instructions = { 'Press button when you see an animal' 'Look passively at the images' 'Press button when you see an animal' 'Look passively at the images'  };
 %                 subject(1).chanlocs = {'subj-1_ss-1-run1.elp' 'subj-1_ss-1-run2.elp' 'subj-1_ss-2-run1.elp' 'subj-1_ss-2-run2.elp'};
-%                 subject(2).file    = {'subj-2_ss-1-run1' 'subj-2_ss-1-run2' 'subj-2_ss-2-run1' 'subj-2_ss-2-run2'};
-%                 subject(2).session = [ 1 1 2 2 ];
-%                 subject(2).run     = [ 1 2 1 2 ];
-%                 subject(2).task    = { 'go-nogo' 'control' 'go-nogo' 'control' };
+%                 subject(2).file       = {'subj-2_ss-1-run1' 'subj-2_ss-1-run2' 'subj-2_ss-2-run1' 'subj-2_ss-2-run2'};
+%                 subject(2).eventtype  = { {'beg' 'end'}       {'beg' 'end'}      {'beg' 'end'}      {'beg' 'end'}    };
+%                 subject(2).eventrange = { [1 1]               [1 1]              [1 1]              [1 1]             };
+%                 subject(2).timerange  = { [0 1000]            [0 1000]           [0 1000]           [0 1000] };
+%                 subject(2).session    = [ 1 1 2 2 ];
+%                 subject(2).run        = [ 1 2 1 2 ];
+%                 subject(2).task       = { 'go-nogo' 'control' 'go-nogo' 'control' };
 %                 subject(2).instructions = { 'Press button when you see an animal' 'Look passively at the images' 'Press button when you see an animal' 'Look passively at the images'  };
 %                 subject(2).chanlocs = {'subj-2_ss-1-run1.elp' 'subj-2_ss-1-run2.elp' 'subj-2_ss-2-run1.elp' 'subj-2_ss-2-run2.elp'};
 %
@@ -187,14 +201,14 @@
 %                this assumes that all the files have the same number of
 %                channels.
 %
-% 'copydata'   -[0|1] While exporting EEGLAB data to BIDS (.set, .fdt), this flag
-%               will enable the copy of all the data files [1], or just create the
-%               BIDS files hierarchy without the large data files [0]. This
-%               options is aimed to be used to speedup the troubleshooting
-%               of bids_export execution. Default: [1]
-%
 % 'importfunc' - [function handle or string] function to import raw data to
 %              EEG format. Default: auto.
+%
+% 'exportformat' - ['same'|'eeglab'|'edf'|'bdf'] export files in the 'same' format
+%              as given as input or export in 'eeglab' .set, 'edf', or 'bdf' format. 
+%              Default is 'same'. If you use 'eventtype', 'eventindex' or 'timeoffset'
+%              and the export format is set to 'same', files will be automatically
+%              exported in the 'eeglab' format.
 %
 % Validation:
 %  If the BIDS data created with this function fails to pass the BIDS
@@ -217,8 +231,9 @@
 % in bids_export_example.m
 %
 %
-% Authors: Arnaud Delorme, 2019
-%          Ramon Martinez-Cancino, 2019
+% Authors: Arnaud Delorme, 2019-
+%          Ramon Martinez-Cancino, 2019-2020
+%          Dung Truong 2021
 
 %  The following are automatically
 %                populated using channel structure info ('eeg', 'ecg', 'emg', 'eog', 'trigger')
@@ -272,12 +287,12 @@ opt = finputcheck(varargin, {
     'defaced'   'string'  {'on' 'off'}    'on';
     'createids' 'string'  {'on' 'off'}    'off';
     'noevents'  'string'  {'on' 'off'}    'off';
+    'exportformat'  'string'  {'same' 'eeglab' 'edf' 'bdf'}    'same';
     'individualEventsJson' 'string'  {'on' 'off'}    'off';
-    'exportext' 'string'  { 'edf' 'eeglab' } 'eeglab';
     'README'    'string'  {}    '';
     'CHANGES'   'string'  {}    '' ;
-    'importfunc' ''  {}    '' ;
-    'copydata'   'real'   [0 1] 1 }, 'bids_export');
+    'copydata'  'integer' {}    [0 1]; % legacy, does nothing now
+    'importfunc' ''  {}    '' }, 'bids_export');
 if isstr(opt), error(opt); end
 if size(opt.stimuli,1) == 1 || size(opt.stimuli,2) == 1
     opt.stimuli = reshape(opt.stimuli, [2 length(opt.stimuli)/2])';
@@ -402,6 +417,17 @@ for iSubj = 1:length(files)
         if length(files(iSubj).notes) < length(files(iSubj).file)
             files(iSubj).notes{length(files(iSubj).file)} = [];
         end
+    end
+
+    % event and time range extraction
+    if ~isfield(files(iSubj), 'timeoffset') || isempty(files(iSubj).timeoffset)
+        files(iSubj).timeoffset = cell(1,length(files(iSubj).file));
+    end
+    if ~isfield(files(iSubj), 'eventtype') || isempty(files(iSubj).eventtype)
+        files(iSubj).eventtype = cell(1,length(files(iSubj).file));
+    end
+    if ~isfield(files(iSubj), 'eventindex') || isempty(files(iSubj).eventindex)
+        files(iSubj).eventindex = cell(1,length(files(iSubj).file));
     end
 
     % check that no two files have the same session/run and task
@@ -680,7 +706,7 @@ for iSubj = 1:length(files)
                 [~,~,fileExt] = fileparts(files(iSubj).file{iTask});
                 fileOut    = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iTask)) '_eeg' fileExt ]);
                 fileOutBeh = fullfile(opt.targetdir, subjectStr, 'beh', [ subjectStr  '_task-' char(files(iSubj).task(iTask)) '_beh.tsv' ]);
-                copy_data_bids( files(iSubj).file{iTask}, fileOut, files(iSubj).notes{iTask}, files(iSubj).chanlocs{iTask}, opt);
+                copy_data_bids( files(iSubj).file{iTask}, fileOut, files(iSubj).notes{iTask}, files(iSubj).chanlocs{iTask}, files(iSubj).timeoffset{iTask}, files(iSubj).eventtype{iTask}, files(iSubj).eventindex{iTask}, opt);
                 eeg_writebehfiles(files(iSubj).beh{iTask}, fileOutBeh);
             end
             
@@ -690,7 +716,7 @@ for iSubj = 1:length(files)
                 [~,~,fileExt] = fileparts(files(iSubj).file{iRun});
                 fileOut    = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' files(iSubj).run{iRun} '_eeg' fileExt ]);
                 fileOutBeh = fullfile(opt.targetdir, subjectStr, 'beh', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' files(iSubj).run{iRun} '_beh.tsv' ]);
-                copy_data_bids( files(iSubj).file{iRun}, fileOut, files(iSubj).notes{iRun}, files(iSubj).chanlocs{iRun}, opt);
+                copy_data_bids( files(iSubj).file{iRun}, fileOut, files(iSubj).notes{iRun}, files(iSubj).chanlocs{iRun}, files(iSubj).timeoffset{iRun}, files(iSubj).eventtype{iRun}, files(iSubj).eventindex{iRun}, opt);
                 eeg_writebehfiles(files(iSubj).beh{iRun}, fileOutBeh);
             end
             
@@ -700,7 +726,7 @@ for iSubj = 1:length(files)
                 [~,~,fileExt] = fileparts(files(iSubj).file{iSess});
                 fileOut    = fullfile(opt.targetdir, subjectStr, [ 'ses-' files(iSubj).session{iSess} ], 'eeg', [ subjectStr '_ses-' files(iSubj).session{iSess} '_task-' char(files(iSubj).task{iSess}) '_eeg' fileExt ]);
                 fileOutBeh = fullfile(opt.targetdir, subjectStr, [ 'ses-' files(iSubj).session{iSess} ], 'beh', [ subjectStr '_ses-' files(iSubj).session{iSess} '_task-' char(files(iSubj).task{iSess}) '_beh.tsv' ]);
-                copy_data_bids( files(iSubj).file{iSess}, fileOut, files(iSubj).notes{iSess}, files(iSubj).chanlocs{iSess}, opt);
+                copy_data_bids( files(iSubj).file{iSess}, fileOut, files(iSubj).notes{iSess}, files(iSubj).chanlocs{iSess}, files(iSubj).timeoffset{iSess}, files(iSubj).eventtype{iSess}, files(iSubj).eventindex{iSess}, opt);
                 eeg_writebehfiles(files(iSubj).beh{iSess}, fileOutBeh);
             end
             
@@ -713,7 +739,7 @@ for iSubj = 1:length(files)
                     [~,~,fileExt] = fileparts(files(iSubj).file{iSet});
                     fileOut    = fullfile(opt.targetdir, subjectStr, [ 'ses-', files(iSubj).session{iSet} ], 'eeg', [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} '_eeg' fileExt ]);
                     fileOutBeh = fullfile(opt.targetdir, subjectStr, [ 'ses-', files(iSubj).session{iSet} ], 'beh', [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} '_beh.tsv' ]);
-                    copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, files(iSubj).chanlocs{iSet}, opt);
+                    copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, files(iSubj).chanlocs{iSet}, files(iSubj).timeoffset{iSet}, files(iSubj).eventtype{iSet}, files(iSubj).eventindex{iSet}, opt);
                     eeg_writebehfiles(files(iSubj).beh{iSet}, fileOutBeh);
                 end
             end
@@ -725,12 +751,8 @@ end
 
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
-%function copy_data_bids(fileIn, fileOut, eInfo, tInfo, trialtype, chanlocs, copydata)
-function copy_data_bids(fileIn, fileOut, notes, chanlocs, opt)
+function copy_data_bids(fileIn, fileOut, notes, chanlocs, timeoffset, eventtype, eventindex, opt)
 folderOut = fileparts(fileOut);
-
-copydata = opt.copydata;
-exportExt = opt.exportext;
 
 if ~exist(folderOut)
     mkdir(folderOut);
@@ -741,41 +763,36 @@ end
 tInfo = opt.tInfo;
 [~,~,ext] = fileparts(fileIn);
 fprintf('Processing file %s\n', fileOut);
+if ~isempty(eventtype) || ~isempty(eventindex) || ~isempty(timeoffset)
+    opt.exportformat = 'eeglab';
+end
 if ~isempty(opt.importfunc)
     EEG = feval(opt.importfunc, fileIn);
-    pop_saveset(EEG, 'filename', fileOut);
 elseif strcmpi(ext, '.bdf') || strcmpi(ext, '.edf')
-    fileIDIn  = fopen(fileIn,'rb','ieee-le');  % see sopen
-    fileIDOut = fopen(fileOut,'wb','ieee-le');  % see sopen
-    if fileIDIn  == -1, error('Cannot read file %s', fileIn); end
-    if fileIDOut == -1, error('Cannot write file %s', fileOut); end
-    data = fread(fileIDIn, Inf);
-    data(9:9+160-1) = ' '; % remove potential identity
-    fwrite(fileIDOut, data);
-    fclose(fileIDIn);
-    fclose(fileIDOut);
-    if strcmpi(ext, '.bdf')
-        tInfo.EEGReference = 'CMS/DRL';
-        tInfo.Manufacturer = 'BIOSEMI';
+    if isequal(opt.exportformat, 'same')
+        fileIDIn  = fopen(fileIn,'rb','ieee-le');  % see sopen
+        fileIDOut = fopen(fileOut,'wb','ieee-le');  % see sopen
+        if fileIDIn  == -1, error('Cannot read file %s', fileIn); end
+        if fileIDOut == -1, error('Cannot write file %s', fileOut); end
+        data = fread(fileIDIn, Inf);
+        data(9:9+160-1) = ' '; % remove potential identity
+        fwrite(fileIDOut, data);
+        fclose(fileIDIn);
+        fclose(fileIDOut);
+        if strcmpi(ext, '.bdf')
+            tInfo.EEGReference = 'CMS/DRL';
+            tInfo.Manufacturer = 'BIOSEMI';
+        end
     end
     EEG = pop_biosig(fileOut);
 elseif strcmpi(ext, '.vhdr')
-    rename_brainvision_files(fileIn, fileOut, 'rmf', 'off');
+    if isequal(opt.exportformat, 'same')
+        rename_brainvision_files(fileIn, fileOut, 'rmf', 'off');
+    end
     [fpathin, fname, ext] = fileparts(fileIn);
     EEG = pop_loadbv(fpathin, [fname ext]);
 elseif strcmpi(ext, '.set')
-    [outfilepath, outfilename,outfileext] = fileparts(fileOut);
-    if copydata
-        EEGin = pop_loadset(fileIn);
-        if strcmp(exportExt,'edf')
-            pop_writeeeg(EEG, [outfilepath filesep outfilename '.edf'], 'TYPE','EDF');
-        else
-            EEG   = pop_saveset(EEGin, 'filename',[outfilename outfileext], 'filepath', outfilepath);
-        end
-    else
-        copyfile(fileIn, fileOut);
-        EEG = pop_loadset([outfilename outfileext],outfilepath, 'loadmode', 'info');
-    end
+    EEG = pop_loadset(fileIn);
 elseif strcmpi(ext, '.cnt')
     EEG = pop_loadcnt(fileIn, 'dataformat', 'auto');
     datFile = [fileIn(1:end-4) '.dat'];
@@ -783,18 +800,14 @@ elseif strcmpi(ext, '.cnt')
         EEG = pop_importevent(EEG, 'indices',1:length(EEG.event), 'append','no', 'event', datFile,...
             'fields',{'DatTrial','DatResp','DatType','DatCorrect','DatLatency'},'skipline',20,'timeunit',NaN,'align',0);
     end
-    pop_saveset(EEG, 'filename', fileOut);
 elseif strcmpi(ext, '.mff')
     EEG = pop_mffimport(fileIn,{'code'});
-    pop_saveset(EEG, 'filename', fileOut);
 elseif strcmpi(ext, '.raw')
     EEG = pop_readegi(fileIn);
-    pop_saveset(EEG, 'filename', fileOut);
 elseif strcmpi(ext, '.eeg')
     [tmpPath,tmpFileName,~] = fileparts(fileIn);
     if exist(fullfile(tmpPath, [tmpFileName '.vhdr']), 'file')
         EEG = pop_loadbv( tmpPath, [tmpFileName '.vhdr'] );
-        pop_saveset(EEG, 'filename', fileOut);
     else
         error('.eeg files not from BrainVision are currently not supported')
     end
@@ -803,6 +816,19 @@ else
 end
 if strcmpi(opt.noevents, 'on')
     EEG.event = [];
+end
+
+% select data subset
+EEG = eeg_selectsegment(EEG, 'eventtype', eventtype, 'eventindex', eventindex, 'timeoffset', timeoffset );        
+
+% export data if necessary
+if ~isequal(opt.exportformat, 'same')
+    [filePathTmp,fileOutNoExt,~] = fileparts(fileOut);
+    if isequal(opt.exportformat, 'eeglab')
+        pop_saveset(EEG, 'filename', [ fileOutNoExt '.set' ], 'filepath', filePathTmp);
+    else
+        pop_writeeeg(EEG, fullfile(filePathTmp, [ fileOutNoExt '.' opt.exportformat]), 'TYPE',upper(opt.exportformat));
+    end
 end
 
 indExt = find(fileOut == '_');
