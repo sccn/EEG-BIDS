@@ -206,7 +206,7 @@
 %
 % 'exportformat' - ['same'|'eeglab'|'edf'|'bdf'] export files in the 'same' format
 %              as given as input or export in 'eeglab' .set, 'edf', or 'bdf' format. 
-%              Default is 'same'. If you use 'eventtype', 'eventindex' or 'timeoffset'
+%              Default is 'eeglab'. If you use 'eventtype', 'eventindex' or 'timeoffset'
 %              and the export format is set to 'same', files will be automatically
 %              exported in the 'eeglab' format.
 %
@@ -287,7 +287,7 @@ opt = finputcheck(varargin, {
     'defaced'   'string'  {'on' 'off'}    'on';
     'createids' 'string'  {'on' 'off'}    'off';
     'noevents'  'string'  {'on' 'off'}    'off';
-    'exportformat'  'string'  {'same' 'eeglab' 'edf' 'bdf'}    'same';
+    'exportformat'  'string'  {'same' 'eeglab' 'edf' 'bdf'}    'eeglab';
     'individualEventsJson' 'string'  {'on' 'off'}    'off';
     'README'    'string'  {}    '';
     'CHANGES'   'string'  {}    '' ;
@@ -458,51 +458,59 @@ end
 
 % write participant information (participants.tsv)
 % -----------------------------------------------
-if ~isempty(opt.pInfo)
+if isempty(opt.pInfo)
+    opt.pInfo{1} = 'participant_id';
     if isfield(files, 'subject')
-        uniqueSubject = unique( { files.subject } );
-        if size(opt.pInfo,1)-1 ~= length( uniqueSubject )
-            error(sprintf('Wrong number of participant (%d) in pInfo structure, should be %d based on the number of files', size(opt.pInfo,1)-1, length( uniqueSubject )));
-        end
-    elseif ~isstruct(files(1).file)
-        if size(opt.pInfo,1)-1 ~= length( files )
-            error(sprintf('Wrong number of participant (%d) in pInfo structure, should be %d based on the number of files', size(opt.pInfo,1)-1, length( files )));
+        opt.pInfo = [opt.pInfo; { files.subject }' ];
+    else
+        for iFile = 1:length(files)
+            opt.pInfo{iFile+1,1} = sprintf('%3.3d', iFile);
         end
     end
-    participants = { 'participant_id' };
-    for iSubj=2:size(opt.pInfo)
-        if strcmp('participant_id', opt.pInfo{1,1})
-            opt.pInfo{iSubj,1} = removeInvalidChar(opt.pInfo{iSubj,1});
-            if length(opt.pInfo{iSubj,1}) > 3 && isequal('sub-', opt.pInfo{iSubj,1}(1:4))
-                participants{iSubj, 1} = opt.pInfo{iSubj,1};
-            elseif strcmpi(opt.createids, 'off')
-                participants{iSubj, 1} = sprintf('sub-%s', opt.pInfo{iSubj,1});
-            else
-                participants{iSubj, 1} = sprintf('sub-%3.3d', iSubj-1);
-            end
+end
+if isfield(files, 'subject')
+    uniqueSubject = unique( { files.subject } );
+    if size(opt.pInfo,1)-1 ~= length( uniqueSubject )
+        error(sprintf('Wrong number of participant (%d) in pInfo structure, should be %d based on the number of files', size(opt.pInfo,1)-1, length( uniqueSubject )));
+    end
+elseif ~isstruct(files(1).file)
+    if size(opt.pInfo,1)-1 ~= length( files )
+        error(sprintf('Wrong number of participant (%d) in pInfo structure, should be %d based on the number of files', size(opt.pInfo,1)-1, length( files )));
+    end
+end
+participants = { 'participant_id' };
+for iSubj=2:size(opt.pInfo)
+    if strcmp('participant_id', opt.pInfo{1,1})
+        opt.pInfo{iSubj,1} = removeInvalidChar(opt.pInfo{iSubj,1});
+        if length(opt.pInfo{iSubj,1}) > 3 && isequal('sub-', opt.pInfo{iSubj,1}(1:4))
+            participants{iSubj, 1} = opt.pInfo{iSubj,1};
+        elseif strcmpi(opt.createids, 'off')
+            participants{iSubj, 1} = sprintf('sub-%s', opt.pInfo{iSubj,1});
         else
             participants{iSubj, 1} = sprintf('sub-%3.3d', iSubj-1);
         end
+    else
+        participants{iSubj, 1} = sprintf('sub-%3.3d', iSubj-1);
     end
-    if size(opt.pInfo,2) > 1
-        if strcmp('participant_id', opt.pInfo{1,1})
-            participants(:,2:size(opt.pInfo,2)) = opt.pInfo(:,2:end);
-        else
-            participants(:,2:size(opt.pInfo,2)+1) = opt.pInfo;
-        end
-    end
-
-    % remove empty columns
-    for iInfo = size(participants,2):-1:1
-        if all(cellfun(@isempty, participants(2:end,iInfo)))
-            if isfield(opt.pInfoDesc, participants{1,iInfo})
-                opt.pInfoDesc = rmfield(opt.pInfoDesc, participants{1,iInfo});
-            end
-            participants(:,iInfo) = [];
-        end
-    end
-    writetsv(fullfile(opt.targetdir, 'participants.tsv'), participants);
 end
+if size(opt.pInfo,2) > 1
+    if strcmp('participant_id', opt.pInfo{1,1})
+        participants(:,2:size(opt.pInfo,2)) = opt.pInfo(:,2:end);
+    else
+        participants(:,2:size(opt.pInfo,2)+1) = opt.pInfo;
+    end
+end
+
+% remove empty columns
+for iInfo = size(participants,2):-1:1
+    if all(cellfun(@isempty, participants(2:end,iInfo)))
+        if isfield(opt.pInfoDesc, participants{1,iInfo})
+            opt.pInfoDesc = rmfield(opt.pInfoDesc, participants{1,iInfo});
+        end
+        participants(:,iInfo) = [];
+    end
+end
+writetsv(fullfile(opt.targetdir, 'participants.tsv'), participants);
 
 % write participants field description (participants.json)
 % --------------------------------------------------------
@@ -703,30 +711,33 @@ for iSubj = 1:length(files)
     switch bidscase
         case 1 % Mult Task: Single-Session Single-Run 
             for iTask = 1:length(files(iSubj).task)
+                structOut = getElement(files(iSubj), iTask);
                 [~,~,fileExt] = fileparts(files(iSubj).file{iTask});
                 fileOut    = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iTask)) '_eeg' fileExt ]);
                 fileOutBeh = fullfile(opt.targetdir, subjectStr, 'beh', [ subjectStr  '_task-' char(files(iSubj).task(iTask)) '_beh.tsv' ]);
-                copy_data_bids( files(iSubj).file{iTask}, fileOut, files(iSubj).notes{iTask}, files(iSubj).chanlocs{iTask}, files(iSubj).timeoffset{iTask}, files(iSubj).eventtype{iTask}, files(iSubj).eventindex{iTask}, opt);
+                copy_data_bids( structOut, fileOut, opt);
                 eeg_writebehfiles(files(iSubj).beh{iTask}, fileOutBeh);
             end
             
         case 2 % Single-Session Mult-Run
             
             for iRun = 1:length(files(iSubj).run)
+                structOut = getElement(files(iSubj), iRun);
                 [~,~,fileExt] = fileparts(files(iSubj).file{iRun});
                 fileOut    = fullfile(opt.targetdir, subjectStr, 'eeg', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' files(iSubj).run{iRun} '_eeg' fileExt ]);
                 fileOutBeh = fullfile(opt.targetdir, subjectStr, 'beh', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' files(iSubj).run{iRun} '_beh.tsv' ]);
-                copy_data_bids( files(iSubj).file{iRun}, fileOut, files(iSubj).notes{iRun}, files(iSubj).chanlocs{iRun}, files(iSubj).timeoffset{iRun}, files(iSubj).eventtype{iRun}, files(iSubj).eventindex{iRun}, opt);
+                copy_data_bids( structOut, fileOut, opt);
                 eeg_writebehfiles(files(iSubj).beh{iRun}, fileOutBeh);
             end
             
         case 3 % Mult-Session Single-Run
             
             for iSess = 1:length(unique(files(iSubj).session))
+                structOut = getElement(files(iSubj), iSess);
                 [~,~,fileExt] = fileparts(files(iSubj).file{iSess});
                 fileOut    = fullfile(opt.targetdir, subjectStr, [ 'ses-' files(iSubj).session{iSess} ], 'eeg', [ subjectStr '_ses-' files(iSubj).session{iSess} '_task-' char(files(iSubj).task{iSess}) '_eeg' fileExt ]);
                 fileOutBeh = fullfile(opt.targetdir, subjectStr, [ 'ses-' files(iSubj).session{iSess} ], 'beh', [ subjectStr '_ses-' files(iSubj).session{iSess} '_task-' char(files(iSubj).task{iSess}) '_beh.tsv' ]);
-                copy_data_bids( files(iSubj).file{iSess}, fileOut, files(iSubj).notes{iSess}, files(iSubj).chanlocs{iSess}, files(iSubj).timeoffset{iSess}, files(iSubj).eventtype{iSess}, files(iSubj).eventindex{iSess}, opt);
+                copy_data_bids( structOut, fileOut, opt);
                 eeg_writebehfiles(files(iSubj).beh{iSess}, fileOutBeh);
             end
             
@@ -736,10 +747,11 @@ for iSubj = 1:length(files)
             for iSess = 1:length(uniqueSess)
                 runindx = strmatch(uniqueSess{iSess}, files(iSubj).session, 'exact');
                 for iSet = runindx(:)'
+                    structOut = getElement(files(iSubj), iSet);
                     [~,~,fileExt] = fileparts(files(iSubj).file{iSet});
                     fileOut    = fullfile(opt.targetdir, subjectStr, [ 'ses-', files(iSubj).session{iSet} ], 'eeg', [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} '_eeg' fileExt ]);
                     fileOutBeh = fullfile(opt.targetdir, subjectStr, [ 'ses-', files(iSubj).session{iSet} ], 'beh', [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} '_beh.tsv' ]);
-                    copy_data_bids(files(iSubj).file{iSet}, fileOut, files(iSubj).notes{iSet}, files(iSubj).chanlocs{iSet}, files(iSubj).timeoffset{iSet}, files(iSubj).eventtype{iSet}, files(iSubj).eventindex{iSet}, opt);
+                    copy_data_bids( structOut, fileOut, opt);
                     eeg_writebehfiles(files(iSubj).beh{iSet}, fileOutBeh);
                 end
             end
@@ -751,7 +763,16 @@ end
 
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
-function copy_data_bids(fileIn, fileOut, notes, chanlocs, timeoffset, eventtype, eventindex, opt)
+%function copy_data_bids(fileIn, fileOut, notes, chanlocs, timeoffset, eventtype, eventindex, opt)
+function copy_data_bids(sIn, fileOut, opt)
+
+fileIn   = sIn.file;
+notes    = sIn.notes;
+chanlocs = sIn.chanlocs;
+timeoffset = sIn.timeoffset;
+eventtype  = sIn.eventtype;
+eventindex = sIn.eventindex;
+
 folderOut = fileparts(fileOut);
 
 if ~exist(folderOut)
@@ -1018,6 +1039,21 @@ for iRow=1:size(matlabArray,1)
     fprintf(fid, '\n');
 end
 fclose(fid);
+
+% remove invalid Chars
+% -------------------- 
+function structOut = getElement(bidsStructItem, ind)
+    structOut = [];
+    fields = fieldnames(bidsStructItem);
+    for iField = 1:length(fields)
+        if ~iscell(getfield(bidsStructItem, fields{iField}))
+            tmp = getfield(bidsStructItem, fields{iField});
+            structOut.(fields{iField}) = tmp;
+        else
+            tmp = getfield(bidsStructItem, fields{iField}, { ind });
+            structOut.(fields{iField}) = tmp{1};
+        end
+    end
 
 % remove invalid Chars
 % --------------------       
