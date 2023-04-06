@@ -203,6 +203,8 @@ if isempty(bids.participants)
     bids.participants = {'participant_id' participantFolders.name }';
 end
 
+bids.participants(strcmp(bids.participants, 'sub-emptyroom'),:) = [];
+
 % load participant sidecar file
 participantsJSONFile = fullfile(bidsFolder, 'participants.json');
 bids.participantsJSON = '';
@@ -229,8 +231,8 @@ if isempty(opt.subjects)
 else
     opt.subjects = opt.subjects+1;
 end
+
 for iSubject = opt.subjects
-    
     parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,1});
     outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,1});
     
@@ -363,6 +365,8 @@ for iSubject = opt.subjects
                                     end
                                 end
                             end
+                            ind2 = cellfun(@(x)~isempty(strfind(x, 'acq-crosstalk')), allFiles(ind));
+                            ind(ind2) = [];
                         end
                     end
                 end
@@ -489,7 +493,7 @@ for iSubject = opt.subjects
                             gunzip(eegFileRaw);
                             EEG = pop_fileio(eegFileRaw(1:end-3)); % fif folder
                         case '.ds'
-                            EEG = pop_fileio(eegFileRaw); % fif folder
+                            EEG = pop_fileio(eegFileRaw, 'makecontinuous', 'on'); % fif folder
                         case '.mefd'
                             if ~exist('pop_matmef', 'file')
                                 error('MEF plugin not present, please install the MATMEF plugin first')
@@ -583,8 +587,11 @@ for iSubject = opt.subjects
                 end
                 if isstruct(behData) && ~isempty(behData)
                     behFields = fieldnames(behData);
+                    if length(behData) > 1
+                        warning('Behavioral data length larger than 1, only retaining the first element');
+                    end
                     for iFieldBeh = 1:length(behFields)
-                        commands = [ commands { behFields{iFieldBeh} behData.(behFields{iFieldBeh}) } ];
+                        commands = [ commands { behFields{iFieldBeh} [behData(1).(behFields{iFieldBeh})] } ];
                     end
                 end
                 count = count+1;
