@@ -350,7 +350,16 @@ jsonwrite(fullfile(opt.targetdir, 'dataset_description.json'), opt.gInfo, struct
 % make cell out of file names if necessary
 % ----------------------------------------
 for iSubj = 1:length(files)
-    if ~iscell(files(iSubj).file)
+    if ~isfield(files, 'file')
+        if isfield(files, 'eyefile')
+            files(iSubj).file = cell(1,length(files(iSubj).eyefile));
+            files(iSubj).file(:) = {''};
+        else
+            error('A field named "file" or "eyefile" must be present in the data structure')
+        end
+    end
+
+    if isfield(files, 'file') && ~iscell(files(iSubj).file)
         if isstruct(files(iSubj).file)
             if isfield(files(iSubj).file, 'session')
                 files(iSubj).session  = [ files(iSubj).file.session  ];
@@ -369,7 +378,7 @@ for iSubj = 1:length(files)
             files(iSubj).file = { files(iSubj).file };
         end
     end
-    
+
     % channel location
     if isfield(files(iSubj), 'chanlocs')
         if ~iscell(files(iSubj).chanlocs)
@@ -774,6 +783,220 @@ eventtype  = sIn.eventtype;
 eventindex = sIn.eventindex;
 
 folderOut = fileparts(fileOut);
+
+if isempty(fileIn)
+    return
+end
+
+if ~exist(folderOut)
+    mkdir(folderOut);
+end
+if ~exist(fileOut)
+end
+
+tInfo = opt.tInfo;
+[~,~,ext] = fileparts(fileIn);
+fprintf('Processing file %s\n', fileOut);
+if ~isempty(eventtype) || ~isempty(eventindex) || ~isempty(timeoffset)
+    opt.exportformat = 'eeglab';
+end
+if ~isempty(opt.importfunc)
+    EEG = feval(opt.importfunc, fileIn);
+elseif strcmpi(ext, '.bdf') || strcmpi(ext, '.edf')
+    if isequal(opt.exportformat, 'same')
+        fileIDIn  = fopen(fileIn,'rb','ieee-le');  % see sopen
+        fileIDOut = fopen(fileOut,'wb','ieee-le');  % see sopen
+        if fileIDIn  == -1, error('Cannot read file %s', fileIn); end
+        if fileIDOut == -1, error('Cannot write file %s', fileOut); end
+        data = fread(fileIDIn, Inf);
+        data(9:9+160-1) = ' '; % remove potential identity
+        fwrite(fileIDOut, data);
+        fclose(fileIDIn);
+        fclose(fileIDOut);
+        if strcmpi(ext, '.bdf')
+            tInfo.EEGReference = 'CMS/DRL';
+            tInfo.Manufacturer = 'BIOSEMI';
+        end
+    end
+    EEG = pop_biosig(fileOut);
+elseif strcmpi(ext, '.vhdr')
+    if isequal(opt.exportformat, 'same')
+        rename_brainvision_files(fileIn, fileOut, 'rmf', 'off');
+    end
+    [fpathin, fname, ext] = fileparts(fileIn);
+    EEG = pop_loadbv(fpathin, [fname ext]);
+elseif strcmpi(ext, '.set')
+    EEG = pop_loadset(fileIn);
+elseif strcmpi(ext, '.cnt')
+    EEG = pop_loadcnt(fileIn, 'dataformat', 'auto');
+    datFile = [fileIn(1:end-4) '.dat'];
+    if exist(datFile,'file')
+        EEG = pop_importevent(EEG, 'indices',1:length(EEG.event), 'append','no', 'event', datFile,...
+            'fields',{'DatTrial','DatResp','DatType','DatCorrect','DatLatency'},'skipline',20,'timeunit',NaN,'align',0);
+    end
+elseif strcmpi(ext, '.mff')
+    EEG = pop_mffimport(fileIn,{'code'});
+elseif strcmpi(ext, '.raw')
+    EEG = pop_readegi(fileIn);
+elseif strcmpi(ext, '.eeg')
+    [tmpPath,tmpFileName,~] = fileparts(fileIn);
+    if exist(fullfile(tmpPath, [tmpFileName '.vhdr']), 'file')
+        EEG = pop_loadbv( tmpPath, [tmpFileName '.vhdr'] );
+    else
+        error('.eeg files not from BrainVision are currently not supported')
+    end
+else
+    error('Data format not supported');
+end
+if strcmpi(opt.noevents, 'on')
+    EEG.event = [];
+end
+
+% select data subset
+EEG = eeg_selectsegment(EEG, 'eventtype', eventtype, 'eventindex', eventindex, 'timeoffset', timeoffset );        
+
+% export data if necessary
+if ~isequal(opt.exportformat, 'same')
+    [filePathTmp,fileOutNoExt,~] = fileparts(fileOut);
+    if isequal(opt.exportformat, 'eeglab')
+        pop_saveset(EEG, 'filename', [ fileOutNoExt '.set' ], 'filepath', filePathTmp);
+    else
+        pop_writeeeg(EEG, fullfile(filePathTmp, [ fileOutNoExt '.' opt.exportformat]), 'TYPE',upper(opt.exportformat));
+    end
+end
+
+indExt = find(fileOut == '_');
+fileOutRed = fileOut(1:indExt(end)-1);
+eeg_writeeventsfiles(EEG, fileOutRed, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, 'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse);
+
+% Write channel file information (channels.tsv)
+% Note: Consider using here electrodes_to_tsv.m
+% fid = fopen( [ fileOutRed 'channels.tsv' ], 'w');
+% miscChannels = 0;
+if ~isempty(chanlocs)
+    EEG.chanlocs = chanlocs;
+    if ischar(EEG.chanlocs)
+        EEG.chanlocs = readlocs(EEG.chanlocs);
+    end
+    EEG = eeg_checkchanlocs(EEG);
+    if length(EEG.chanlocs) == EEG.nbchan+1
+        for iChan = 1:length(EEG.chanlocs)
+            EEG.chanlocs(iChan).ref = EEG.chanlocs(end).labels;
+        end
+    elseif length(EEG.chanlocs) ~= EEG.nbchan
+        error(sprintf('Number of channels in channel location inconsistent with data for file %s', fileIn));
+    end
+end
+if ischar(opt.chanlookup) && ~isempty(opt.chanlookup)
+    EEG=pop_chanedit(EEG, 'lookup', opt.chanlookup);
+end
+channelsCount = eeg_writechanfile(EEG, fileOutRed);
+
+% Write electrode file information (electrodes.tsv and coordsystem.json)
+eeg_writeelectrodesfiles(EEG, fileOutRed);
+
+% Write task information (eeg.json) Note: depends on channels
+% requiredChannelTypes: 'EEG', 'EOG', 'ECG', 'EMG', 'MISC'. Other channel
+% types are currently not valid output for eeg.json.
+nonEmptyChannelTypes = fieldnames(channelsCount);
+for i=1:numel(nonEmptyChannelTypes)
+    if strcmp(nonEmptyChannelTypes{i}, 'MISC')
+        tInfo.('MiscChannelCount') = channelsCount.('MISC');
+    else
+        tInfo.([nonEmptyChannelTypes{i} 'ChannelCount']) = channelsCount.(nonEmptyChannelTypes{i});
+    end
+end
+
+if ~isfield(tInfo, 'EEGReference')
+    if ~ischar(EEG.ref) && numel(EEG.ref) > 1 % untested for all cases
+        refChanLocs = EEG.chanlocs(EEG.ref);
+        ref = join({refChanLocs.labels},',');
+        ref = ref{1};
+    else
+        ref = EEG.ref;
+    end
+    tInfo.EEGReference    = ref;
+end
+if EEG.trials == 1
+    tInfo.RecordingType = 'continuous';
+else
+    tInfo.RecordingType = 'epoched';
+    tInfo.EpochLength = EEG.pnts/EEG.srate;
+end
+tInfo.RecordingDuration = EEG.pnts/EEG.srate;
+tInfo.SamplingFrequency = EEG.srate;
+if ~isempty(notes)
+    tInfo.SubjectArtefactDescription = notes;
+end
+%     jsonStr = jsonencode(tInfo);
+%     fid = fopen( [fileOut(1:end-3) 'eeg.json' ], 'w');
+%     fprintf(fid, '%s', jsonStr);
+%     fclose(fid);
+
+tInfoFields = {...
+    'TaskName' 'REQUIRED' '' '';
+    'TaskDescription' 'RECOMMENDED' '' '';
+    'Instructions' 'RECOMMENDED' 'char' '';
+    'CogAtlasID' 'RECOMMENDED' 'char' '';
+    'CogPOID' 'RECOMMENDED' 'char' '';
+    'InstitutionName' 'RECOMMENDED' 'char' '';
+    'InstitutionAddress' 'RECOMMENDED' 'char' '';
+    'InstitutionalDepartmentName' ' RECOMMENDED' 'char' '';
+    'DeviceSerialNumber' 'RECOMMENDED' 'char' '';
+    'SamplingFrequency' 'REQUIRED' '' '';
+    'EEGChannelCount' 'REQUIRED' '' '';
+    'EOGChannelCount' 'REQUIRED' '' 0;
+    'ECGChannelCount' 'REQUIRED' '' 0;
+    'EMGChannelCount' 'REQUIRED' '' 0;
+    'EEGReference' 'REQUIRED' 'char' 'Unknown';
+    'PowerLineFrequency' 'REQUIRED' '' 0;
+    'EEGGround' 'RECOMMENDED ' 'char' '';
+    'HeadCircumference' 'OPTIONAL ' '' 0;
+    'MiscChannelCount' ' OPTIONAL' '' '';
+    'TriggerChannelCount' 'RECOMMENDED' '' ''; % double in Bucanl's fork
+    'EEGPlacementScheme' 'RECOMMENDED' 'char' '';
+    'Manufacturer' 'RECOMMENDED' 'char' '';
+    'ManufacturersModelName' 'OPTIONAL' 'char' '';
+    'CapManufacturer' 'RECOMMENDED' 'char' 'Unknown';
+    'CapManufacturersModelName' 'OPTIONAL' 'char' '';
+    'HardwareFilters' 'OPTIONAL' 'struct' 'n/a';
+    'SoftwareFilters' 'REQUIRED' 'struct' 'n/a';
+    'RecordingDuration' 'RECOMMENDED' '' 'n/a';
+    'RecordingType' 'RECOMMENDED' 'char' '';
+    'EpochLength' 'RECOMMENDED' '' 'n/a';
+    'SoftwareVersions' 'RECOMMENDED' 'char' '';
+    'SubjectArtefactDescription' 'OPTIONAL' 'char' '' };
+tInfo = checkfields(tInfo, tInfoFields, 'tInfo');
+
+jsonwrite([fileOutRed '_eeg.json' ], tInfo,struct('indent','  '));
+
+% write channel information
+%     cInfo.name.LongName = 'Channel name';
+%     cInfo.name.Description = 'Channel name';
+%     cInfo.type.LongName = 'Channel type';
+%     cInfo.type.Description = 'Channel type';
+%     cInfo.units.LongName = 'Channel unit';
+%     cInfo.units.Description = 'Channel unit';
+%     jsonStr = jsonencode(cInfo);
+%     fid = fopen( [fileOut(1:end-3) 'channels.json' ], 'w');
+%     fprintf(fid, '%s', jsonStr);
+%     fclose(fid);
+
+
+%--------------------------------------------------------------------------
+%--------------------------------------------------------------------------
+function copy_eye_data_bids(sIn, fileOut, opt)
+
+fileIn   = sIn.eyefile;
+notes    = sIn.notes;
+timeoffset = sIn.timeoffset;
+eventtype  = sIn.eventtype;
+eventindex = sIn.eventindex;
+folderOut = fileparts(fileOut);
+
+if isempty(fileIn)
+    return
+end
 
 if ~exist(folderOut)
     mkdir(folderOut);
