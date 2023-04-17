@@ -18,6 +18,10 @@ if isempty(beh)
     return;
 end
 
+if ~contains(fileOut, '_beh.txt')
+    fileOut = [ fileOut '_beh.txt'];
+end
+
 folder = fileparts(fileOut);
 if ~exist(folder)
     mkdir(folder);
