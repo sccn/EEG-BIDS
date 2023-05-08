@@ -184,6 +184,9 @@
 %  'chanlocs'  - [file] channel location file (must have the same number
 %                of channel as the data.
 %
+%  'elecexport' - ['on'|'off'|'auto'] export electrode file. Default is
+%                'auto'.
+%
 %  'chanlookup' - [file] look up channel locations based on file. Default
 %                 not to look up channel location.
 %
@@ -286,6 +289,7 @@ opt = finputcheck(varargin, {
     'anattype'  ''        {}    'T1w';
     'chanlocs'  ''        {}    '';
     'chanlookup' 'string' {}    '';
+    'elecexport' 'string'  {'on' 'off' 'auto'}    'auto';
     'interactive' 'string'  {'on' 'off'}    'off';
     'defaced'   'string'  {'on' 'off'}    'on';
     'createids' 'string'  {'on' 'off'}    'off';
@@ -893,7 +897,7 @@ end
 channelsCount = eeg_writechanfile(EEG, fileOutRed);
 
 % Write electrode file information (electrodes.tsv and coordsystem.json)
-eeg_writeelectrodesfiles(EEG, fileOutRed);
+eeg_writeelectrodesfiles(EEG, fileOutRed, 'export', opt.elecexport);
 
 % Write task information (eeg.json) Note: depends on channels
 % requiredChannelTypes: 'EEG', 'EOG', 'ECG', 'EMG', 'MISC'. Other channel

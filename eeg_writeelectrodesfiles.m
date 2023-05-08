@@ -1,28 +1,36 @@
 % eeg_writeelectrodesfiles - write electrodes.tsv and coordsystem.json from single EEG dataset
 %
 % Usage:
-%    eeg_writeelectrodesfiles(EEG, fileOut)
-%
+%    eeg_writeelectrodesfiles(EEG, fileOut, flagExport)
 %
 % Inputs:
 %  'EEG'       - [struct] the EEG structure
-%
 %  'fileOut'   - [string] filepath of the desired output location with file basename
 %                e.g. ~/BIDS_EXPORT/sub-01/ses-01/eeg/sub-01_ses-01_task-GoNogo
 %
+% Optional inputs:
+%  'Export'    - ['on'|'off'|'auto']
+%
 % Authors: Dung Truong, Arnaud Delorme, 2022
-function eeg_writeelectrodesfiles(EEG, fileOut)
+
+function eeg_writeelectrodesfiles(EEG, fileOut, varargin)
+
+if nargin > 2
+    flagExport = varargin{2};
+else
+    flagExport = 'auto';
+end
 isTemplate = false;
-if isfield(EEG.chaninfo, 'filename')
+if isfield(EEG.chaninfo, 'filename') && isequal(flagExport, 'auto')
     if ~isempty(strfind(EEG.chaninfo.filename, 'standard-10-5-cap385.elp')) || ...
-      ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005.elc'))||...
-      ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005.ced'))
-      isTemplate = true;
-      disp('Template channel location detected, not exporting electrodes.tsv file');
+            ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005.elc'))||...
+            ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005.ced'))
+        flagExport = 'off';
+        disp('Template channel location detected, not exporting electrodes.tsv file');
     end
 end
 
-if ~isTemplate && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && any(cellfun(@(x)~isempty(x), { EEG.chanlocs.X }))
+if isequal(flagExport, 'on') && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && any(cellfun(@(x)~isempty(x), { EEG.chanlocs.X }))
     fid = fopen( [ fileOut '_electrodes.tsv' ], 'w');
     fprintf(fid, 'name\tx\ty\tz\n');
     
