@@ -4,13 +4,14 @@
 
 data = [];
 p =fileparts(which('eeglab'));
-data(end+1).eyefile  = { 'hbn_files/NDARAA075AMK_Video1_Samples.txt' };
+data(end+1).file  = { 'hbn_files/Video1.set' };
+data(end  ).eyefile  = { 'hbn_files/NDARAA075AMK_Video1_Samples.txt' };
 
 %% participant information for participants.tsv file
 % -------------------------------------------------
 pInfo = { 'participantID' 'gender' 'age';
           'NDARAA075AMK' 'M' 22 };
-      
+
 %% Code Files used to preprocess and import to BIDS
 % -----------------------------------------------------|
 codefiles = { fullfile(pwd, mfilename) };
@@ -49,7 +50,7 @@ pInfoDesc.age.Units       = 'years';
 
 %% Content for README file
 % -----------------------
-README = [ 'Test' ];
+README = [ 'Test text' ];
 
 %% Content for CHANGES file
 % ------------------------
@@ -64,16 +65,22 @@ tInfo.InstitutionalDepartmentName = 'Institute of Neural Computation';
 tInfo.PowerLineFrequency = 60;
 tInfo.ManufacturersModelName = 'Snapmaster';
 
+eInfo = { 
+    'onset'       'latency';
+    'sample'      'latency';
+    'value'       'type';
+    'description' 'description' };
+
 % call to the export function
 % ---------------------------
 targetFolder =  'BIDS_eye';
 bids_export(data, ...
     'targetdir', targetFolder, ...
-    'taskName', 'HBN-eye',...
+    'taskName', 'HBN-data',...
     'gInfo', generalInfo, ...
     'pInfo', pInfo, ...
     'pInfoDesc', pInfoDesc, ...
-    'eInfo', {}, ...
+    'eInfo', eInfo, ...
     'README', README, ...
     'CHANGES', CHANGES, ...
     'codefiles', codefiles, ...

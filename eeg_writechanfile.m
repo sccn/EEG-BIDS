@@ -17,11 +17,16 @@
 %   channelsCount - [struct] count of different types of channels
 %
 % Authors: Dung Truong, Arnaud Delorme, 2022
+
 function channelsCount = eeg_writechanfile(EEG, fileOut)
+
 fid = fopen( [ fileOut '_channels.tsv' ], 'w');
 if isempty(EEG.chanlocs)
     fprintf(fid, 'name\ttype\tunits\n');
-    for iChan = 1:EEG.nbchan, fprintf(fid, 'E%d\tEEG\tmicroV\n', iChan); end
+    for iChan = 1:EEG.nbchan
+        fprintf(fid, 'E%d\tEEG\tmicroV\n', iChan); 
+    end
+    channelsCount = struct([]);
 else
     fprintf(fid, 'name\ttype\tunits\n');
     acceptedChannelTypes = { 'AUDIO' 'EEG' 'EOG' 'ECG' 'EMG' 'EYEGAZE' 'GSR' 'HEOG' 'MISC' 'PUPIL' 'REF' 'RESP' 'SYSCLOCK' 'TEMP' 'TRIG' 'VEOG' };

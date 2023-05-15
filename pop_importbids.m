@@ -359,9 +359,12 @@ for iSubject = opt.subjects
                             if isempty(ind)
                                 ind = strmatch( '.gz', cellfun(@(x)x(end-2:end), allFiles, 'uniformoutput', false) ); % FIF
                                 if isempty(ind) && ~isempty(allFiles)
-                                    ind = strmatch( '.mefd', cellfun(@(x)x(end-4:end), allFiles, 'uniformoutput', false) ); % MEFD
+                                    ind = strmatch( '.ds', cellfun(@(x)x(end-2:end), allFiles, 'uniformoutput', false) ); % DS
                                     if isempty(ind) && ~isempty(allFiles)
-                                        fprintf(2, 'No EEG file found for subject %s\n', bids.participants{iSubject,1});
+                                        ind = strmatch( '.mefd', cellfun(@(x)x(end-4:end), allFiles, 'uniformoutput', false) ); % MEFD
+                                        if isempty(ind) && ~isempty(allFiles)
+                                            fprintf(2, 'No EEG file found for subject %s\n', bids.participants{iSubject,1});
+                                        end
                                     end
                                 end
                             end
@@ -743,9 +746,11 @@ function outFile = searchparent(folder, fileName)
 % only get exact match and filter out hidden file
 outFile = '';
 parent = folder;
-while ~any(arrayfun(@(x) strcmp(lower(x.name),'dataset_description.json'), dir(parent))) && isempty(outFile) % dataset_description indicates root BIDS folder
+count = 4;
+while ~any(arrayfun(@(x) strcmp(lower(x.name),'dataset_description.json'), dir(parent))) && isempty(outFile) && count > 0 % dataset_description indicates root BIDS folder
     outFile = filterHiddenFile(folder, dir(fullfile(parent, fileName)));
     parent = fileparts(parent);
+    count = count-1;
 end
 if isempty(outFile)
     outFile = filterHiddenFile(parent, dir(fullfile(parent, fileName)));
