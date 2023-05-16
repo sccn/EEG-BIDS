@@ -75,6 +75,7 @@ end
 % coordinate transform factor
 % ---------------------------
 function factor = checkunit(chaninfo, field)
+    factor = 1;
     if isfield(chaninfo.bids, field) && isfield(chaninfo, 'unit')
         if isequal(chaninfo.bids.(field), 'mm') && isequal(chaninfo.unit, 'cm')
             factor = 1/10;
