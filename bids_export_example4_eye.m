@@ -6,11 +6,14 @@ data = [];
 p =fileparts(which('eeglab'));
 data(end+1).file  = { 'hbn_files/Video1.set' };
 data(end  ).eyefile  = { 'hbn_files/NDARAA075AMK_Video1_Samples.txt' };
+data(end+1).file  = { 'hbn_files/SurroundSupp_Block1.set' };
+data(end  ).eyefile  = { 'hbn_files/NDARAA773LUW_SurrSupp_Block1_ori.tsv' };
 
 %% participant information for participants.tsv file
 % -------------------------------------------------
 pInfo = { 'participantID' 'gender' 'age';
-          'NDARAA075AMK' 'M' 22 };
+          'NDARAA075AMK' 'M' 22;
+          'NDARAA773LUW' 'M' 22 };
 
 %% Code Files used to preprocess and import to BIDS
 % -----------------------------------------------------|

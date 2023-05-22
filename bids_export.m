@@ -1051,7 +1051,29 @@ if strcmpi(ext, '.txt')
     EEG.chanlocs(1).labels = cols{1,1};
     EEG.data = [ [1:EEG.pnts]; EEG.data];
 elseif strcmpi(ext, '.tsv')
-    error('Not implemented yet')
+    EEG = pop_read_gazepoint(fileIn);
+
+    % columns to match 
+    cols = eyeTrackingColumns(:,1);
+    cols{1,2} = 'TIME';  
+    cols{2,2} = 'LPOGX'; % LEYEX ?
+    cols{2,2} = 'LPOGX';
+    cols{3,2} = 'LPOGY';
+    cols{4,2} = 'LPUPILD';
+    cols{5,2} = 'RPOGX';
+    cols{6,2} = 'RPOGY';
+    cols{7,2} = 'RPUPILD';
+
+    colNames = { EEG.chanlocs.labels };
+    for iCol = size(cols,1):-1:1
+        ind = strmatch(cols{iCol,2}, colNames, 'exact');
+        if ~isempty(ind)
+            EEG.chanlocs(2:end+1) = EEG.chanlocs;
+            EEG.chanlocs(1).labels = cols{iCol,1};
+            EEG.data = [ EEG.data(ind,:); EEG.data];
+        end
+    end
+
 else
     error('Data format not supported');
 end
