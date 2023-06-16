@@ -498,10 +498,10 @@ for iSubject = opt.subjects
                         case '.ds'
                             EEG = pop_fileio(eegFileRaw, 'makecontinuous', 'on'); % fif folder
                         case '.mefd'
-                            if ~exist('pop_matmef', 'file')
-                                error('MEF plugin not present, please install the MATMEF plugin first')
+                            if ~exist('pop_MEF3', 'file')
+                                error('MEF plugin not present, please install the MEF3 plugin first')
                             end
-                            EEG = pop_matmef(eegFileRaw); % fif folder
+                            EEG = pop_MEF3(eegFileRaw); % MEF folder
                         otherwise
                             error('No EEG data found for subject/session %s', subjectFolder{iFold});
                     end
