@@ -420,9 +420,9 @@ for iSubject = opt.subjects
                     tmpEegFileRaw = eegFileRaw(ind(1)+5:end);
                     indUnder = find(tmpEegFileRaw == '_');
                     iRun = str2double(tmpEegFileRaw(1:indUnder(1)-1));
-                    if isnan(iRun) || iRun == 0
+                    if isnan(iRun)
                         iRun = str2double(tmpEegFileRaw(1:indUnder(1)-2)); % rare case run 5H in ds003190/sub-01/ses-01/eeg/sub-01_ses-01_task-ctos_run-5H_eeg.eeg
-                        if isnan(iRun) || iRun == 0
+                        if isnan(iRun)
                             error('Problem converting run information'); 
                         end
                     end
