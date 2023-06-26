@@ -799,7 +799,7 @@ end
 
 tInfo = opt.tInfo;
 [~,~,ext] = fileparts(fileIn);
-fileOut = [fileBase '_eeg.' ext];
+fileOut = [fileBase '_eeg' ext];
 fprintf('Processing file %s\n', fileOut);
 if ~isempty(eventtype) || ~isempty(eventindex) || ~isempty(timeoffset)
     opt.exportformat = 'eeglab';
