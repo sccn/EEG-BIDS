@@ -344,6 +344,7 @@ gInfoFields = { 'ReferencesAndLinks' 'required' 'cell' { 'n/a' };
     'Acknowledgements'   'optional' 'char' '';
     'HowToAcknowledge'   'optional' 'char' '';
     'Funding'            'optional' 'cell' { 'n/a' };
+    'GeneratedBy'        'required' 'struct' struct('Name', 'bids-matlab-tools', 'Version', bids_matlab_tools_ver);
     'DatasetDOI'         'optional' 'char' { 'n/a' }};
 
 if ~isfield(opt.gInfo, 'Name'), opt.gInfo(1).Name = opt.Name; end
@@ -1136,7 +1137,7 @@ for iRow = 1:size(f,1)
     end
     if isempty(s) || ~isfield(s, f{iRow,1})
         if strcmpi(f{iRow,2}, 'required') % required or optional
-            if ~iscell(f{iRow,4})
+            if ~iscell(f{iRow,4}) && ~isstruct(f{iRow,4})
                 fprintf('Warning: "%s" set to %s\n', f{iRow,1}, num2str(f{iRow,4}));
             end
             s = setfield(s, {1}, f{iRow,1}, f{iRow,4});

@@ -11,7 +11,7 @@
 
 function vers = eegplugin_bids(fig, trystrs, catchstrs)
 
-    vers = '7.6';
+    vers = bids_matlab_tools_ver;
     if nargin < 3
         error('eegplugin_bids requires 3 arguments');
     end
