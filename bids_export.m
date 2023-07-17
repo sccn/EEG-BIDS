@@ -737,7 +737,11 @@ for iSubj = 1:length(files)
             
             for iRun = 1:length(files(iSubj).run)
                 structOut = getElement(files(iSubj), iRun);
-                fileStr   = [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' files(iSubj).run{iRun} ];
+                if isnan(files(iSubj).run{iRun})
+                    fileStr   = [ subjectStr  '_task-' char(files(iSubj).task(iRun)) ];
+                else
+                    fileStr   = [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' files(iSubj).run{iRun} ];
+                end
                 copy_data_to_bids( structOut, subjectStr, fileStr, opt);
             end
             
@@ -756,7 +760,11 @@ for iSubj = 1:length(files)
                 runindx = strmatch(uniqueSess{iSess}, files(iSubj).session, 'exact');
                 for iSet = runindx(:)'
                     structOut = getElement(files(iSubj), iSet);
-                    fileStr      = [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} ];
+                    if isnan( files(iSubj).run{iSet} )
+                        fileStr      = [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) ];
+                    else
+                        fileStr      = [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} ];
+                    end
                     copy_data_to_bids( structOut, subjectStr, fileStr, opt);
                 end
             end
