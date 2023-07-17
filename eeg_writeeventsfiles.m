@@ -58,9 +58,10 @@
 % Authors: Dung Truong, Arnaud Delorme, 2022
 function eeg_writeeventsfiles(EEG, fileOut, varargin)
 opt = finputcheck(varargin, {
-    'stimuli'   'cell'    {}    {};
-    'eInfo'     'cell'    {}    {};
-    'eInfoDesc' 'struct'  {}    struct([]);
+    'stimuli'    'cell'    {}    {};
+    'eInfo'      'cell'    {}    {};
+    'omitsample' 'string'  {'on' 'off'}    {'off'};
+    'eInfoDesc'  'struct'  {}    struct([]);
     'renametype' 'cell'   {}    {};
     'trialtype'  'cell'   {}    {};
     'checkresponse' 'string'   {}    '';
@@ -128,14 +129,23 @@ if ~isempty(EEG.event)
     remainingInd = setdiff([1:size(opt.eInfo,1)], newOrder);
     newOrder = [ newOrder remainingInd];
     opt.eInfo = opt.eInfo(newOrder,:);
-    fprintf(fid,'onset%s\n', sprintf('\t%s', opt.eInfo{2:end,1}));
     
     % scan events
     for iEvent = 1:length(EEG.event)
         
         str = {};
         for iField = 1:size(opt.eInfo,1)
-            
+            if iEvent == 1
+                if strcmpi(opt.omitsample, 'off') || ~isequal(opt.eInfo{iField,1}, 'sample')
+                    if iField == size(opt.eInfo,1)
+                        fprintf(fid, '%s\n', opt.eInfo{iField,1});
+                    else
+                        fprintf(fid, '%s\t', opt.eInfo{iField,1});
+                    end
+                end
+            end
+
+
             tmpField = opt.eInfo{iField,2};
             if strcmpi(tmpField, 'n/a')
                 str{end+1} = tmpField;
@@ -158,16 +168,18 @@ if ~isempty(EEG.event)
                         str{end+1} = duration;
                         
                     case 'sample'
-                        if isfield(EEG.event, tmpField)
-                            sample = num2str(EEG.event(iEvent).(tmpField)-1);
-                        else
-                            sample = 'n/a';
+                        if ~strcmpi(opt.omitsample, 'on')
+                            if isfield(EEG.event, tmpField)
+                                sample = num2str(EEG.event(iEvent).(tmpField)-1);
+                            else
+                                sample = 'n/a';
+                            end
+                            if isempty(sample) || strcmpi(sample, 'NaN')
+                                sample = 'n/a';
+                            end
+                            str{end+1} = sample;
                         end
-                        if isempty(sample) || strcmpi(sample, 'NaN')
-                            sample = 'n/a';
-                        end
-                        str{end+1} = sample;
-                        
+
                     case 'trial_type'
                         % trial type (which is the experimental condition - not the same as EEGLAB)
                         if isfield(EEG.event(iEvent), tmpField) && ~isempty(EEG.event(iEvent).(tmpField))

@@ -772,7 +772,6 @@ end
 function copy_data_to_bids( structOut, subjectStr, fileStr, opt)
 
 copy_data_bids_eeg( structOut, subjectStr, fileStr, opt);
-copy_data_bids_eye( structOut, subjectStr, fileStr, opt);
 %eeg_writebehfiles(structOut.beh, subjectStr, fileStr);
 
 
@@ -870,9 +869,14 @@ if ~isequal(opt.exportformat, 'same')
     end
 end
 
+% export eye-tracking data
+eyeWritenStatus = save_bids_eye_tracking(sIn, fileBase, EEG, opt);
+
+% write events
 indExt = find(fileOut == '_');
 fileOutRed = fileOut(1:indExt(end)-1);
-eeg_writeeventsfiles(EEG, fileOutRed, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, 'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse);
+eeg_writeeventsfiles(EEG, fileOutRed, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, ...
+    'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse, 'omitsample', fastif(eyeWritenStatus, 'on', 'off'));
 
 % Write channel file information (channels.tsv)
 % Note: Consider using here electrodes_to_tsv.m
@@ -990,22 +994,23 @@ jsonwrite([fileOutRed '_eeg.json' ], tInfo,struct('indent','  '));
 
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
-function copy_data_bids_eye(sIn, subjectStr, fileStr, opt)
+function eyeWritenStatus = save_bids_eye_tracking(sIn, fileBase, EEG, opt)
 
-fileBase = fullfile(opt.targetdir, subjectStr, 'eye', fileStr);
+eyeWritenStatus = false;
 if ~isfield(sIn, 'eyefile')
-    return;
+    return
 end
 fileIn   = sIn.eyefile;
-notes    = sIn.notes;
 timeoffset = sIn.timeoffset;
 eventtype  = sIn.eventtype;
 eventindex = sIn.eventindex;
+
 folderOut = fileparts(fileBase);
 
 if isempty(fileIn)
     return
 end
+eyeWritenStatus = true;
 
 if ~exist(folderOut)
     mkdir(folderOut);
@@ -1023,10 +1028,10 @@ eyeTrackingColumns = {...
 
 tInfo = opt.tInfoeye;
 [~,~,ext] = fileparts(fileIn);
-fileOut = [fileBase '_eye.txt' ];
+fileOut = [fileBase '_eyetrack.tsv' ];
 fprintf('Processing file %s\n', fileOut);
 if strcmpi(ext, '.txt')
-    EEG = pop_read_smi(fileIn, []);
+    EYE = pop_read_smi(fileIn, []);
 
     % columns to match 
     cols = eyeTrackingColumns(:,1);
@@ -1037,22 +1042,22 @@ if strcmpi(ext, '.txt')
     cols{6,2} = 'R EPOS Y';
     cols{7,2} = 'R Mapped Diameter [mm]';
 
-    colNames = { EEG.chanlocs.labels };
+    colNames = { EYE.chanlocs.labels };
     for iCol = size(cols,1):-1:1
         ind = strmatch(cols{iCol,2}, colNames, 'exact');
         if ~isempty(ind)
-            EEG.chanlocs(2:end+1) = EEG.chanlocs;
-            EEG.chanlocs(1).labels = cols{iCol,1};
-            EEG.data = [ EEG.data(ind,:); EEG.data];
+            EYE.chanlocs(2:end+1) = EYE.chanlocs;
+            EYE.chanlocs(1).labels = cols{iCol,1};
+            EYE.data = [ EYE.data(ind,:); EYE.data];
         end
     end
                 
     % adding time stamp in samples
-    EEG.chanlocs(2:end+1) = EEG.chanlocs;
-    EEG.chanlocs(1).labels = cols{1,1};
-    EEG.data = [ [1:EEG.pnts]; EEG.data];
+    EYE.chanlocs(2:end+1) = EYE.chanlocs;
+    EYE.chanlocs(1).labels = cols{1,1};
+    EYE.data = [ [1:EYE.pnts]; EYE.data];
 elseif strcmpi(ext, '.tsv')
-    EEG = pop_read_gazepoint(fileIn);
+    EYE = pop_read_gazepoint(fileIn);
 
     % columns to match 
     cols = eyeTrackingColumns(:,1);
@@ -1065,13 +1070,13 @@ elseif strcmpi(ext, '.tsv')
     cols{6,2} = 'RPOGY';
     cols{7,2} = 'RPUPILD';
 
-    colNames = { EEG.chanlocs.labels };
+    colNames = { EYE.chanlocs.labels };
     for iCol = size(cols,1):-1:1
         ind = strmatch(cols{iCol,2}, colNames, 'exact');
         if ~isempty(ind)
-            EEG.chanlocs(2:end+1) = EEG.chanlocs;
-            EEG.chanlocs(1).labels = cols{iCol,1};
-            EEG.data = [ EEG.data(ind,:); EEG.data];
+            EYE.chanlocs(2:end+1) = EYE.chanlocs;
+            EYE.chanlocs(1).labels = cols{iCol,1};
+            EYE.data = [ EYE.data(ind,:); EYE.data];
         end
     end
 
@@ -1079,16 +1084,18 @@ else
     error('Data format not supported');
 end
 if strcmpi(opt.noevents, 'on')
-    EEG.event = [];
+    EYE.event = [];
 end
 
 % select data subset
-EEG = eeg_selectsegment(EEG, 'eventtype', eventtype, 'eventindex', eventindex, 'timeoffset', timeoffset );        
+EYE = eeg_selectsegment(EYE, 'eventtype', eventtype, 'eventindex', eventindex, 'timeoffset', timeoffset );        
+
+% EYE = align_eye_to_eeg(EYE, EEG);
 
 % export the data
-tmpTable = array2table(EEG.data', 'VariableNames', { EEG.chanlocs.labels });
-writetable(tmpTable, fileOut);
-eeg_writeeventsfiles(EEG, fileBase, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, 'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse);
+tmpTable = array2table(EYE.data', 'VariableNames', { EYE.chanlocs.labels });
+writetable(tmpTable, fileOut, 'FileType', 'text', 'delimiter', '\t');
+%eeg_writeeventsfiles(EEG, fileBase, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, 'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse);
 
 tInfoFields = {...
     'SamplingFrequency'	        'REQUIRED'	''	    'n/a' 'Sampling frequency (in Hz) of all the data in the recording, regardless of their type (for example, 2400).';
@@ -1100,10 +1107,10 @@ tInfoFields = {...
     'ScreenDistance'	        'REQUIRED'	''  	'n/a' 'Distance between the participant''s eye and the screen. If no screen was used, use n/a.'
     };
 
-tInfo(1).SamplingFrequency = EEG.srate;
+tInfo(1).SamplingFrequency = EYE.srate;
 tInfo = checkfields(tInfo, tInfoFields, 'tInfo');
 
-jsonwrite([fileBase '_eye.json' ], tInfo, struct('indent','  '));
+jsonwrite([fileBase '_eyetrack.json' ], tInfo, struct('indent','  '));
 
 % write channel information
 %     cInfo.name.LongName = 'Channel name';
@@ -1116,9 +1123,6 @@ jsonwrite([fileBase '_eye.json' ], tInfo, struct('indent','  '));
 %     fid = fopen( [fileOut(1:end-3) 'channels.json' ], 'w');
 %     fprintf(fid, '%s', jsonStr);
 %     fclose(fid);
-
-
-
 
 
 % check the fields for the structures
