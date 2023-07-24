@@ -1096,9 +1096,14 @@ if strcmpi(opt.noevents, 'on')
 end
 
 % select data subset
-EYE = eeg_selectsegment(EYE, 'eventtype', eventtype, 'eventindex', eventindex, 'timeoffset', timeoffset );        
+%EYE = eeg_selectsegment(EYE, 'eventtype', eventtype, 'eventindex', eventindex, 'timeoffset', timeoffset );        
 
-% EYE = align_eye_to_eeg(EYE, EEG);
+for iEvent = 1:length(EYE.event)
+    if ~isempty(EYE.event(iEvent).description)
+        EYE.event(iEvent).type = deblank(EYE.event(iEvent).description);
+    end
+end
+EYE = eeg_mergechannels(EEG, EYE);
 
 % export the data
 tmpTable = array2table(EYE.data', 'VariableNames', { EYE.chanlocs.labels });
