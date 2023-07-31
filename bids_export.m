@@ -1103,6 +1103,7 @@ for iEvent = 1:length(EYE.event)
         EYE.event(iEvent).type = deblank(EYE.event(iEvent).description);
     end
 end
+EYE = eeg_checkset(EYE);
 EYE = eeg_mergechannels(EEG, EYE);
 
 % export the data
