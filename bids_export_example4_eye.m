@@ -2,6 +2,8 @@
 % 
 % Arnaud Delorme - May 2022
 
+clear
+cd('/System/Volumes/Data/data/matlab/bids_eyetracking')
 data = [];
 p =fileparts(which('eeglab'));
 data(end+1).file     = { 'hbn_files/Video1.set' };
