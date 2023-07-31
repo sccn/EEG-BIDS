@@ -46,7 +46,12 @@
 % ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 % THE POSSIBILITY OF SUCH DAMAGE.
 
-function [EEG, EYE] = eeg_mergechannels(EEG1, EEG2, varargin)
+function [MERGEDEEG, TMPEEG2] = eeg_mergechannels(EEG1, EEG2, varargin)
+
+if nargin < 2
+    help eeg_mergechannels
+    return
+end
 
 g = finputcheck( varargin, { ...
     'eventfield1'   'string'    {}   '';
@@ -54,6 +59,10 @@ g = finputcheck( varargin, { ...
         } );
 if ischar(g)
     error(g)
+end
+
+if EEG1.trials > 1 || EEG2.trials > 1
+    error('The eeg_mergechannels can only process continuous data')
 end
 
 % find matching event types
@@ -98,9 +107,9 @@ end
 
 % search for common events and count them
 [commonEvents,ind1,ind2] = intersect(evenType1, evenType2);
-if length(evenType1) - length(setdiff(evenType1, commonEvents)) > length(matchingEvents1)
+if length(evenType1) - length(removeevents(evenType1, commonEvents)) > length(matchingEvents1)
     fprintf(2, 'Some common events were missed, check event structures\n');
-elseif length(evenType2) - length(setdiff(evenType2, commonEvents)) > length(matchingEvents2)
+elseif length(evenType2) - length(removeevents(evenType2, commonEvents)) > length(matchingEvents2)
     fprintf(2, 'Some common events were missed, check event structures\n');
 end
 
@@ -115,25 +124,16 @@ fprintf('Matching events structure 2 are %s -> {%s}\n', int2str(matchingEvents2)
 
 % first change sampling rate of second input
 
-EEG2 = pop_resample(EEG2, EEG1.srate);
-
 latency1 = [EEG1.event(matchingEvents1).latency];
 latency2 = [EEG2.event(matchingEvents2).latency];
 
-latency1nooffset = latency1-latency1(1);
-latency2nooffset = latency2-latency2(1);
-ratio = (latency2nooffset+1)/(latency1nooffset+1);
+ratio = EEG2.srate/EEG1.srate;
 
-initcond = [ratio 0]; % srate_ratio then offset
-initcond = [ratio latency1(2)-latency1(1)]; % srate_ratio then offset
+initcond = [ratio latency2(1)-latency1(1)*ratio]; % srate_ratio then offset
 func = @(x)mean(abs(x(1)*latency1-latency2+x(2)));
-newfactor = fminsearch(@(x)func(x), initcond, optimset('MaxIter',10000));
 
 try
-%    newfactor = fminsearch('eventalign',initcond,[],latency1-latency1(1), latency2-latency2(1), 'mean', optimset('MaxIter',10000));
-    % newfactor = fminsearch(@(x)eventalign(x, latency1-latency1(1), latency2-latency2(1), 'mean'),initcond, optimset('MaxIter',10000));
-    % newfactor = fminsearch(@(x)eventalign(x, latency1, latency2, 'mean'),initcond, optimset('MaxIter',10000));
-    
+    newfactor = fminsearch(@(x)func(x), initcond, optimset('MaxIter',10000));
  catch
     error('Missing function fminsearch.m - Octave users, run "pkg install -forge optim" to install missing package and try again');
 end
@@ -142,22 +142,71 @@ end
 fprintf('Ratio of sampling rate is %1.5f (%1.0f vs %1.0f) optimized to %1.5f\n', EEG2.srate/EEG1.srate, EEG1.srate, EEG2.srate, newfactor(1))
 fprintf('Event offset is %1.1f samples or %1.1f seconds\n', newfactor(2), newfactor(2)/EEG2.srate)
 fprintf('Event offset (compare row 1 and 2): ');
-latency2corrected = latency1*newfactor(1) + newfactor(2);
-latency2corrected = latency1*newfactor(1) + newfactor(2);
+
+
+latency1corrected = (latency2 - newfactor(2))/newfactor(1);
 for iEvent = 1:min(10, length(latency1))
-    fprintf('%8s                   ', sprintf('%1.1f', latency2(iEvent)));
+    fprintf('%8s                   ', sprintf('%1.1f', latency1(iEvent)));
 end
 fprintf('\n                                    ');
 for iEvent = 1:min(10, length(latency2))
-    fprintf('%8s (off by %2d ms)    ', sprintf('%1.1f', latency2corrected(iEvent)), round(abs(latency2corrected(iEvent)-latency2(iEvent))));
+    fprintf('%8s (off by %2d ms)    ', sprintf('%1.1f', latency1corrected(iEvent)), round(abs(latency1corrected(iEvent)-latency1(iEvent))));
 end
 fprintf('\n');
 
+% modify EEG2 to match EEG1
+newsrate = round(100*EEG2.srate/newfactor(1))/100;
+fprintf('Resampling second dataset to %1.2f (to best match first dataset %1.1% sampling rate\n', newsrate, EEG1.srate)
+TMPEEG2 = pop_resample(EEG2, newsrate);
 
+% shift data
+originalOffset = round(newfactor(2)/newfactor(1));
+fprintf('Shift origin of second dataset by %d samples to match first dataset\n', originalOffset)
+if originalOffset > 0
+    TMPEEG2.data(:,1:originalOffset) = [];
+elseif originalOffset < 0
+    TMPEEG2.data = [ zeros(TMPEEG2.nbchan, -originalOffset) TMPEEG2.data ];
+end
+for iEvent = 1:length(TMPEEG2.event)
+    TMPEEG2.event(iEvent).latency = TMPEEG2.event(iEvent).latency - originalOffset;
+end
 
+if size(TMPEEG2.data,2) < size(EEG1.data,2)
+    fprintf('Padding second dataset with %d samples so it matches the length of the first one\n', size(EEG1.data,2)-size(TMPEEG2.data,2))
+    TMPEEG2.data(:,end+1:size(EEG1.data,2)) = 0;
+elseif size(TMPEEG2.data,2) > size(EEG1.data,2)
+    fprintf('Removing second dataset %d trailing samples so it matches the length of the first one\n', size(EEG1.data,2)-size(TMPEEG2.data,2))
+    TMPEEG2.data(:,size(EEG1.data,2)+1:end) = [];
+end
 
+% merge datasets
+MERGEDEEG = EEG1;
+TMPEEG2.event(matchingEvents2) = [];
+MERGEDEEG.data(end+1:end+TMPEEG2.nbchan,:) = TMPEEG2.data;
 
+fields = fieldnames(TMPEEG2.chanlocs);
+inds = length(MERGEDEEG.chanlocs)+1:length(MERGEDEEG.chanlocs)+1+TMPEEG2.nbchan-1;
+if ~isempty(TMPEEG2.chanlocs)
+    for iField = 1:length(fields)
+        [MERGEDEEG.chanlocs(inds).(fields{iField})] = deal(TMPEEG2.chanlocs.(fields{iField}));
+    end
+elseif ~isempty(EEG1.chanlocs)
+    MERGEDEEG.chanlocs(end+length(TMPEEG2.chanlocs)).labels = '';
+end
 
-adsf
+fields = fieldnames(TMPEEG2.event);
+inds = length(MERGEDEEG.event)+1:length(MERGEDEEG.event)+1+length(TMPEEG2.event)-1;
+if ~isempty(TMPEEG2.event)
+    for iField = 1:length(fields)
+        [MERGEDEEG.event(inds).(fields{iField})] = deal(TMPEEG2.event.(fields{iField}));
+    end
+end
+MERGEDEEG = eeg_checkset(MERGEDEEG, 'eventconsistency');
 
+% remove event types from list
+function allevents = removeevents(allevents, rmlist)
 
+for iEvent = 1:length(rmlist)
+    inds = strmatch(allevents, rmlist{iEvent}, 'exact');
+    allevents(inds) = [];
+end
