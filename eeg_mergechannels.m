@@ -113,6 +113,51 @@ fprintf('Matching events structure 2 are %s -> {%s}\n', int2str(matchingEvents2)
 % find matching fields (assuming correct orders)
 % eventstruct = importevent(EEG1.event, EEG2.event, EEG1.srate)
 
-% sdafdsa
+% first change sampling rate of second input
+
+EEG2 = pop_resample(EEG2, EEG1.srate);
+
+latency1 = [EEG1.event(matchingEvents1).latency];
+latency2 = [EEG2.event(matchingEvents2).latency];
+
+latency1nooffset = latency1-latency1(1);
+latency2nooffset = latency2-latency2(1);
+ratio = (latency2nooffset+1)/(latency1nooffset+1);
+
+initcond = [ratio 0]; % srate_ratio then offset
+initcond = [ratio latency1(2)-latency1(1)]; % srate_ratio then offset
+func = @(x)mean(abs(x(1)*latency1-latency2+x(2)));
+newfactor = fminsearch(@(x)func(x), initcond, optimset('MaxIter',10000));
+
+try
+%    newfactor = fminsearch('eventalign',initcond,[],latency1-latency1(1), latency2-latency2(1), 'mean', optimset('MaxIter',10000));
+    % newfactor = fminsearch(@(x)eventalign(x, latency1-latency1(1), latency2-latency2(1), 'mean'),initcond, optimset('MaxIter',10000));
+    % newfactor = fminsearch(@(x)eventalign(x, latency1, latency2, 'mean'),initcond, optimset('MaxIter',10000));
+    
+ catch
+    error('Missing function fminsearch.m - Octave users, run "pkg install -forge optim" to install missing package and try again');
+end
+%newfactor(2) = latency2(1)-latency1(1);
+
+fprintf('Ratio of sampling rate is %1.5f (%1.0f vs %1.0f) optimized to %1.5f\n', EEG2.srate/EEG1.srate, EEG1.srate, EEG2.srate, newfactor(1))
+fprintf('Event offset is %1.1f samples or %1.1f seconds\n', newfactor(2), newfactor(2)/EEG2.srate)
+fprintf('Event offset (compare row 1 and 2): ');
+latency2corrected = latency1*newfactor(1) + newfactor(2);
+latency2corrected = latency1*newfactor(1) + newfactor(2);
+for iEvent = 1:min(10, length(latency1))
+    fprintf('%8s                   ', sprintf('%1.1f', latency2(iEvent)));
+end
+fprintf('\n                                    ');
+for iEvent = 1:min(10, length(latency2))
+    fprintf('%8s (off by %2d ms)    ', sprintf('%1.1f', latency2corrected(iEvent)), round(abs(latency2corrected(iEvent)-latency2(iEvent))));
+end
+fprintf('\n');
+
+
+
+
+
+
+adsf
 
 
