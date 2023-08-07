@@ -4,10 +4,15 @@
 %                     simultaneously or from 2 modalities in the same
 %                     subject.
 % Usage:
-%         >> OUTEEG = eeg_mergechannels(EEG1, EEG2, varargin);
+%         >> [MERGEDEEG, EEG2PRIME] = eeg_mergechannels(EEG1, EEG2, varargin);
 % Inputs:
 %       EEG1 - first EEGLAB dataset
 %       EEG2 - second EEGLAB dataset
+%
+% Optional inputs:
+%       MERGEDEEG - contains the merged EEG datasets
+%       EEG2PRIME - contains EEG2 with some sample removed so that the
+%                   first sample of EEG1 match the first sample of EEG2.
 %
 % Output:
 %  OUTEEG  - output EEG structure with the two datasets merged
@@ -46,7 +51,7 @@
 % ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 % THE POSSIBILITY OF SUCH DAMAGE.
 
-function [MERGEDEEG, TMPEEG2] = eeg_mergechannels(EEG1, EEG2, varargin)
+function [MERGEDEEG, EEG2PRIME] = eeg_mergechannels(EEG1, EEG2, varargin)
 
 if nargin < 2
     help eeg_mergechannels
@@ -154,7 +159,7 @@ for iEvent = 1:min(10, length(latency2))
 end
 fprintf('\n');
 
-% modify EEG2 to match EEG1
+% offset raw EEG2 to match EEG1
 newsrate = round(100*EEG2.srate/newfactor(1))/100;
 fprintf('Resampling second dataset to %1.2f (to best match first dataset %1.1% sampling rate\n', newsrate, EEG1.srate)
 TMPEEG2 = pop_resample(EEG2, newsrate);
@@ -202,6 +207,20 @@ if ~isempty(TMPEEG2.event)
     end
 end
 MERGEDEEG = eeg_checkset(MERGEDEEG, 'eventconsistency');
+
+% return a modified version of EEG2 with changed sampling rate and samples removed
+EEG2PRIME = EEG2;
+EEG2PRIME.srate = EEG1.srate*newfactor(1);
+
+eeg2offset = round(originalOffset * newfactor(1));
+if originalOffset > 0
+    EEG2PRIME = pop_select(EEG2PRIME, 'rmpoint', [ 1 eeg2offset ]);
+elseif originalOffset < 0
+    EEG2PRIME.data = [ zeros(EEG2PRIME.nbchan, -eeg2offset) EEG2PRIME.data ];
+    for iEvent = 1:length(EEG2PRIME.event)
+        EEG2PRIME.event(iEvent).latency = EEG2PRIME.event(iEvent).latency + eeg2offset;
+    end
+end
 
 % remove event types from list
 function allevents = removeevents(allevents, rmlist)

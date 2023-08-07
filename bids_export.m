@@ -1104,7 +1104,7 @@ for iEvent = 1:length(EYE.event)
     end
 end
 EYE = eeg_checkset(EYE);
-MERGEDEEG = eeg_mergechannels(EEG, EYE);
+[MERGEDEEG, EYEPRIME] = eeg_mergechannels(EEG, EYE);
 
 % export the data
 tmpTable = array2table(EYE.data', 'VariableNames', { EYE.chanlocs.labels });
