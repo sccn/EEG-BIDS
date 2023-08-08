@@ -2,4 +2,4 @@
 
 function str = bids_matlab_tools_ver
 
-str = '7.6';
+str = '7.7';

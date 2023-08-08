@@ -67,3 +67,5 @@ v7.4 - fix version issues for HED and BIDS. Export subjects in order. Remove unu
 v7.5 - adding support for coordsystem files, and for loading specific runs, support for motion files
 
 v7.6 - adding export to non-EEGLAB formats, refactor export
+
+v7.7 - fix importing MEG and MEF files. Better handling of runs. Now tracks tool version in BIDS.
