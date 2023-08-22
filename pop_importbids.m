@@ -496,7 +496,7 @@ for iSubject = opt.subjects
                             gunzip(eegFileRaw);
                             EEG = pop_fileio(eegFileRaw(1:end-3)); % fif folder
                         case '.ds'
-                            EEG = pop_fileio(eegFileRaw, 'makecontinuous', 'on'); % fif folder
+                            EEG = pop_ctf_read(eegFileRaw, 'makecontinuous', 'on'); % fif folder
                         case '.mefd'
                             if ~exist('pop_MEF3', 'file')
                                 error('MEF plugin not present, please install the MEF3 plugin first')
@@ -658,6 +658,7 @@ end
 % compute basic statistics
 clear stats;
 stats.README             = 0;
+stats.EthicsApprovals    = 0;
 stats.TaskDescription    = 0;
 stats.Instructions       = 0;
 stats.EEGReference       = 0;
@@ -671,8 +672,11 @@ stats.ChannelConsistency = 0;
 stats.EventDescription   = 0;
 stats.StandardChannelLabels = 0;
 if ~isempty(bids.README), stats.README = 1; end
-if ismember('age'   , bids.participants(1,:)) && ismember('gender', bids.participants(1,:))
-    stats.ParticipantsAgeAndGender = 1; 
+if isfield(bids.dataset_description, 'EthicsApprovals') stats.EthicsApprovals = 1; end
+if ismember('age', lower(bids.participants(1,:)))
+    if ismember('gender', lower(bids.participants(1,:))) || ismember('sex', lower(bids.participants(1,:)))
+        stats.ParticipantsAgeAndGender = 1; 
+    end
 end
 if checkBIDSfield(bids, 'TaskDescription'),            stats.TaskDescription = 1; end
 if checkBIDSfield(bids, 'Instructions'),               stats.Instructions = 1; end

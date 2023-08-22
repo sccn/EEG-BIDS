@@ -36,10 +36,11 @@ files = dir(bidsFolder);
 [files(:).folder] = deal(bidsFolder);
 %fprintf('Scanning %s\n', bidsFolder);
 for iFile = 1:length(files)
-    if files(iFile).isdir && files(iFile).name(end) ~= '.'
+    if files(iFile).isdir && files(iFile).name(end) ~= '.' && length(files(iFile).name) > 2 &&  ~isequal(lower(files(iFile).name(end-2:end)), '.ds')
         if length(files(iFile).name) > 2 && strcmpi(files(iFile).name(1:3), 'ses')
             sessions = union(sessions, { files(iFile).name });
         end
+
         [tasklistTmp,sessionTmp,runsTmp] = bids_getinfofromfolder(fullfile(files(iFile).folder, fullfile(files(iFile).name)));
         tasklist = union(tasklist, tasklistTmp);
         sessions = union(sessions, sessionTmp);
