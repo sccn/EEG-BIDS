@@ -1013,6 +1013,10 @@ timeoffset = sIn.timeoffset;
 eventtype  = sIn.eventtype;
 eventindex = sIn.eventindex;
 
+if ~isempty(timeoffset) || ~isempty(eventtype) || ~isempty(eventindex)
+    error('Feature not implemented')
+end
+
 folderOut = fileparts(fileBase);
 
 if isempty(fileIn)
@@ -1098,16 +1102,24 @@ end
 % select data subset
 %EYE = eeg_selectsegment(EYE, 'eventtype', eventtype, 'eventindex', eventindex, 'timeoffset', timeoffset );        
 
-for iEvent = 1:length(EYE.event)
-    if ~isempty(EYE.event(iEvent).description)
-        EYE.event(iEvent).type = deblank(EYE.event(iEvent).description);
+if isfield(EYE.event, 'description') % use for type
+    fprintf('Warning: using description field in eye-tracking channel for event type\n')
+    for iEvent = 1:length(EYE.event)
+        if ~isempty(EYE.event(iEvent).description)
+            EYE.event(iEvent).type = deblank(EYE.event(iEvent).description);
+        end
     end
 end
-EYE = eeg_checkset(EYE);
+EYE = eeg_checkset(EYE, 'eventconsistency');
 [MERGEDEEG, EYEPRIME] = eeg_mergechannels(EEG, EYE);
 
+indExt = find(fileOut == '_');
+fileOutRed = fileOut(1:indExt(end)-1);
+eeg_writeeventsfiles(MERGEDEEG, fileOutRed, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, ...
+    'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse, 'omitsample', 'on');
+
 % export the data
-tmpTable = array2table(EYE.data', 'VariableNames', { EYE.chanlocs.labels });
+tmpTable = array2table(EYEPRIME.data', 'VariableNames', { EYEPRIME.chanlocs.labels });
 writetable(tmpTable, fileOut, 'FileType', 'text', 'delimiter', '\t');
 %eeg_writeeventsfiles(EEG, fileBase, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, 'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse);
 
