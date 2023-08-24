@@ -1,15 +1,17 @@
-% Same as example 3 but uses different sessions and runs
+% Example to export joint EEG and Eye-tracking data (child mind)
+% The data is not included here because it is too large, but it 
+% can be downloaded from http://fcon_1000.projects.nitrc.org/indi/cmi_healthy_brain_network/sharing_neuro.html
 % 
-% Arnaud Delorme - May 2022
+% Arnaud Delorme - May 2023
 
 clear
 cd('/System/Volumes/Data/data/matlab/bids_eyetracking')
 data = [];
 p =fileparts(which('eeglab'));
+data(end+1).file     = { 'hbn_files/NDARAA773LUW_SurroundSupp_Block1.set' };
+data(end  ).eyefile  = { 'hbn_files/NDARAA773LUW_SurrSupp_Block1.tsv' };
 data(end+1).file     = { 'hbn_files/Video1.set' };
 data(end  ).eyefile  = { 'hbn_files/NDARAA075AMK_Video1_Samples.txt' };
-data(end+1).file     = { 'hbn_files/SurroundSupp_Block1.set' };
-data(end  ).eyefile  = { 'hbn_files/NDARAA773LUW_SurrSupp_Block1_ori.tsv' };
 
 %% participant information for participants.tsv file
 % -------------------------------------------------
