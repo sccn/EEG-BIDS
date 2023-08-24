@@ -71,8 +71,11 @@ if EEG1.trials > 1 || EEG2.trials > 1
 end
 
 % find matching event types
-evenType1 = cellfun(@deblank, { EEG1.event.type }, 'uniformoutput', false);
-evenType2 = cellfun(@deblank, { EEG2.event.type }, 'uniformoutput', false);
+evenType1 = cellfun(@num2str, { EEG1.event.type }, 'uniformoutput', false);
+evenType2 = cellfun(@num2str, { EEG2.event.type }, 'uniformoutput', false);
+
+evenType1 = cellfun(@deblank, evenType1, 'uniformoutput', false);
+evenType2 = cellfun(@deblank, evenType2, 'uniformoutput', false);
 
 remainingEvents = true;
 counter1 = 1;
@@ -131,11 +134,13 @@ fprintf('Matching events structure 2 are %s -> {%s}\n', int2str(matchingEvents2)
 
 latency1 = [EEG1.event(matchingEvents1).latency];
 latency2 = [EEG2.event(matchingEvents2).latency];
+[ypred, alpha, rsq, slope, intercept] = fastregress(latency1, latency2);
 
 ratio = EEG2.srate/EEG1.srate;
 
 initcond = [ratio latency2(1)-latency1(1)*ratio]; % srate_ratio then offset
 func = @(x)mean(abs(x(1)*latency1-latency2+x(2)));
+%func2 = @(x)mean(abs(ratio*latency1-latency2+x(2)));
 
 try
     newfactor = fminsearch(@(x)func(x), initcond, optimset('MaxIter',10000));
@@ -143,6 +148,7 @@ try
     error('Missing function fminsearch.m - Octave users, run "pkg install -forge optim" to install missing package and try again');
 end
 %newfactor(2) = latency2(1)-latency1(1);
+newfactor = [slope intercept];
 
 fprintf('Ratio of sampling rate is %1.5f (%1.0f vs %1.0f) optimized to %1.5f\n', EEG2.srate/EEG1.srate, EEG1.srate, EEG2.srate, newfactor(1))
 fprintf('Event offset is %1.1f samples or %1.1f seconds\n', newfactor(2), newfactor(2)/EEG2.srate)
@@ -150,12 +156,12 @@ fprintf('Event offset (compare row 1 and 2): ');
 
 
 latency1corrected = (latency2 - newfactor(2))/newfactor(1);
-for iEvent = 1:min(10, length(latency1))
-    fprintf('%8s                   ', sprintf('%1.1f', latency1(iEvent)));
+for iEvent = 1:min(50, length(latency1))
+    fprintf('%8s                    ', sprintf('%1.1f', latency1(iEvent)));
 end
 fprintf('\n                                    ');
-for iEvent = 1:min(10, length(latency2))
-    fprintf('%8s (off by %2d ms)    ', sprintf('%1.1f', latency1corrected(iEvent)), round(abs(latency1corrected(iEvent)-latency1(iEvent))));
+for iEvent = 1:min(50, length(latency2))
+    fprintf('%8s (off by %3d ms)    ', sprintf('%1.1f', latency1corrected(iEvent)), round(abs(latency1corrected(iEvent)-latency1(iEvent))));
 end
 fprintf('\n');
 
