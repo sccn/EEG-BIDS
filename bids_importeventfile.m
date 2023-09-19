@@ -1,7 +1,7 @@
-% eeg_importeventsfiles - create EEG.event from events.tsv and optionally events.json files
+% BIDS_IMPORTEVENTFILE - create EEG.event from events.tsv and optionally events.json files
 %
 % Usage:
-%    [EEG, ~, ~, ~] = eeg_importeventsfiles(EEG, eventfile, 'key', value)
+%    [EEG, ~, ~, ~] = bids_importeventfile(EEG, eventfile, 'key', value)
 %
 % Inputs:
 %  'EEG'        - [struct] the EEG structure to which event information will be imported
@@ -22,7 +22,7 @@
 %
 % Authors: Dung Truong, Arnaud Delorme, 2022
 
-function [EEG, bids, eventData, eventDesc] = eeg_importeventsfiles(EEG, eventfile, varargin)
+function [EEG, bids, eventData, eventDesc] = bids_importeventfile(EEG, eventfile, varargin)
 g = finputcheck(varargin,  {'eventDescFile'   'string'   [] '';
                             'bids'            'struct'   [] struct([]);
                             'eventtype'       'string'   [] 'value' ;

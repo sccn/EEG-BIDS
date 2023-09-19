@@ -1,7 +1,7 @@
-% eeg_importcoordsystemfiles - import coordinate information
+% BIDS_IMPORTCOORDSYSTEMFILE - import coordinate information
 %
 % Usage:
-%    [EEG, bids] = eeg_importcoordsystemfiles(EEG, coordfile, 'key', value)
+%    [EEG, bids] = bids_importcoordsystemfile(EEG, coordfile, 'key', value)
 %
 % Inputs:
 %  'EEG'        - [struct] the EEG structure to which event information will be imported
@@ -17,7 +17,7 @@
 %
 % Authors: Arnaud Delorme, 2022
 
-function [EEG, bids] = eeg_importcoordsystemfiles(EEG, coordfile, varargin)
+function [EEG, bids] = bids_importcoordsystemfile(EEG, coordfile, varargin)
 
 if nargin < 2
     help eeg_importcoordsystemfiles;

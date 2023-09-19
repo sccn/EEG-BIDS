@@ -1,7 +1,7 @@
-% eeg_writeelectrodesfiles - write electrodes.tsv and coordsystem.json from single EEG dataset
+% BIDS_WRITEELECTRODEFILE - write electrodes.tsv and coordsystem.json from single EEG dataset
 %
 % Usage:
-%    eeg_writeelectrodesfiles(EEG, fileOut, flagExport)
+%    bids_writeelectrodefile(EEG, fileOut, flagExport)
 %
 % Inputs:
 %  'EEG'       - [struct] the EEG structure
@@ -13,7 +13,7 @@
 %
 % Authors: Dung Truong, Arnaud Delorme, 2022
 
-function eeg_writeelectrodesfiles(EEG, fileOut, varargin)
+function bids_writeelectrodefile(EEG, fileOut, varargin)
 
 if nargin > 2
     flagExport = varargin{2};
