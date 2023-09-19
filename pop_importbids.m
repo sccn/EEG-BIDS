@@ -227,7 +227,19 @@ end
 for iSubject = opt.subjects
     parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,1});
     outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,1});
-    
+
+    iteration = 0;
+    while ~exist(parentSubjectFolder, 'dir') && iteration < 3
+        fprintf(2, 'Folder %s does not exist\n', parentSubjectFolder);
+        dashpos = find(bids.participants{iSubject,1} == '-');
+        if ~isempty(dashpos)
+            bids.participants{iSubject,1} = [ bids.participants{iSubject,1}(1:dashpos) '0' bids.participants{iSubject,1}(dashpos+1:end) ];
+            parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,1});
+            outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,1});
+        end
+        iteration = iteration + 1;
+    end
+
     % find folder containing eeg
     subFolders = dir(fullfile(parentSubjectFolder, 'ses*'));
     if ~isempty(subFolders)
@@ -239,7 +251,7 @@ for iSubject = opt.subjects
     subjectFolderOut = {};
     if ~isempty(opt.sessions)
         subFolders = intersect(subFolders, opt.sessions);
-    end
+    end        
 
     for iFold = 1:length(subFolders)
         subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'eeg');

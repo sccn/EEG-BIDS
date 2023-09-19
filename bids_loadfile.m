@@ -12,7 +12,7 @@ function data = bids_loadfile(localFile, globalFile, rawFlag)
 [~,~,ext] = fileparts(localFile);
 data = [];
 localFile = dir(localFile);
-if nargin > 3
+if nargin > 2
     if ischar(localFile)
         data = importalltxt( localFile );        
     else

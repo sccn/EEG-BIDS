@@ -35,7 +35,8 @@ function [EEG, channelData, elecData] = eeg_importchanlocs(EEG, channelFile, ele
         if size(channelData,2) > 3
             chanlocs(iChan-1).status = channelData{iChan,4};
         end
-
+    end
+    for iChan = 2:size(elecData,1)
         if ~isempty(elecData) && iChan <= size(elecData,1)
             chanlocs(iChan-1).labels = elecData{iChan,1};
             chanlocs(iChan-1).X = elecData{iChan,2};
