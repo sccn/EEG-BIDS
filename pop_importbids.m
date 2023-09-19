@@ -544,10 +544,12 @@ for iSubject = opt.subjects
                         eventfile              = bids_get_file(eegFileRaw(1:end-8), '_events.tsv', eventFile);
                         selected_eventdescfile = bids_get_file(eegFileRaw(1:end-8), '_events.json', eventDescFile);
                 
-                        [EEG, bids, eventData, eventDesc] = eeg_importeventsfiles(EEG, eventfile, 'bids', bids, 'eventDescFile', selected_eventdescfile, 'eventtype', opt.eventtype); 
-                        if isempty(eventData), error('bidsevent on but events.tsv has no data'); end
-                        bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
-                        bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
+			if ~isempty(eventfile)
+				[EEG, bids, eventData, eventDesc] = eeg_importeventsfiles(EEG, eventfile, 'bids', bids, 'eventDescFile', selected_eventdescfile, 'eventtype', opt.eventtype); 
+				if isempty(eventData), error('bidsevent on but events.tsv has no data'); end
+				bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
+				bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
+			end
                     end
                     
                     % coordsystem file
