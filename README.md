@@ -69,3 +69,5 @@ v7.5 - adding support for coordsystem files, and for loading specific runs, supp
 v7.6 - adding export to non-EEGLAB formats, refactor export
 
 v7.7 - fix importing MEG and MEF files. Better handling of runs. Now tracks tool version in BIDS.
+
+v8.0 - (not released) renamed files, separate file for task info
