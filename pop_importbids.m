@@ -170,14 +170,14 @@ end
 changesFile = fullfile(bidsFolder, 'CHANGES');
 bids.CHANGES = '';
 if exist(changesFile,'File')
-    bids.CHANGES = bids_loadfile( changesFile );
+    bids.CHANGES = bids_loadfile( changesFile, [], true );
 end
 
 % load Readme file
 readmeFile = fullfile(bidsFolder, 'README');
 bids.README = '';
 if exist(readmeFile,'File')
-    bids.README = bids_loadfile( readmeFile );
+    bids.README = bids_loadfile( readmeFile, [], true );
 end
 
 % load dataset description file

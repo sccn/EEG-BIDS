@@ -8,10 +8,19 @@
 %   globalFile     - Name of the global file if the local file cannot be
 %                    found
 
-function data = bids_loadfile(localFile, globalFile)
+function data = bids_loadfile(localFile, globalFile, rawFlag)
 [~,~,ext] = fileparts(localFile);
 data = [];
 localFile = dir(localFile);
+if nargin > 3
+    if ischar(localFile)
+        data = importalltxt( localFile );        
+    else
+        data = importalltxt( fullfile(localFile(1).folder, localFile(1).name) );
+    end
+    return
+end
+
 if ~isempty(localFile)
     if strcmpi(ext, '.tsv')
         data = importtsv( fullfile(localFile(1).folder, localFile(1).name));
