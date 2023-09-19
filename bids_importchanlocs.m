@@ -22,9 +22,10 @@
 %   elecData    - [cell array] imported data from electrodes.tsv
 %
 % Authors: Dung Truong, Arnaud Delorme, 2022
+
 function [EEG, channelData, elecData] = eeg_importchanlocs(EEG, channelFile, elecFile)
-    channelData = loadfile(channelFile, '');
-    elecData    = loadfile(elecFile, '');
+    channelData = bids_loadfile(channelFile, '');
+    elecData    = bids_loadfile(elecFile, '');
     chanlocs = [];
     for iChan = 2:size(channelData,1)
         % the fields below are all required

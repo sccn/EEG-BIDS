@@ -1,6 +1,14 @@
-% import JSON or TSV file
-% -----------------------
-function data = loadfile(localFile, globalFile)
+% BIDS_LOADFILE - import JSON or TSV file
+%
+% Usage:
+%    bids_loadfile(localFile, globalFile)
+%
+% Input:
+%   localFile      - Name of the localfile
+%   globalFile     - Name of the global file if the local file cannot be
+%                    found
+
+function data = bids_loadfile(localFile, globalFile)
 [~,~,ext] = fileparts(localFile);
 data = [];
 localFile = dir(localFile);
@@ -14,7 +22,7 @@ if ~isempty(localFile)
             data = jsonread(fullfile(localFile(1).folder, localFile(1).name));
         end
     end        
-elseif ~isempty(globalFile)
+elseif nargin > 1 && ~isempty(globalFile)
     if strcmpi(ext, '.tsv')
         data = importtsv( fullfile(globalFile(1).folder, globalFile(1).name));
     else

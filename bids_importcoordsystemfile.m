@@ -30,7 +30,7 @@ if isstr(g), error(g); end
 bids = g.bids;
                         
 % coordinate information
-bids(1).coordsystem = loadfile( coordfile, '');
+bids(1).coordsystem = bids_loadfile( coordfile, '');
 if ~isfield(EEG.chaninfo, 'nodatchans')
     EEG.chaninfo.nodatchans = [];
 end
@@ -87,45 +87,6 @@ function factor = checkunit(chaninfo, field)
             error('Unit not supported')
         end
     end
-
-% import JSON or TSV file
-% -----------------------
-function data = loadfile(localFile, globalFile)
-[~,~,ext] = fileparts(localFile);
-data = [];
-localFile = dir(localFile);
-if ~isempty(localFile)
-    if strcmpi(ext, '.tsv')
-        data = importtsv( fullfile(localFile(1).folder, localFile(1).name));
-    else
-        if exist('jsondecode.m','file')
-            data = jsondecode( importalltxt( fullfile(localFile(1).folder, localFile(1).name) ));
-        else
-            data = jsonread(fullfile(localFile(1).folder, localFile(1).name));
-        end
-    end        
-elseif ~isempty(globalFile)
-    if strcmpi(ext, '.tsv')
-        data = importtsv( fullfile(globalFile(1).folder, globalFile(1).name));
-    else
-        if exist('jsondecode.m','file')
-            data = jsondecode( importalltxt( fullfile(globalFile(1).folder, globalFile(1).name) ));
-        else
-            data = jsonread(fullfile(globalFile(1).folder, globalFile(1).name));
-        end
-    end
-end
-
-% Import full text file
-% ---------------------
-function str = importalltxt(fileName)
-
-str = [];
-fid =fopen(fileName, 'r');
-while ~feof(fid)
-    str = [str 10 fgetl(fid) ];
-end
-str(1) = [];
 
 function nameout = cleanvarname(namein)
 

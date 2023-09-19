@@ -170,32 +170,28 @@ end
 changesFile = fullfile(bidsFolder, 'CHANGES');
 bids.CHANGES = '';
 if exist(changesFile,'File')
-    bids.CHANGES = importalltxt( changesFile );
+    bids.CHANGES = bids_loadfile( changesFile );
 end
 
 % load Readme file
 readmeFile = fullfile(bidsFolder, 'README');
 bids.README = '';
 if exist(readmeFile,'File')
-    bids.README = importalltxt( readmeFile );
+    bids.README = bids_loadfile( readmeFile );
 end
 
 % load dataset description file
 dataset_descriptionFile = fullfile(bidsFolder, 'dataset_description.json');
 bids.dataset_description = '';
 if exist(dataset_descriptionFile,'File')
-    if exist('jsondecode.m','file')
-        bids.dataset_description = jsondecode(importalltxt( dataset_descriptionFile ));
-    else
-        bids.dataset_description = jsonread(dataset_descriptionFile);
-    end
+    bids.dataset_description = bids_loadfile( dataset_descriptionFile );
 end
 
 % load participant file
 participantsFile = fullfile(bidsFolder, 'participants.tsv');
 bids.participants = '';
 if exist(participantsFile,'File')
-    bids.participants = importtsv( participantsFile );
+    bids.participants = bids_loadfile( participantsFile );
 end
 % if no participants.tsv, use subjects folder names as their IDs
 if isempty(bids.participants)
@@ -209,11 +205,7 @@ bids.participants(strcmp(bids.participants, 'sub-emptyroom'),:) = [];
 participantsJSONFile = fullfile(bidsFolder, 'participants.json');
 bids.participantsJSON = '';
 if exist(participantsJSONFile,'File')
-    if exist('jsondecode.m','file')
-        bids.participantsJSON = jsondecode(importalltxt( participantsJSONFile ));
-    else
-        bids.participantsJSON = jsonread(participantsJSONFile);
-    end
+    bids.participantsJSON = bids_loadfile( participantsJSONFile );
 end
 
 % scan participants
@@ -282,7 +274,7 @@ for iSubject = opt.subjects
             
             if exist('scansFile', 'var') && ~isempty(scansFile)
                 useScans = true;
-                scans = loadfile( scansFile.name, scansFile);
+                scans = bids_loadfile( scansFile.name, scansFile);
                 bids.data = setallfields(bids.data, [iSubject-1,iFold,1], struct('scans', {scans}));
             else
                 useScans = false;
@@ -450,7 +442,7 @@ for iSubject = opt.subjects
                 end
                 
                 % JSON information file
-                infoData = loadfile([ eegFileRaw(1:end-8) '_eeg.json' ], infoFile);
+                infoData = bids_loadfile([ eegFileRaw(1:end-8) '_eeg.json' ], infoFile);
                 bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], infoData);
                     
                 % extract task name
@@ -521,8 +513,8 @@ for iSubject = opt.subjects
                             EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
                         end
                     else
-                        channelData = loadfile(selected_chanfile);
-                        elecData    = loadfile(selected_elecfile);
+                        channelData = bids_loadfile(selected_chanfile);
+                        elecData    = bids_loadfile(selected_elecfile);
                         if ~isfield(EEG.chanlocs, 'theta') || all(cellfun(@isempty, { EEG.chanlocs.theta }))
                             dipfitdefs;
                             EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
@@ -749,17 +741,6 @@ if isfield(bids.data, fieldName)
     if ~isempty(fieldContent), res = true; end
 end
 
-% Import full text file
-% ---------------------
-function str = importalltxt(fileName)
-
-str = [];
-fid =fopen(fileName, 'r');
-while ~feof(fid)
-    str = [str 10 fgetl(fid) ];
-end
-str(1) = [];
-
 % search parent folders (outward search) for the file of given fileName
 % ---------------------
 function outFile = searchparent(folder, fileName)
@@ -822,33 +803,6 @@ for iFile = 1:length(fileList)
 end
 fileList = fileList(logical(keepInd));
 
-% import JSON or TSV file
-% -----------------------
-function data = loadfile(localFile, globalFile)
-[~,~,ext] = fileparts(localFile);
-data = [];
-localFile = dir(localFile);
-if ~isempty(localFile)
-    if strcmpi(ext, '.tsv')
-        data = importtsv( fullfile(localFile(1).folder, localFile(1).name));
-    else
-        if exist('jsondecode.m','file')
-            data = jsondecode( importalltxt( fullfile(localFile(1).folder, localFile(1).name) ));
-        else
-            data = jsonread(fullfile(localFile(1).folder, localFile(1).name));
-        end
-    end        
-elseif nargin > 1 && ~isempty(globalFile)
-    if strcmpi(ext, '.tsv')
-        data = importtsv( fullfile(globalFile(1).folder, globalFile(1).name));
-    else
-        if exist('jsondecode.m','file')
-            data = jsondecode( importalltxt( fullfile(globalFile(1).folder, globalFile(1).name) ));
-        else
-            data = jsonread(fullfile(globalFile(1).folder, globalFile(1).name));
-        end
-    end
-end
 
 % set structure
 % -------------
@@ -859,28 +813,6 @@ if length(indices) < 3, error('Must have 3 indices'); end
 allFields = fieldnames(newdata);
 for iField = 1:length(allFields)
     sdata(indices(1), indices(2), indices(3)).(allFields{iField}) = newdata.(allFields{iField});
-end
-
-% Import tsv file
-% ---------------
-function res = importtsv( fileName)
-
-res = loadtxt( fileName, 'verbose', 'off', 'delim', 9);
-
-for iCol = 1:size(res,2)
-    % search for NaNs in numerical array
-    indNaNs = cellfun(@(x)strcmpi('n/a', x), res(:,iCol));
-    if ~isempty(indNaNs)
-        allNonNaNVals = res(find(~indNaNs),iCol);
-        allNonNaNVals(1) = []; % header
-        testNumeric   = cellfun(@isnumeric, allNonNaNVals);
-        if all(testNumeric)
-            res(find(indNaNs),iCol) = { NaN };
-        elseif ~all(~testNumeric)
-            % Convert numerical value back to string
-            res(:,iCol) = cellfun(@num2str, res(:,iCol), 'uniformoutput', false);
-        end
-    end
 end
 
 % get BIDS file
@@ -912,14 +844,14 @@ for iDat = 1:numel(dataFile)
     
     % JSON information file
     infoFile        = searchparent([subjectFolder, dataType], dataFileJSON);
-    infoData        = loadfile(infoFile.name, infoFile);
+    infoData        = bids_loadfile(infoFile.name, infoFile);
     
     % check or construct needed channel files according to the data type
     switch dataType
         case 'motion'
             channelFileMotion   = [fileName(1:end-6) 'channels.tsv']; % replace _motion with _channels
             channelFile         = searchparent([subjectFolder, dataType], channelFileMotion);
-            channelData         = loadfile(channelFile(1).name, channelFile);
+            channelData         = bids_loadfile(channelFile(1).name, channelFile);
         case 'physio'
             % channel file (for physio data, hidden in json file as 'columns')
             channelData = {'name', 'type', 'units'};
