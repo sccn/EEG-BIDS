@@ -1,8 +1,8 @@
-% eeg_writeeventsfiles - write events.tsv and (if toggled) events.json for individual dataset
+% BIDS_WRITEEVENTFILE - write events.tsv and (if toggled) events.json for individual dataset
 %                       from EEG dataset
 %
 % Usage:
-%    eeg_writeeventsfiles(EEG, fileOut, varargin)
+%    bids_writeeventfile(EEG, fileOut, varargin)
 %
 % Inputs:
 %  'EEG'       - [struct] the EEG structure
@@ -56,7 +56,7 @@
 %                           top-level events.json file for the entire dataset
 %
 % Authors: Dung Truong, Arnaud Delorme, 2022
-function eeg_writeeventsfiles(EEG, fileOut, varargin)
+function bids_writeeventfile(EEG, fileOut, varargin)
 opt = finputcheck(varargin, {
     'stimuli'    'cell'    {}    {};
     'eInfo'      'cell'    {}    {};

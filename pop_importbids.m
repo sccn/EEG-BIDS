@@ -1,4 +1,4 @@
-% pop_importbids() - Import BIDS format folder structure into an EEGLAB
+% POP_IMPORTBIDS - Import BIDS format folder structure into an EEGLAB
 %                    study.
 % Usage:
 %   >> [STUDY ALLEEG] = pop_importbids(bidsfolder);
@@ -515,7 +515,7 @@ for iSubject = opt.subjects
                     selected_chanfile = bids_get_file(eegFileRaw(1:end-8), '_channels.tsv', channelFile);
                     selected_elecfile = bids_get_file(eegFileRaw(1:end-8), '_electrodes.tsv', elecFile);
                     if strcmpi(opt.bidschanloc, 'on')
-                        [EEG, channelData, elecData] = eeg_importchanlocs(EEG, selected_chanfile, selected_elecfile);
+                        [EEG, channelData, elecData] = bids_importchanlocs(EEG, selected_chanfile, selected_elecfile);
                         if isempty(selected_elecfile) && (isempty(EEG.chanlocs) || ~isfield(EEG.chanlocs, 'theta') || any(~cellfun(@isempty, { EEG.chanlocs.theta })))
                             dipfitdefs;
                             EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
@@ -544,7 +544,7 @@ for iSubject = opt.subjects
                         eventfile              = bids_get_file(eegFileRaw(1:end-8), '_events.tsv', eventFile);
                         selected_eventdescfile = bids_get_file(eegFileRaw(1:end-8), '_events.json', eventDescFile);
                 
-                        [EEG, bids, eventData, eventDesc] = eeg_importeventsfiles(EEG, eventfile, 'bids', bids, 'eventDescFile', selected_eventdescfile, 'eventtype', opt.eventtype); 
+                        [EEG, bids, eventData, eventDesc] = bids_importeventfile(EEG, eventfile, 'bids', bids, 'eventDescFile', selected_eventdescfile, 'eventtype', opt.eventtype); 
                         if isempty(eventData), error('bidsevent on but events.tsv has no data'); end
                         bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
                         bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
@@ -555,7 +555,7 @@ for iSubject = opt.subjects
                     if strcmpi(opt.bidscoord, 'on')
                         coordFile = bids_get_file(eegFileRaw(1:end-8), '_coordsystem.json', coordFile);
 %                     
-                        [EEG, bids] = eeg_importcoordsystemfiles(EEG, coordFile, 'bids', bids); 
+                        [EEG, bids] = bids_importcoordsystemfile(EEG, coordFile, 'bids', bids); 
                     end
 
                     % copy information inside dataset

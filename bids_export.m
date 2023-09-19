@@ -1,4 +1,4 @@
-% bids_export - this function allows converting a collection of datasets to
+% BIDS_EXPORT - this function allows converting a collection of datasets to
 %               BIDS formated folders and files.
 %
 % Usage:
@@ -352,7 +352,7 @@ if ~isfield(opt.gInfo, 'License'), opt.gInfo.License = opt.License; end
 if ~isfield(opt.gInfo, 'Authors'), opt.gInfo.Authors = opt.Authors; end
 if ~isfield(opt.gInfo, 'ReferencesAndLinks'), opt.gInfo.ReferencesAndLinks = opt.ReferencesAndLinks; end
 
-opt.gInfo = checkfields(opt.gInfo, gInfoFields, 'gInfo');
+opt.gInfo = bids_checkfields(opt.gInfo, gInfoFields, 'gInfo');
 jsonwrite(fullfile(opt.targetdir, 'dataset_description.json'), opt.gInfo, struct('indent','  '));
 
 % make cell out of file names if necessary
@@ -545,7 +545,7 @@ if ~isempty(opt.pInfo)
     for iField = 1:length(fields)
         descFields{1,4} = fields{iField};
         if ~isfield(opt.pInfoDesc, fields{iField}), opt.pInfoDesc(1).(fields{iField}) = struct([]); end
-        opt.pInfoDesc.(fields{iField}) = checkfields(opt.pInfoDesc.(fields{iField}), descFields, 'pInfoDesc');
+        opt.pInfoDesc.(fields{iField}) = bids_checkfields(opt.pInfoDesc.(fields{iField}), descFields, 'pInfoDesc');
     end
     % remove empty fields for BIDS compliance
     for iField = 1:length(fields)
@@ -570,7 +570,7 @@ fields = fieldnames(opt.eInfoDesc);
 for iField = 1:length(fields)
     descFields{1,4} = fields{iField};
     if ~isfield(opt.eInfoDesc, fields{iField}), opt.eInfoDesc(1).(fields{iField}) = struct([]); end
-    opt.eInfoDesc.(fields{iField}) = checkfields(opt.eInfoDesc.(fields{iField}), eInfoDescFields, 'eInfoDesc');
+    opt.eInfoDesc.(fields{iField}) = bids_checkfields(opt.eInfoDesc.(fields{iField}), eInfoDescFields, 'eInfoDesc');
 end
 if strcmpi(opt.individualEventsJson, 'off')
     jsonwrite(fullfile(opt.targetdir, ['task-' opt.taskName '_events.json' ]), opt.eInfoDesc,struct('indent','  '));
@@ -780,7 +780,7 @@ end
 function copy_data_to_bids( structOut, subjectStr, fileStr, opt)
 
 copy_data_bids_eeg( structOut, subjectStr, fileStr, opt);
-%eeg_writebehfiles(structOut.beh, subjectStr, fileStr);
+%bids_writebehfile(structOut.beh, subjectStr, fileStr);
 
 
 %--------------------------------------------------------------------------
@@ -883,7 +883,7 @@ eyeWritenStatus = save_bids_eye_tracking(sIn, fileBase, EEG, opt);
 % write events
 indExt = find(fileOut == '_');
 fileOutRed = fileOut(1:indExt(end)-1);
-eeg_writeeventsfiles(EEG, fileOutRed, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, ...
+bids_writeeventfile(EEG, fileOutRed, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, ...
     'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse, 'omitsample', fastif(eyeWritenStatus, 'on', 'off'));
 
 % Write channel file information (channels.tsv)
@@ -907,85 +907,7 @@ end
 if ischar(opt.chanlookup) && ~isempty(opt.chanlookup)
     EEG=pop_chanedit(EEG, 'lookup', opt.chanlookup);
 end
-channelsCount = eeg_writechanfile(EEG, fileOutRed);
-
-% Write electrode file information (electrodes.tsv and coordsystem.json)
-eeg_writeelectrodesfiles(EEG, fileOutRed, 'export', opt.elecexport);
-
-% Write task information (eeg.json) Note: depends on channels
-% requiredChannelTypes: 'EEG', 'EOG', 'ECG', 'EMG', 'MISC'. Other channel
-% types are currently not valid output for eeg.json.
-nonEmptyChannelTypes = fieldnames(channelsCount);
-for i=1:numel(nonEmptyChannelTypes)
-    if strcmp(nonEmptyChannelTypes{i}, 'MISC')
-        tInfo.('MiscChannelCount') = channelsCount.('MISC');
-    else
-        tInfo.([nonEmptyChannelTypes{i} 'ChannelCount']) = channelsCount.(nonEmptyChannelTypes{i});
-    end
-end
-
-if ~isfield(tInfo, 'EEGReference')
-    if ~ischar(EEG.ref) && numel(EEG.ref) > 1 % untested for all cases
-        refChanLocs = EEG.chanlocs(EEG.ref);
-        ref = join({refChanLocs.labels},',');
-        ref = ref{1};
-    else
-        ref = EEG.ref;
-    end
-    tInfo.EEGReference    = ref;
-end
-if EEG.trials == 1
-    tInfo.RecordingType = 'continuous';
-else
-    tInfo.RecordingType = 'epoched';
-    tInfo.EpochLength = EEG.pnts/EEG.srate;
-end
-tInfo.RecordingDuration = EEG.pnts/EEG.srate;
-tInfo.SamplingFrequency = EEG.srate;
-if ~isempty(notes)
-    tInfo.SubjectArtefactDescription = notes;
-end
-%     jsonStr = jsonencode(tInfo);
-%     fid = fopen( [fileOut(1:end-3) 'eeg.json' ], 'w');
-%     fprintf(fid, '%s', jsonStr);
-%     fclose(fid);
-
-tInfoFields = {...
-    'TaskName' 'REQUIRED' '' '';
-    'TaskDescription' 'RECOMMENDED' '' '';
-    'Instructions' 'RECOMMENDED' 'char' '';
-    'CogAtlasID' 'RECOMMENDED' 'char' '';
-    'CogPOID' 'RECOMMENDED' 'char' '';
-    'InstitutionName' 'RECOMMENDED' 'char' '';
-    'InstitutionAddress' 'RECOMMENDED' 'char' '';
-    'InstitutionalDepartmentName' ' RECOMMENDED' 'char' '';
-    'DeviceSerialNumber' 'RECOMMENDED' 'char' '';
-    'SamplingFrequency' 'REQUIRED' '' '';
-    'EEGChannelCount' 'REQUIRED' '' '';
-    'EOGChannelCount' 'REQUIRED' '' 0;
-    'ECGChannelCount' 'REQUIRED' '' 0;
-    'EMGChannelCount' 'REQUIRED' '' 0;
-    'EEGReference' 'REQUIRED' 'char' 'Unknown';
-    'PowerLineFrequency' 'REQUIRED' '' 0;
-    'EEGGround' 'RECOMMENDED ' 'char' '';
-    'HeadCircumference' 'OPTIONAL ' '' 0;
-    'MiscChannelCount' ' OPTIONAL' '' '';
-    'TriggerChannelCount' 'RECOMMENDED' '' ''; % double in Bucanl's fork
-    'EEGPlacementScheme' 'RECOMMENDED' 'char' '';
-    'Manufacturer' 'RECOMMENDED' 'char' '';
-    'ManufacturersModelName' 'OPTIONAL' 'char' '';
-    'CapManufacturer' 'RECOMMENDED' 'char' 'Unknown';
-    'CapManufacturersModelName' 'OPTIONAL' 'char' '';
-    'HardwareFilters' 'OPTIONAL' 'struct' 'n/a';
-    'SoftwareFilters' 'REQUIRED' 'struct' 'n/a';
-    'RecordingDuration' 'RECOMMENDED' '' 'n/a';
-    'RecordingType' 'RECOMMENDED' 'char' '';
-    'EpochLength' 'RECOMMENDED' '' 'n/a';
-    'SoftwareVersions' 'RECOMMENDED' 'char' '';
-    'SubjectArtefactDescription' 'OPTIONAL' 'char' '' };
-tInfo = checkfields(tInfo, tInfoFields, 'tInfo');
-
-jsonwrite([fileOutRed '_eeg.json' ], tInfo,struct('indent','  '));
+bids_writetinfofile(EEG, tInfo, notes, fileOutRed);
 
 % write channel information
 %     cInfo.name.LongName = 'Channel name';
@@ -1115,13 +1037,12 @@ EYE = eeg_checkset(EYE, 'eventconsistency');
 
 indExt = find(fileOut == '_');
 fileOutRed = fileOut(1:indExt(end)-1);
-eeg_writeeventsfiles(MERGEDEEG, fileOutRed, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, ...
+bids_writeeventfile(MERGEDEEG, fileOutRed, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, ...
     'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse, 'omitsample', 'on');
 
 % export the data
 tmpTable = array2table(EYEPRIME.data', 'VariableNames', { EYEPRIME.chanlocs.labels });
 writetable(tmpTable, fileOut, 'FileType', 'text', 'delimiter', '\t');
-%eeg_writeeventsfiles(EEG, fileBase, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, 'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse);
 
 tInfoFields = {...
     'SamplingFrequency'	        'REQUIRED'	''	    'n/a' 'Sampling frequency (in Hz) of all the data in the recording, regardless of their type (for example, 2400).';
@@ -1134,7 +1055,7 @@ tInfoFields = {...
     };
 
 tInfo(1).SamplingFrequency = EYE.srate;
-tInfo = checkfields(tInfo, tInfoFields, 'tInfo');
+tInfo = bids_checkfields(tInfo, tInfoFields, 'tInfo');
 
 jsonwrite([fileBase '_eyetrack.json' ], tInfo, struct('indent','  '));
 
@@ -1149,37 +1070,6 @@ jsonwrite([fileBase '_eyetrack.json' ], tInfo, struct('indent','  '));
 %     fid = fopen( [fileOut(1:end-3) 'channels.json' ], 'w');
 %     fprintf(fid, '%s', jsonStr);
 %     fclose(fid);
-
-
-% check the fields for the structures
-% -----------------------------------
-function s = checkfields(s, f, structName)
-
-fields = fieldnames(s);
-diffFields = setdiff(fields, f(:,1)');
-if ~isempty(diffFields)
-    fprintf('Warning: Ignoring invalid field name(s) "%s" for structure %s\n', sprintf('%s ',diffFields{:}), structName);
-    s = rmfield(s, diffFields);
-end
-for iRow = 1:size(f,1)
-    if strcmp(structName,'tInfo') && strcmp(f{iRow,1}, 'EEGReference') && ~isa(s.(f{iRow,1}), 'char')
-        s.(f{iRow,1}) = char(s.(f{iRow,1}));
-    end
-    if isempty(s) || ~isfield(s, f{iRow,1})
-        if strcmpi(f{iRow,2}, 'required') % required or optional
-            if ~iscell(f{iRow,4}) && ~isstruct(f{iRow,4})
-                fprintf('Warning: "%s" set to %s\n', f{iRow,1}, num2str(f{iRow,4}));
-            end
-            s = setfield(s, {1}, f{iRow,1}, f{iRow,4});
-        end
-    elseif ~isempty(f{iRow,3}) && ~isa(s.(f{iRow,1}), f{iRow,3}) && ~strcmpi(s.(f{iRow,1}), 'n/a')
-        % if it's HED in eInfoDesc, allow string also
-        if strcmp(structName,'eInfoDesc') && strcmp(f{iRow,1}, 'HED') && isa(s.(f{iRow,1}), 'char')
-            return
-        end
-        error(sprintf('Parameter %s.%s must be a %s', structName, f{iRow,1}, f{iRow,3}));
-    end
-end
 
 function printEventHeader(eInfo)
 fields = eInfo{:,1};

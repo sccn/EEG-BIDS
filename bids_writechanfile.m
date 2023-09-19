@@ -18,7 +18,7 @@
 %
 % Authors: Dung Truong, Arnaud Delorme, 2022
 
-function channelsCount = eeg_writechanfile(EEG, fileOut)
+function eeg_writechanfile(EEG, fileOut)
 
 fid = fopen( [ fileOut '_channels.tsv' ], 'w');
 if isempty(EEG.chanlocs)
@@ -30,8 +30,6 @@ if isempty(EEG.chanlocs)
 else
     fprintf(fid, 'name\ttype\tunits\n');
     acceptedChannelTypes = { 'AUDIO' 'EEG' 'EOG' 'ECG' 'EMG' 'EYEGAZE' 'GSR' 'HEOG' 'MISC' 'PUPIL' 'REF' 'RESP' 'SYSCLOCK' 'TEMP' 'TRIG' 'VEOG' };
-    channelsCount = [];
-    channelsCount.EEG = 0;
     for iChan = 1:EEG.nbchan
         % Type
         if ~isfield(EEG.chanlocs, 'type') || isempty(EEG.chanlocs(iChan).type)
@@ -48,26 +46,8 @@ else
             unit = 'n/a';
         end
         
-        % Count channels by type (for use later in eeg.json)
-        if strcmp(type, 'n/a')
-            channelsCount.('EEG') = channelsCount.('EEG') + 1;
-        else
-            if ~isfield(channelsCount, type), channelsCount.(type) = 0; end
-            if strcmp(type, 'HEOG') || strcmp(type,'VEOG')
-                if ~isfield(channelsCount, 'EOG')
-                    channelsCount.('EOG') = 1;
-                else
-                    channelsCount.('EOG') = channelsCount.('EOG') + 1;
-                end
-            else
-                channelsCount.(type) = channelsCount.(type) + 1;
-            end
-        end
-        
         %Write
         fprintf(fid, '%s\t%s\t%s\n', EEG.chanlocs(iChan).labels, type, unit);
     end
 end
 fclose(fid);
-
-end

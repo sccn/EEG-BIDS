@@ -1,7 +1,7 @@
-% eeg_writebehfiles - write behavioral file
+% BIDS_WRITEBEHFILE - write behavioral file
 %
 % Usage:
-%    eeg_writebehfiles(beh, fileOut)
+%    bids_writebehfile(beh, fileOut)
 %
 %
 % Inputs:
@@ -12,7 +12,7 @@
 %
 % Authors: Arnaud Delorme, 2022
 
-function eeg_writebehfiles(beh, fileOut)
+function bids_writebehfile(beh, fileOut)
 
 if isempty(beh)
     return;
