@@ -61,10 +61,10 @@ tInfoFields = {...
     'InstitutionalDepartmentName' ' RECOMMENDED' 'char' '';
     'DeviceSerialNumber' 'RECOMMENDED' 'char' '';
     'SamplingFrequency' 'REQUIRED' '' '';
-    'EEGChannelCount' 'REQUIRED' '' '';
-    'EOGChannelCount' 'REQUIRED' '' 0;
-    'ECGChannelCount' 'REQUIRED' '' 0;
-    'EMGChannelCount' 'REQUIRED' '' 0;
+    'EEGChannelCount' 'RECOMMENDED' '' '';
+    'EOGChannelCount' 'RECOMMENDED' '' 0;
+    'ECGChannelCount' 'RECOMMENDED' '' 0;
+    'EMGChannelCount' 'RECOMMENDED' '' 0;
     'EEGReference' 'REQUIRED' 'char' 'Unknown';
     'PowerLineFrequency' 'REQUIRED' '' 0;
     'EEGGround' 'RECOMMENDED ' 'char' '';
