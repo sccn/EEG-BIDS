@@ -559,8 +559,7 @@ for iSubject = opt.subjects
                     % coordsystem file
                     % ----------------
                     if strcmpi(opt.bidscoord, 'on')
-                        coordFile = bids_get_file(eegFileRaw(1:end-8), '_coordsystem.json', coordFile);
-%                     
+                        coordFile = bids_get_file(eegFileRaw(1:end-8), '_coordsystem.json', coordFile);                   
                         [EEG, bids] = bids_importcoordsystemfile(EEG, coordFile, 'bids', bids); 
                     end
 
@@ -573,11 +572,15 @@ for iSubject = opt.subjects
                     % build `EEG.BIDS` from `bids`
                     BIDS.gInfo = bids.dataset_description;
                     BIDS.gInfo.README = bids.README;
+                    BIDS.gInfo.CHANGES = bids.CHANGES;
                     BIDS.pInfo = [bids.participants(1,:); bids.participants(iSubject,:)]; % header -> iSubject info
                     BIDS.pInfoDesc = bids.participantsJSON;
                     BIDS.eInfo = bids.eventInfo;
                     BIDS.eInfoDesc = bids.data.eventdesc;
                     BIDS.tInfo = infoData;
+                    if ~isempty(elecData)
+                       BIDS.scannedElectrodes = true;
+                    end
                     if ~isempty(behData)
                         behData = table2struct(behData);
                     end
