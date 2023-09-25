@@ -44,8 +44,20 @@ if isequal(flagExport, 'on') && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 
     fclose(fid);
     
     % Write coordinate file information (coordsystem.json)
-    coordsystemStruct.EEGCoordinateUnits = 'mm';
-    coordsystemStruct.EEGCoordinateSystem = 'CTF'; % Change as soon as possible to EEGLAB
-    coordsystemStruct.EEGCoordinateSystemDescription = 'EEGLAB';
+    if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EEGCoordinateUnits')
+        coordsystemStruct.EEGCoordinateUnits = EEG.chaninfo.BIDS.EEGCoordinateUnits;
+    else
+        coordsystemStruct.EEGCoordinateUnits = 'mm';
+    end
+    if isfield(EEG.chaninfo, 'BIDS') &&isfield(EEG.chaninfo.BIDS, 'EEGCoordinateSystem')
+        coordsystemStruct.EEGCoordinateSystem = EEG.chaninfo.BIDS.EEGCoordinateSystem;
+    else
+        coordsystemStruct.EEGCoordinateSystem = 'CTF';
+    end
+    if isfield(EEG.chaninfo, 'BIDS') &&isfield(EEG.chaninfo.BIDS, 'EEGCoordinateSystemDescription')
+        coordsystemStruct.EEGCoordinateSystemDescription = EEG.chaninfo.BIDS.EEGCoordinateSystemDescription;
+    else
+        coordsystemStruct.EEGCoordinateSystemDescription = 'EEGLAB';
+    end
     jsonwrite( [ fileOut '_coordsystem.json' ], coordsystemStruct);
 end

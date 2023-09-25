@@ -34,7 +34,7 @@ bids(1).coordsystem = bids_loadfile( coordfile, '');
 if ~isfield(EEG.chaninfo, 'nodatchans')
     EEG.chaninfo.nodatchans = [];
 end
-EEG.chaninfo.bids = bids(1).coordsystem;
+EEG.chaninfo.BIDS = bids(1).coordsystem;
 
 % import anatomical landmark
 % --------------------------
@@ -76,12 +76,12 @@ end
 % ---------------------------
 function factor = checkunit(chaninfo, field)
     factor = 1;
-    if isfield(chaninfo, 'bids') && isfield(chaninfo.bids, field) && isfield(chaninfo, 'unit')
-        if isequal(chaninfo.bids.(field), 'mm') && isequal(chaninfo.unit, 'cm')
+    if isfield(chaninfo, 'BIDS') && isfield(chaninfo.BIDS, field) && isfield(chaninfo, 'unit')
+        if isequal(chaninfo.BIDS.(field), 'mm') && isequal(chaninfo.unit, 'cm')
             factor = 1/10;
-        elseif isequal(chaninfo.bids.(field), 'cm') && isequal(chaninfo.unit, 'mm')
+        elseif isequal(chaninfo.BIDS.(field), 'cm') && isequal(chaninfo.unit, 'mm')
             factor = 10;
-        elseif isequal(chaninfo.bids.(field), chaninfo.unit)
+        elseif isequal(chaninfo.BIDS.(field), chaninfo.unit)
             factor = 1;
         else
             error('Unit not supported')

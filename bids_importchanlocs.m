@@ -8,7 +8,6 @@
 %  'channelFile' - [string] full path to the channels.tsv file
 %                   e.g.
 %                   ~/BIDS_EXPORT/sub-01/ses-01/eeg/sub-01_ses-01_task-GoNogo_channels.tsv
-%
 %  'elecFile'    - [string] full path to the electrodes.tsv file
 %                  e.g.
 %                  ~/BIDS_EXPORT/sub-01/ses-01/eeg/sub-01_ses-01_task-GoNogo_electrodes.tsv
@@ -27,6 +26,9 @@ function [EEG, channelData, elecData] = eeg_importchanlocs(EEG, channelFile, ele
     channelData = bids_loadfile(channelFile, '');
     elecData    = bids_loadfile(elecFile, '');
     chanlocs = [];
+    if isempty(channelData) && isempty(elecData)
+        return
+    end
     for iChan = 2:size(channelData,1)
         % the fields below are all required
         chanlocs(iChan-1).labels = channelData{iChan,1};

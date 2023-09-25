@@ -99,6 +99,8 @@
 %                info.ReferencesAndLinks = { 'Pubmed 122032020' };
 %                info.Name = 'This is a custom task';
 %                info.License = 'Creative commons';
+%                info.generatedBy.Name = 'bids-matlab-tools';
+%                info.sourceDatasets.DOI = 'xxx';
 %
 %  'tInfo'     - [struct] task information fields. See BIDS specifications.
 %                For example.
@@ -181,9 +183,6 @@
 %                                                   '4'    'stimulus';
 %                                                   '128'  'response' }
 %
-%  'chanlocs'  - [file] channel location file (must have the same number
-%                of channel as the data.
-%
 %  'elecexport' - ['on'|'off'|'auto'] export electrode file. Default is
 %                'auto'.
 %
@@ -200,6 +199,12 @@
 %                anonymized IDs instead. Default is 'off'.
 %
 %  'noevents' - ['on'|'off'] do not save event files. Default is 'off'.
+%
+%  'forcesession' - ['on'|'off'] force to export sessions even if there is 
+%               only one. Default is 'off'.
+%
+%  'forcerun'     - ['on'|'off'] force to export runs even if there is 
+%               only one. Default is 'off'.
 %
 %  'chanlocs'  - [struct or file name] channel location structure or file
 %                name to use when saving channel information. Note that
@@ -283,6 +288,8 @@ opt = finputcheck(varargin, {
     'pInfoDesc' 'struct'  {}    struct([]);
     'eInfoDesc' 'struct'  {}    struct([]);
     'cInfoDesc' 'struct'  {}    struct([]);
+    'generatedBy' 'struct'  {}    struct([]);
+    'sourceDatasets' 'struct'  {}    struct([]);
     'trialtype' 'cell'    {}    {};
     'renametype' 'cell'   {}    {};
     'checkresponse' 'string'   {}    '';
@@ -294,6 +301,8 @@ opt = finputcheck(varargin, {
     'defaced'   'string'  {'on' 'off'}    'on';
     'createids' 'string'  {'on' 'off'}    'off';
     'noevents'  'string'  {'on' 'off'}    'off';
+    'forcesession'  'string'  {'on' 'off'}    'off';
+    'forcerun'      'string'  {'on' 'off'}    'off';
     'exportformat'  'string'  {'same' 'eeglab' 'edf' 'bdf'}    'eeglab';
     'individualEventsJson' 'string'  {'on' 'off'}    'off';
     'README'    'string'  {}    '';
@@ -343,6 +352,7 @@ gInfoFields = { 'ReferencesAndLinks' 'required' 'cell' { 'n/a' };
     'Authors'            'optional' 'cell' { 'n/a' };
     'Acknowledgements'   'optional' 'char' '';
     'HowToAcknowledge'   'optional' 'char' '';
+    'sourceDatasets'     'optional' 'struct' struct([]);
     'Funding'            'optional' 'cell' { 'n/a' };
     'GeneratedBy'        'required' 'struct' struct('Name', 'bids-matlab-tools', 'Version', bids_matlab_tools_ver);
     'DatasetDOI'         'optional' 'char' { 'n/a' }};
@@ -669,12 +679,12 @@ for iSubj = 1:length(files)
 end
 
 multsessionflag = 1;
-if all(allsubjnsessions == 1)
+if all(allsubjnsessions == 1) && ~strcmpi(opt.forcesession, 'on')
     multsessionflag = 0;
 end
 
 multrunflag = 1;
-if all(allsubjnruns == 1)
+if all(allsubjnruns == 1) && ~strcmpi(opt.forcerun, 'on')
     multrunflag = 0;
 end
 
@@ -730,7 +740,7 @@ for iSubj = 1:length(files)
             for iTask = 1:length(files(iSubj).task)
                 structOut = getElement(files(iSubj), iTask);
                 fileStr    = [ subjectStr  '_task-' char(files(iSubj).task(iTask)) ];
-                copy_data_to_bids( structOut, subjectStr, fileStr, opt);
+                copy_data_bids_eeg( structOut, subjectStr, '', fileStr, opt);
             end
             
         case 2 % Single-Session Mult-Run
@@ -742,7 +752,7 @@ for iSubj = 1:length(files)
                 else
                     fileStr   = [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' files(iSubj).run{iRun} ];
                 end
-                copy_data_to_bids( structOut, subjectStr, fileStr, opt);
+                copy_data_bids_eeg( structOut, subjectStr, '', fileStr, opt);
             end
             
         case 3 % Mult-Session Single-Run
@@ -750,7 +760,7 @@ for iSubj = 1:length(files)
             for iSess = 1:length(unique(files(iSubj).session))
                 structOut = getElement(files(iSubj), iSess);
                 fileStr    = [ subjectStr '_ses-' files(iSubj).session{iSess} '_task-' char(files(iSubj).task{iSess}) ];
-                copy_data_to_bids( structOut, subjectStr, fileStr, opt);
+                copy_data_bids_eeg( structOut, subjectStr, ['ses-' files(iSubj).session{iSet}], fileStr, opt);
             end
             
         case 4 % Mult-Task Mult-Session Mult-Run
@@ -765,7 +775,7 @@ for iSubj = 1:length(files)
                     else
                         fileStr      = [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} ];
                     end
-                    copy_data_to_bids( structOut, subjectStr, fileStr, opt);
+                    copy_data_bids_eeg( structOut, subjectStr, ['ses-' files(iSubj).session{iSet}], fileStr, opt);
                 end
             end
                         
@@ -774,20 +784,11 @@ for iSubj = 1:length(files)
     end
 end
 
-% ------------------------------------
-% master function to copy data to BIDS
-% ------------------------------------
-function copy_data_to_bids( structOut, subjectStr, fileStr, opt)
-
-copy_data_bids_eeg( structOut, subjectStr, fileStr, opt);
-%bids_writebehfile(structOut.beh, subjectStr, fileStr);
-
-
 %--------------------------------------------------------------------------
 %--------------------------------------------------------------------------
-function copy_data_bids_eeg(sIn, subjectStr, fileStr, opt)
+function copy_data_bids_eeg(sIn, subjectStr, sess, fileStr, opt)
 
-fileBase = fullfile(opt.targetdir, subjectStr, 'eeg', fileStr);
+fileBase = fullfile(opt.targetdir, subjectStr, sess, 'eeg', fileStr);
 fileIn   = sIn.file;
 notes    = sIn.notes;
 chanlocs = sIn.chanlocs;
@@ -907,6 +908,10 @@ end
 if ischar(opt.chanlookup) && ~isempty(opt.chanlookup)
     EEG=pop_chanedit(EEG, 'lookup', opt.chanlookup);
 end
+
+% Write electrode file information (electrodes.tsv and coordsystem.json)
+bids_writechanfile(EEG, fileOutRed);
+bids_writeelectrodefile(EEG, fileOutRed, 'export', opt.elecexport);
 bids_writetinfofile(EEG, tInfo, notes, fileOutRed);
 
 % write channel information

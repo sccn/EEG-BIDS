@@ -40,12 +40,16 @@ else
             type = 'MISC';
         end
         % Unit
-        if strcmpi(type, 'eeg')
-            unit = 'uV';
+        if isfield(EEG.chanlocs(iChan), 'unit')
+            unit = EEG.chanlocs(iChan).unit;
         else
-            unit = 'n/a';
+            if strcmpi(type, 'eeg')
+                unit = 'uV';
+            else
+                unit = 'n/a';
+            end
         end
-        
+
         %Write
         fprintf(fid, '%s\t%s\t%s\n', EEG.chanlocs(iChan).labels, type, unit);
     end

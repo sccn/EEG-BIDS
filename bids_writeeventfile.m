@@ -158,7 +158,7 @@ if ~isempty(EEG.event)
                         
                     case 'duration'
                         if isfield(EEG.event, tmpField) && ~isempty(EEG.event(iEvent).(tmpField))
-                            duration = num2str(EEG.event(iEvent).(tmpField), '%1.10f');
+                            duration = num2str(EEG.event(iEvent).(tmpField)/EEG.srate, '%1.10f');
                         else
                             duration = 'n/a';
                         end
