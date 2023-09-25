@@ -61,7 +61,7 @@ for i = 1:length(EEG.chanlocs)
 
     if any(matchIdx)
         EEG.chanlocs(i).type = types{matchIdx};
-    elseif any(strcmpi(label, eeg_chans)) && ( isempty(EEG.chanlocs(i).type) || isnan(EEG.chanlocs(i).type) || isequal(lower(EEG.chanlocs(i).type), 'n/a'))
+    elseif any(strcmpi(label, eeg_chans)) && ( ~isfield(EEG.chanlocs, 'type') || isempty(EEG.chanlocs(i).type) || all(isnan(EEG.chanlocs(i).type)) || isequal(lower(EEG.chanlocs(i).type), 'n/a'))
         EEG.chanlocs(i).type = 'EEG';
     end
 end
