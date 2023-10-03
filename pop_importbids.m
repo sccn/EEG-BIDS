@@ -534,11 +534,11 @@ for iSubject = opt.subjects
                             disp('The EEG file has channel locations associated with it, we are keeping them');
                         end
                     end
-                    % look up EEG channel type if not present
-                    if ~isfield(EEG.chanlocs, 'type') || all(cellfun(@isempty, { EEG.chanlocs.type }))
-                        disp('No channel type found, looking up channel type from channel labels');
-                        EEG = eeg_getchantype(EEG);
-                    end
+                    
+                    % look up EEG channel type
+                    disp('Looking up/checking channel type from channel labels');
+                    EEG = eeg_getchantype(EEG);
+                    
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('chaninfo', { channelData }));
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('elecinfo', { elecData }));
                     
