@@ -78,10 +78,8 @@ else
     channelsCount.EEG = 0;
     for iChan = 1:EEG.nbchan
         % Type
-        if ~isfield(EEG.chanlocs, 'type') || isempty(EEG.chanlocs(iChan).type)
+        if ~isfield(EEG.chanlocs, 'type') || isempty(EEG.chanlocs(iChan).type) || isnan(EEG.chanlocs(iChan).type(1))
             type = 'n/a';
-        elseif ~isfield(EEG.chanlocs, 'type') || isnan(EEG.chanlocs(iChan).type)
-            type = 'n/a';    
         elseif ismember(upper(EEG.chanlocs(iChan).type), acceptedChannelTypes)
             type = upper(EEG.chanlocs(iChan).type);
         else
