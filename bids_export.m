@@ -220,6 +220,19 @@
 %              and the export format is set to 'same', files will be automatically
 %              exported in the 'eeglab' format.
 %
+% 'deleteExportDir' - ['on'|'off'] remove the target BIDS directory if previously 
+%                     present. This should be almost always 'on'. The
+%                     exception is having multi-task sessions in which each
+%                     task has specific eInfo and/or tInfo inputs. Default is 'on'.
+%
+% 'writePInfoOnly' - ['on'|'off'] bids_export ends after exporting
+%                    participants.tsv file. This should be almost always
+%                    'off'. Use case is when 'deleteExportDir' is 'off',
+%                    the participants.tsv will be potentially incomplete,
+%                    as it was overwritten. The solution is to regenerate
+%                    the file, but without touching the other contents of
+%                    the directory. Default is 'off'.
+%
 % Validation:
 %  If the BIDS data created with this function fails to pass the BIDS
 %  validator (npm install -g https://github.com/bids-standard/bids-validator.git
@@ -308,7 +321,9 @@ opt = finputcheck(varargin, {
     'README'    'string'  {}    '';
     'CHANGES'   'string'  {}    '' ;
     'copydata'  'integer' {}    [0 1]; % legacy, does nothing now
-    'importfunc' ''  {}    '' }, 'bids_export');
+    'importfunc' ''  {}    '';
+    'deleteExportDir' 'string' {'on' 'off'} 'on' ;
+    'writePInfoOnly' 'string' {'on' 'off'} 'off'}, 'bids_export');
 if isstr(opt), error(opt); end
 if size(opt.stimuli,1) == 1 || size(opt.stimuli,2) == 1
     opt.stimuli = reshape(opt.stimuli, [2 length(opt.stimuli)/2])';
@@ -334,8 +349,12 @@ if exist(opt.targetdir,'dir')
             return
         end
     end
-    disp('Folder exist. Deleting folder...')
-    rmdir(opt.targetdir, 's');
+    if strcmpi(opt.deleteExportDir, 'on')
+        disp('Folder exists. Deleting folder...')
+        rmdir(opt.targetdir, 's');
+    else
+        warning('Folder exists. You chose not to delete the folder. Results may not be satisfactory.')
+    end
 end
 
 disp('Creating sub-directories...')
@@ -567,6 +586,7 @@ if ~isempty(opt.pInfo)
         jsonwrite(fullfile(opt.targetdir, 'participants.json'), opt.pInfoDesc, struct('indent','  '));
     end
 end
+if strcmpi(opt.writePInfoOnly, 'on'), return; end % for a rare case that the particiapnts.tsv table needs to be re-created.
 
 % prepare event file information (_events.json)
 % ----------------------------
