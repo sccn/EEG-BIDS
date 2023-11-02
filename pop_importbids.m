@@ -194,7 +194,7 @@ pInd = 1;
 if exist(participantsFile,'File')
     bids.participants = bids_loadfile( participantsFile );
     if ~isempty(bids.participants) && ~isequal(bids.participants{1}, 'participant_id')
-        pInd = strmatch('participant_id', bids.participants(1,:), 'exact');
+        pInd = find(cellfun(@(x)contains(x, 'participant_id'), bids.participants(1,:))); % sometime special chars
         if isempty(pInd)
             error('Cannot find participant_id column')
         end
