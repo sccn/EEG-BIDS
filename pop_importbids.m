@@ -190,8 +190,15 @@ end
 % load participant file
 participantsFile = fullfile(bidsFolder, 'participants.tsv');
 bids.participants = '';
+pInd = 1;
 if exist(participantsFile,'File')
     bids.participants = bids_loadfile( participantsFile );
+    if ~isempty(bids.participants) && ~isequal(bids.participants{1}, 'participant_id')
+        pInd = strmatch('participant_id', bids.participants(1,:), 'exact');
+        if isempty(pInd)
+            error('Cannot find participant_id column')
+        end
+    end
 end
 % if no participants.tsv, use subjects folder names as their IDs
 if isempty(bids.participants)
@@ -225,8 +232,8 @@ else
 end
 
 for iSubject = opt.subjects
-    parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,1});
-    outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,1});
+    parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,pInd});
+    outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,pInd});
 
     iteration = 0;
     while ~exist(parentSubjectFolder, 'dir') && iteration < 3
@@ -234,8 +241,8 @@ for iSubject = opt.subjects
         dashpos = find(bids.participants{iSubject,1} == '-');
         if ~isempty(dashpos)
             bids.participants{iSubject,1} = [ bids.participants{iSubject,1}(1:dashpos) '0' bids.participants{iSubject,1}(dashpos+1:end) ];
-            parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,1});
-            outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,1});
+            parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,pInd});
+            outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,pInd});
         end
         iteration = iteration + 1;
     end
@@ -269,7 +276,7 @@ for iSubject = opt.subjects
     % import data
     for iFold = 1:length(subjectFolder) % scan sessions
         if ~exist(subjectFolder{iFold},'dir')
-            fprintf(2, 'No EEG data folder for subject %s session %s\n', bids.participants{iSubject,1}, subFolders{iFold});
+            fprintf(2, 'No EEG data folder for subject %s session %s\n', bids.participants{iSubject,pInd}, subFolders{iFold});
         else
             
             % scans.tsv for time synch information
@@ -367,7 +374,7 @@ for iSubject = opt.subjects
                                     if isempty(ind) && ~isempty(allFiles)
                                         ind = strmatch( '.mefd', cellfun(@(x)x(end-4:end), allFiles, 'uniformoutput', false) ); % MEFD
                                         if isempty(ind) && ~isempty(allFiles)
-                                            fprintf(2, 'No EEG file found for subject %s\n', bids.participants{iSubject,1});
+                                            fprintf(2, 'No EEG file found for subject %s\n', bids.participants{iSubject,pInd});
                                         end
                                     end
                                 end
@@ -500,7 +507,7 @@ for iSubject = opt.subjects
                             gunzip(eegFileRaw);
                             EEG = pop_fileio(eegFileRaw(1:end-3)); % fif folder
                         case '.ds'
-                            EEG = pop_ctf_read(eegFileRaw, 'makecontinuous', 'on'); % fif folder
+                            EEG = pop_ctf_read(eegFileRaw); % fif folder
                         case '.mefd'
                             if ~exist('pop_MEF3', 'file')
                                 error('MEF plugin not present, please install the MEF3 plugin first')
@@ -520,7 +527,7 @@ for iSubject = opt.subjects
                     selected_elecfile = bids_get_file(eegFileRaw(1:end-8), '_electrodes.tsv', elecFile);
                     if strcmpi(opt.bidschanloc, 'on')
                         [EEG, channelData, elecData] = bids_importchanlocs(EEG, selected_chanfile, selected_elecfile);
-                        if isempty(selected_elecfile) && (isempty(EEG.chanlocs) || ~isfield(EEG.chanlocs, 'theta') || any(~cellfun(@isempty, { EEG.chanlocs.theta })))
+                        if isempty(EEG.chanlocs) || ~isfield(EEG.chanlocs, 'theta') || all(cellfun(@isempty, { EEG.chanlocs.theta }))
                             dipfitdefs;
                             EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
                         end
@@ -564,7 +571,7 @@ for iSubject = opt.subjects
                     end
 
                     % copy information inside dataset
-                    EEG.subject = bids.participants{iSubject,1};
+                    EEG.subject = bids.participants{iSubject,pInd};
                     EEG.session = iFold;
                     EEG.run = iRun;
                     EEG.task = task(6:end); % task is currently of format "task-<Task name>"
@@ -596,7 +603,7 @@ for iSubject = opt.subjects
                 end
                 
                 % building study command
-                commands = [ commands { 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,1} 'session' iFold 'task' task(6:end) 'run' iRun } ];
+                commands = [ commands { 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,pInd} 'session' iFold 'task' task(6:end) 'run' iRun } ];
                 
                 % custom numerical fields
                 for iCol = 2:size(bids.participants,2)
@@ -617,7 +624,7 @@ for iSubject = opt.subjects
                 bData = bids.data(iSubject-1,iFold,iFile);
                 if ~isempty(bData.chaninfo)
                     if size(bData.chaninfo,1)-1 ~= bData.EEG.nbchan
-                        fprintf(2, 'Warning: inconsistency detected, %d channels in BIDS file vs %d in EEG file for %s\n', size(bData.chaninfo,1)-1, bData.EEG.nbchan, [tmpFileName,fileExt]);
+                        warning('Warning: inconsistency detected, %d channels in BIDS file vs %d in EEG file for %s\n', size(bData.chaninfo,1)-1, bData.EEG.nbchan, [tmpFileName,fileExt]);
                         inconsistentChannels = inconsistentChannels+1;
                     end
                 end
@@ -637,7 +644,7 @@ for iSubject = opt.subjects
                 dataType    = otherModality{iMod}; 
                 dataFile    = eval([dataType 'File']);
                 dataRaw     = eval([dataType 'Data']); % cell array containing tables
-                subjectID   = bids.participants{iSubject,1}; 
+                subjectID   = bids.participants{iSubject,pInd}; 
                 subjectDataFolder       = subjectFolder{iFold}(1:end-3);
                 subjectDataFolderOut    = subjectFolderOut{iFold}(1:end-3); 
                  
