@@ -20,7 +20,7 @@
 function [EEG, bids] = bids_importcoordsystemfile(EEG, coordfile, varargin)
 
 if nargin < 2
-    help eeg_importcoordsystemfiles;
+    help bids_importcoordsystemfile;
     return;
 end
 
