@@ -18,8 +18,8 @@ if isempty(beh)
     return;
 end
 
-if ~contains(fileOut, '_beh.txt')
-    fileOut = [ fileOut '_beh.txt'];
+if ~contains(fileOut, '_beh.tsv')
+    fileOut = [ fileOut '_beh.tsv'];
 end
 
 folder = fileparts(fileOut);
