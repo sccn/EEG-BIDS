@@ -740,19 +740,24 @@ for iSubj = 1:length(files)
             for iTask = 1:length(files(iSubj).task)
                 structOut = getElement(files(iSubj), iTask);
                 fileStr    = [ subjectStr  '_task-' char(files(iSubj).task(iTask)) ];
+                fileOutBeh = fullfile(opt.targetdir, subjectStr, 'beh', [ subjectStr  '_task-' char(files(iSubj).task(iTask)) '_beh.tsv' ]);
                 copy_data_bids_eeg( structOut, subjectStr, '', fileStr, opt);
+                bids_writebehfile(files(iSubj).beh{iTask}, fileOutBeh);
             end
             
         case 2 % Single-Session Mult-Run
             
             for iRun = 1:length(files(iSubj).run)
                 structOut = getElement(files(iSubj), iRun);
-                if strcmp(files(iSubj).run{iRun},'NaN')
+                if strcmp(files(iSubj).run{iRun}, 'NaN')
                     fileStr   = [ subjectStr  '_task-' char(files(iSubj).task(iRun)) ];
+                    fileOutBeh = fullfile(opt.targetdir, subjectStr, 'beh', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_beh.tsv' ]);
                 else
                     fileStr   = [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' files(iSubj).run{iRun} ];
+                    fileOutBeh = fullfile(opt.targetdir, subjectStr, 'beh', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' files(iSubj).run{iRun} '_beh.tsv' ]);
                 end
                 copy_data_bids_eeg( structOut, subjectStr, '', fileStr, opt);
+                bids_writebehfile(files(iSubj).beh{iRun}, fileOutBeh);
             end
             
         case 3 % Mult-Session Single-Run
@@ -760,7 +765,9 @@ for iSubj = 1:length(files)
             for iSess = 1:length(unique(files(iSubj).session))
                 structOut = getElement(files(iSubj), iSess);
                 fileStr    = [ subjectStr '_ses-' files(iSubj).session{iSess} '_task-' char(files(iSubj).task{iSess}) ];
+                fileOutBeh = fullfile(opt.targetdir, subjectStr, [ 'ses-' files(iSubj).session{iSess} ], 'beh', [ subjectStr '_ses-' files(iSubj).session{iSess} '_task-' char(files(iSubj).task{iSess}) '_beh.tsv' ]);
                 copy_data_bids_eeg( structOut, subjectStr, ['ses-' files(iSubj).session{iSet}], fileStr, opt);
+                bids_writebehfile(files(iSubj).beh{iSess}, fileOutBeh);
             end
             
         case 4 % Mult-Task Mult-Session Mult-Run
@@ -772,10 +779,13 @@ for iSubj = 1:length(files)
                     structOut = getElement(files(iSubj), iSet);
                     if strcmp(files(iSubj).run{iSet},'NaN')
                         fileStr      = [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) ];
+                        fileOutBeh = fullfile(opt.targetdir, subjectStr, [ 'ses-', files(iSubj).session{iSet} ], 'beh', [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_beh.tsv' ]);
                     else
                         fileStr      = [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} ];
+                        fileOutBeh = fullfile(opt.targetdir, subjectStr, [ 'ses-', files(iSubj).session{iSet} ], 'beh', [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} '_beh.tsv' ]);
                     end
                     copy_data_bids_eeg( structOut, subjectStr, ['ses-' files(iSubj).session{iSet}], fileStr, opt);
+                    bids_writebehfile(files(iSubj).beh{iSet}, fileOutBeh);
                 end
             end
                         
