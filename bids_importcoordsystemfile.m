@@ -79,8 +79,16 @@ function factor = checkunit(chaninfo, field)
     if isfield(chaninfo, 'BIDS') && isfield(chaninfo.BIDS, field) && isfield(chaninfo, 'unit')
         if isequal(chaninfo.BIDS.(field), 'mm') && isequal(chaninfo.unit, 'cm')
             factor = 1/10;
+        elseif isequal(chaninfo.BIDS.(field), 'mm') && isequal(chaninfo.unit, 'm')
+            factor = 1/1000;
         elseif isequal(chaninfo.BIDS.(field), 'cm') && isequal(chaninfo.unit, 'mm')
             factor = 10;
+        elseif isequal(chaninfo.BIDS.(field), 'cm') && isequal(chaninfo.unit, 'm')
+            factor = 1/10;
+        elseif isequal(chaninfo.BIDS.(field), 'm') && isequal(chaninfo.unit, 'cm')
+            factor = 100;
+        elseif isequal(chaninfo.BIDS.(field), 'm') && isequal(chaninfo.unit, 'mm')
+            factor = 1000;
         elseif isequal(chaninfo.BIDS.(field), chaninfo.unit)
             factor = 1;
         else
