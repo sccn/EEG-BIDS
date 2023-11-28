@@ -831,7 +831,7 @@ elseif strcmpi(ext, '.bdf') || strcmpi(ext, '.edf')
             tInfo.Manufacturer = 'BIOSEMI';
         end
     end
-    EEG = pop_biosig(fileOut);
+    EEG = pop_biosig(fileIn);
 elseif strcmpi(ext, '.vhdr')
     if isequal(opt.exportformat, 'same')
         rename_brainvision_files(fileIn, fileOut, 'rmf', 'off');
