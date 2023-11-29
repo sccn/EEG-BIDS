@@ -22,7 +22,7 @@
 %
 % Authors: Dung Truong, Arnaud Delorme, 2022
 
-function [EEG, channelData, elecData] = eeg_importchanlocs(EEG, channelFile, elecFile)
+function [EEG, channelData, elecData] = bids_importchanlocs(EEG, channelFile, elecFile)
     channelData = bids_loadfile(channelFile, '');
     elecData    = bids_loadfile(elecFile, '');
     chanlocs = [];
@@ -58,10 +58,15 @@ function [EEG, channelData, elecData] = eeg_importchanlocs(EEG, channelFile, ele
     end
 
     if length(chanlocs) ~= EEG.nbchan
-        error('channel location file and EEG file do not have the same number of channels');
+        if ~isempty(EEG.chanlocs)
+            warning('channel location file and EEG file do not have the same number of channels - ignoring channel location BIDS files');
+            chanlocs = EEG.chanlocs;
+        else
+            error('channel location file and EEG file do not have the same number of channels (and no channel location in the EEG file)');
+        end
     end
 
-    if isfield(chanlocs, 'X')
+    if isfield(chanlocs, 'X') && ~isempty(chanlocs(1).X)
         EEG.chanlocs = convertlocs(chanlocs, 'cart2all');
     else
         EEG.chanlocs = chanlocs;

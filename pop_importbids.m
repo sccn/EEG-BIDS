@@ -190,8 +190,15 @@ end
 % load participant file
 participantsFile = fullfile(bidsFolder, 'participants.tsv');
 bids.participants = '';
+pInd = 1;
 if exist(participantsFile,'File')
     bids.participants = bids_loadfile( participantsFile );
+    if ~isempty(bids.participants) && ~isequal(bids.participants{1}, 'participant_id')
+        pInd = find(cellfun(@(x)contains(x, 'participant_id'), bids.participants(1,:))); % sometime special chars
+        if isempty(pInd)
+            error('Cannot find participant_id column')
+        end
+    end
 end
 % if no participants.tsv, use subjects folder names as their IDs
 if isempty(bids.participants)
@@ -225,8 +232,8 @@ else
 end
 
 for iSubject = opt.subjects
-    parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,1});
-    outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,1});
+    parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,pInd});
+    outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,pInd});
 
     iteration = 0;
     while ~exist(parentSubjectFolder, 'dir') && iteration < 3
@@ -234,8 +241,8 @@ for iSubject = opt.subjects
         dashpos = find(bids.participants{iSubject,1} == '-');
         if ~isempty(dashpos)
             bids.participants{iSubject,1} = [ bids.participants{iSubject,1}(1:dashpos) '0' bids.participants{iSubject,1}(dashpos+1:end) ];
-            parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,1});
-            outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,1});
+            parentSubjectFolder = fullfile(bidsFolder   , bids.participants{iSubject,pInd});
+            outputSubjectFolder = fullfile(opt.outputdir, bids.participants{iSubject,pInd});
         end
         iteration = iteration + 1;
     end
@@ -269,7 +276,7 @@ for iSubject = opt.subjects
     % import data
     for iFold = 1:length(subjectFolder) % scan sessions
         if ~exist(subjectFolder{iFold},'dir')
-            fprintf(2, 'No EEG data folder for subject %s session %s\n', bids.participants{iSubject,1}, subFolders{iFold});
+            fprintf(2, 'No EEG data folder for subject %s session %s\n', bids.participants{iSubject,pInd}, subFolders{iFold});
         else
             
             % scans.tsv for time synch information
@@ -367,7 +374,7 @@ for iSubject = opt.subjects
                                     if isempty(ind) && ~isempty(allFiles)
                                         ind = strmatch( '.mefd', cellfun(@(x)x(end-4:end), allFiles, 'uniformoutput', false) ); % MEFD
                                         if isempty(ind) && ~isempty(allFiles)
-                                            fprintf(2, 'No EEG file found for subject %s\n', bids.participants{iSubject,1});
+                                            fprintf(2, 'No EEG file found for subject %s\n', bids.participants{iSubject,pInd});
                                         end
                                     end
                                 end
@@ -500,7 +507,7 @@ for iSubject = opt.subjects
                             gunzip(eegFileRaw);
                             EEG = pop_fileio(eegFileRaw(1:end-3)); % fif folder
                         case '.ds'
-                            EEG = pop_ctf_read(eegFileRaw, 'makecontinuous', 'on'); % fif folder
+                            EEG = pop_ctf_read(eegFileRaw); % fif folder
                         case '.mefd'
                             if ~exist('pop_MEF3', 'file')
                                 error('MEF plugin not present, please install the MEF3 plugin first')
@@ -520,7 +527,7 @@ for iSubject = opt.subjects
                     selected_elecfile = bids_get_file(eegFileRaw(1:end-8), '_electrodes.tsv', elecFile);
                     if strcmpi(opt.bidschanloc, 'on')
                         [EEG, channelData, elecData] = bids_importchanlocs(EEG, selected_chanfile, selected_elecfile);
-                        if isempty(selected_elecfile) && (isempty(EEG.chanlocs) || ~isfield(EEG.chanlocs, 'theta') || any(~cellfun(@isempty, { EEG.chanlocs.theta })))
+                        if isempty(EEG.chanlocs) || ~isfield(EEG.chanlocs, 'theta') || all(cellfun(@isempty, { EEG.chanlocs.theta }))
                             dipfitdefs;
                             EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
                         end
@@ -564,7 +571,7 @@ for iSubject = opt.subjects
                     end
 
                     % copy information inside dataset
-                    EEG.subject = bids.participants{iSubject,1};
+                    EEG.subject = bids.participants{iSubject,pInd};
                     EEG.session = iFold;
                     EEG.run = iRun;
                     EEG.task = task(6:end); % task is currently of format "task-<Task name>"
@@ -596,7 +603,7 @@ for iSubject = opt.subjects
                 end
                 
                 % building study command
-                commands = [ commands { 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,1} 'session' iFold 'task' task(6:end) 'run' iRun } ];
+                commands = [ commands { 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,pInd} 'session' iFold 'task' task(6:end) 'run' iRun } ];
                 
                 % custom numerical fields
                 for iCol = 2:size(bids.participants,2)
@@ -617,7 +624,7 @@ for iSubject = opt.subjects
                 bData = bids.data(iSubject-1,iFold,iFile);
                 if ~isempty(bData.chaninfo)
                     if size(bData.chaninfo,1)-1 ~= bData.EEG.nbchan
-                        fprintf(2, 'Warning: inconsistency detected, %d channels in BIDS file vs %d in EEG file for %s\n', size(bData.chaninfo,1)-1, bData.EEG.nbchan, [tmpFileName,fileExt]);
+                        warning('Warning: inconsistency detected, %d channels in BIDS file vs %d in EEG file for %s\n', size(bData.chaninfo,1)-1, bData.EEG.nbchan, [tmpFileName,fileExt]);
                         inconsistentChannels = inconsistentChannels+1;
                     end
                 end
@@ -637,7 +644,7 @@ for iSubject = opt.subjects
                 dataType    = otherModality{iMod}; 
                 dataFile    = eval([dataType 'File']);
                 dataRaw     = eval([dataType 'Data']); % cell array containing tables
-                subjectID   = bids.participants{iSubject,1}; 
+                subjectID   = bids.participants{iSubject,pInd}; 
                 subjectDataFolder       = subjectFolder{iFold}(1:end-3);
                 subjectDataFolderOut    = subjectFolderOut{iFold}(1:end-3); 
                  
@@ -703,7 +710,7 @@ stats.EventConsistency   = fastif(inconsistentEvents   > 0, 0, 1);
 if isfield(bids.data, 'chaninfo') && size(bids.data(1).chaninfo, 1) > 1
     chanLabels = bids.data(1).chaninfo(2:end,1);
     standardLabels = { 'Fp1' 'Fpz' 'Fp2' 'AF9' 'AF7' 'AF5' 'AF3' 'AF1' 'AFz' 'AF2' 'AF4' 'AF6' 'AF8' 'AF10' 'F9' 'F7' 'F5' 'F3' 'F1' 'Fz' 'F2' 'F4' 'F6' 'F8' 'F10' 'FT9' 'FT7' 'FC5' 'FC3' 'FC1' 'FCz' 'FC2' 'FC4' 'FC6' 'FT8' 'FT10' 'T9' 'T7' 'C5' 'C3' 'C1' 'Cz' 'C2' 'C4' 'C6' 'T8' 'T10' 'TP9' 'TP7' 'CP5' 'CP3' 'CP1' 'CPz' 'CP2' 'CP4' 'CP6' 'TP8' 'TP10' 'P9' 'P7' 'P5' 'P3' 'P1' 'Pz' 'P2' 'P4' 'P6' 'P8' 'P10' 'PO9' 'PO7' 'PO5' 'PO3' 'PO1' 'POz' 'PO2' 'PO4' 'PO6' 'PO8' 'PO10' 'O1' 'Oz' 'O2' 'I1' 'Iz' 'I2' 'AFp9h' 'AFp7h' 'AFp5h' 'AFp3h' 'AFp1h' 'AFp2h' 'AFp4h' 'AFp6h' 'AFp8h' 'AFp10h' 'AFF9h' 'AFF7h' 'AFF5h' 'AFF3h' 'AFF1h' 'AFF2h' 'AFF4h' 'AFF6h' 'AFF8h' 'AFF10h' 'FFT9h' 'FFT7h' 'FFC5h' 'FFC3h' 'FFC1h' 'FFC2h' 'FFC4h' 'FFC6h' 'FFT8h' 'FFT10h' 'FTT9h' 'FTT7h' 'FCC5h' 'FCC3h' 'FCC1h' 'FCC2h' 'FCC4h' 'FCC6h' 'FTT8h' 'FTT10h' 'TTP9h' 'TTP7h' 'CCP5h' 'CCP3h' 'CCP1h' 'CCP2h' 'CCP4h' 'CCP6h' 'TTP8h' 'TTP10h' 'TPP9h' 'TPP7h' 'CPP5h' 'CPP3h' 'CPP1h' 'CPP2h' 'CPP4h' 'CPP6h' 'TPP8h' 'TPP10h' 'PPO9h' 'PPO7h' 'PPO5h' 'PPO3h' 'PPO1h' 'PPO2h' 'PPO4h' 'PPO6h' 'PPO8h' 'PPO10h' 'POO9h' 'POO7h' 'POO5h' 'POO3h' 'POO1h' 'POO2h' 'POO4h' 'POO6h' 'POO8h' 'POO10h' 'OI1h' 'OI2h' 'Fp1h' 'Fp2h' 'AF9h' 'AF7h' 'AF5h' 'AF3h' 'AF1h' 'AF2h' 'AF4h' 'AF6h' 'AF8h' 'AF10h' 'F9h' 'F7h' 'F5h' 'F3h' 'F1h' 'F2h' 'F4h' 'F6h' 'F8h' 'F10h' 'FT9h' 'FT7h' 'FC5h' 'FC3h' 'FC1h' 'FC2h' 'FC4h' 'FC6h' 'FT8h' 'FT10h' 'T9h' 'T7h' 'C5h' 'C3h' 'C1h' 'C2h' 'C4h' 'C6h' 'T8h' 'T10h' 'TP9h' 'TP7h' 'CP5h' 'CP3h' 'CP1h' 'CP2h' 'CP4h' 'CP6h' 'TP8h' 'TP10h' 'P9h' 'P7h' 'P5h' 'P3h' 'P1h' 'P2h' 'P4h' 'P6h' 'P8h' 'P10h' 'PO9h' 'PO7h' 'PO5h' 'PO3h' 'PO1h' 'PO2h' 'PO4h' 'PO6h' 'PO8h' 'PO10h' 'O1h' 'O2h' 'I1h' 'I2h' 'AFp9' 'AFp7' 'AFp5' 'AFp3' 'AFp1' 'AFpz' 'AFp2' 'AFp4' 'AFp6' 'AFp8' 'AFp10' 'AFF9' 'AFF7' 'AFF5' 'AFF3' 'AFF1' 'AFFz' 'AFF2' 'AFF4' 'AFF6' 'AFF8' 'AFF10' 'FFT9' 'FFT7' 'FFC5' 'FFC3' 'FFC1' 'FFCz' 'FFC2' 'FFC4' 'FFC6' 'FFT8' 'FFT10' 'FTT9' 'FTT7' 'FCC5' 'FCC3' 'FCC1' 'FCCz' 'FCC2' 'FCC4' 'FCC6' 'FTT8' 'FTT10' 'TTP9' 'TTP7' 'CCP5' 'CCP3' 'CCP1' 'CCPz' 'CCP2' 'CCP4' 'CCP6' 'TTP8' 'TTP10' 'TPP9' 'TPP7' 'CPP5' 'CPP3' 'CPP1' 'CPPz' 'CPP2' 'CPP4' 'CPP6' 'TPP8' 'TPP10' 'PPO9' 'PPO7' 'PPO5' 'PPO3' 'PPO1' 'PPOz' 'PPO2' 'PPO4' 'PPO6' 'PPO8' 'PPO10' 'POO9' 'POO7' 'POO5' 'POO3' 'POO1' 'POOz' 'POO2' 'POO4' 'POO6' 'POO8' 'POO10' 'OI1' 'OIz' 'OI2' 'T3' 'T5' 'T4' 'T6' 'M1' 'M2' 'A1' 'A2' 'O9' 'O10' };
-    if length(intersect(lower(chanLabels), lower(standardLabels))) > length(chanLabels)/2
+    if ischar(chanLabels{1}) && length(intersect(lower(chanLabels), lower(standardLabels))) > length(chanLabels)/2
         stats.StandardChannelLabels = 1;
     end
 end
