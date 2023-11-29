@@ -830,6 +830,8 @@ elseif strcmpi(ext, '.bdf') || strcmpi(ext, '.edf')
             tInfo.EEGReference = 'CMS/DRL';
             tInfo.Manufacturer = 'BIOSEMI';
         end
+    else
+        copyfile(fileIn, fileOut);
     end
     EEG = pop_biosig(fileOut);
 elseif strcmpi(ext, '.vhdr')
