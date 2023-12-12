@@ -27,6 +27,8 @@
 %  'bidstask'    - [string] value of a key task- allowing to analyze some
 %                  tasks only
 %  'metadata'    - ['on'|'off'] only import metadata. Default 'off'.
+%  'ctffunc'     - ['fileio'|'ctfimport'] function to use to import CTF data
+%                  Default 'fileio'.
 %
 % Outputs:
 %   STUDY   - EEGLAB STUDY structure
@@ -152,6 +154,7 @@ opt = finputcheck(options, { ...
     'sessions'       'cell'      {}                {}; ...
     'runs'           'integer'   {}                []; ...
     'metadata'       'string'    { 'on' 'off' }    'off'; ...
+    'ctffunc'        'string'    { 'fileio' 'ctfimport' }    'fileio'; ...
     'eventtype'      'string'    {  }              'value'; ...
     'outputdir'      'string'    { } fullfile(bidsFolder, 'derivatives', 'eeglab'); ...
     'studyName'      'string'    { }                defaultStudyName ...
@@ -495,7 +498,14 @@ for iSubject = opt.subjects
                             EEG = pop_biosig( eegFileRaw ); % no way to read meta data only (because events in channel)
                         case '.eeg'
                             [tmpPath,tmpFileName,~] = fileparts(eegFileRaw);
-                            if exist(fullfile(tmpPath, [tmpFileName '.vhdr']), 'file'), ext = '.vhdr'; else ext = '.VMRK'; end
+                            if exist(fullfile(tmpPath, [tmpFileName '.vhdr']), 'file')
+                                ext = '.vhdr'; 
+                            elseif exist(fullfile(tmpPath, [tmpFileName '.VHDR']), 'file'), 
+                                ext = '.VHDR'; 
+                            else
+                                fprintf(2, 'Warning: eeg file found without BVA header file\n');
+                                break;
+                            end
                             if strcmpi(opt.metadata, 'on')
                                 EEG = pop_loadbv( tmpPath, [tmpFileName ext], [], [], true );
                             else
@@ -507,7 +517,11 @@ for iSubject = opt.subjects
                             gunzip(eegFileRaw);
                             EEG = pop_fileio(eegFileRaw(1:end-3)); % fif folder
                         case '.ds'
-                            EEG = pop_ctf_read(eegFileRaw); % fif folder
+                            if strcmpi(opt.ctffunc, 'fileio')
+                                EEG = pop_fileio(eegFileRaw);
+                            else
+                                EEG = pop_ctf_read(eegFileRaw);
+                            end
                         case '.mefd'
                             if ~exist('pop_MEF3', 'file')
                                 error('MEF plugin not present, please install the MEF3 plugin first')
@@ -863,7 +877,7 @@ for iDat = 1:numel(dataFile)
     [~,fileName,fileExt] = fileparts(dataFile(iDat).name);
     dataFileOut   = fullfile(subjectDataFolderOut, dataType, [fileName '.set']);
     dataFileJSON  = [fileName '.json'];
-    
+
     % JSON information file
     infoFile        = searchparent([subjectFolder, dataType], dataFileJSON);
     infoData        = bids_loadfile(infoFile.name, infoFile);
