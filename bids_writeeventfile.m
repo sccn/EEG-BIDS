@@ -154,11 +154,11 @@ if ~isempty(EEG.event)
                     
                     case 'onset'
                         onset = (EEG.event(iEvent).(tmpField)-1)/EEG.srate;
-                        str{end+1} = sprintf('%1.10f', onset);
+                        str{end+1} = num2str(onset, 10);
                         
                     case 'duration'
                         if isfield(EEG.event, tmpField) && ~isempty(EEG.event(iEvent).(tmpField))
-                            duration = num2str(EEG.event(iEvent).(tmpField)/EEG.srate, '%1.10f');
+                            duration = num2str(EEG.event(iEvent).(tmpField)/EEG.srate, 10);
                         else
                             duration = 'n/a';
                         end
