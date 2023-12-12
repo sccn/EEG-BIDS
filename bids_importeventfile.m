@@ -146,5 +146,8 @@ end
 
 % last check
 if ~isvarname(nameout)
-    error('the variable name to use is still invalid, check chars to remove')
+    nameout(1) = upper(nameout(1));
+    if ~isvarname(nameout)
+        error('the variable name to use is still invalid, check chars to remove')
+    end
 end
