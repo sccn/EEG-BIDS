@@ -1070,7 +1070,11 @@ if isfield(EYE.event, 'description') % use for type
     end
 end
 EYE = eeg_checkset(EYE, 'eventconsistency');
-[MERGEDEEG, EYEPRIME] = eeg_mergechannels(EEG, EYE);
+MERGEDEEG = eeg_mergechannels(EEG, EYE);
+
+EYEPRIME      = MERGEDEEG;
+EYEPRIME.data     = EYEPRIME.data(EEG.nbchan+1:end,:);
+EYEPRIME.chanlocs = EYEPRIME.chanlocs(EEG.nbchan+1:end);
 
 indExt = find(fileOut == '_');
 fileOutRed = fileOut(1:indExt(end)-1);

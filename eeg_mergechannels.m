@@ -11,8 +11,6 @@
 %
 % Optional inputs:
 %       MERGEDEEG - contains the merged EEG datasets
-%       EEG2PRIME - contains EEG2 with some sample removed so that the
-%                   first sample of EEG1 match the first sample of EEG2.
 %
 % Output:
 %  OUTEEG  - output EEG structure with the two datasets merged
@@ -71,6 +69,7 @@ if EEG1.trials > 1 || EEG2.trials > 1
 end
 
 % find matching event types
+% -------------------------
 evenType1 = cellfun(@num2str, { EEG1.event.type }, 'uniformoutput', false);
 evenType2 = cellfun(@num2str, { EEG2.event.type }, 'uniformoutput', false);
 
@@ -114,6 +113,7 @@ while counter1 <= length(EEG1.event) && counter2 <= length(EEG2.event)
 end        
 
 % search for common events and count them
+% ---------------------------------------
 [commonEvents,ind1,ind2] = intersect(evenType1, evenType2);
 if length(evenType1) - length(removeevents(evenType1, commonEvents)) > length(matchingEvents1)
     fprintf(2, 'Some common events were missed, check event structures\n');
@@ -131,10 +131,100 @@ fprintf('Matching events structure 2 are %s -> {%s}\n', int2str(matchingEvents2)
 % eventstruct = importevent(EEG1.event, EEG2.event, EEG1.srate)
 
 % first change sampling rate of second input
-
+% ------------------------------------------
 latency1 = [EEG1.event(matchingEvents1).latency];
 latency2 = [EEG2.event(matchingEvents2).latency];
-[ypred, alpha, rsq, slope, intercept] = fastregress(latency1, latency2);
+[~, ~, ~, slope, intercept] = fastregress(latency1, latency2);
+
+func1to2 = @(x)x*slope+intercept;
+func2to1 = @(x)(x-intercept)/slope;
+
+fprintf('Event offset for dataset 1 vs 2 (compare the two rows):\n')
+
+% show the difference
+latency2in1 = func2to1(latency2);
+for iEvent = 1:min(50, length(latency1))
+    fprintf('%8s                    ', sprintf('%1.1f', latency1(iEvent)));
+end
+fprintf('\n');
+for iEvent = 1:min(50, length(latency2in1))
+    fprintf('%8s (off by %3d ms)    ', sprintf('%1.1f', latency2in1(iEvent)), round(abs(latency2in1(iEvent)-latency1(iEvent))));
+end
+fprintf('\n');
+
+% get the samples to interpolate and interpolate each channel
+% -----------------------------------------------------------
+samples = func1to2(1:EEG1.pnts);
+MERGEDEEG = EEG1;
+MERGEDEEG.data(end+EEG2.nbchan,:) = 0;
+fprintf('Interpolating channels:')
+for iChan = 1:EEG2.nbchan
+    MERGEDEEG.data(MERGEDEEG.nbchan+iChan,:) = interp1(1:EEG2.pnts, EEG2.data(iChan,:), samples, 'lin', 0);
+    fprintf('.');
+end
+fprintf('\n')
+MERGEDEEG.nbchan = size(MERGEDEEG.data,1);
+
+% merge channels
+% --------------
+if ~isempty(MERGEDEEG.chanlocs) || ~isempty(EEG2.chanlocs)
+    
+    if isempty(MERGEDEEG.chanlocs)
+        for iChan = 1:EEG1.nbchan
+            MERGEDEEG.chanlocs(iChan).labels = [ 'E' num2str(iChan) ];
+        end
+    end
+
+    if isempty(EEG2.chanlocs)
+        for iChan = 1:EEG2.nbchan
+            EEG2.chanlocs(iChan).labels = [ 'E' num2str(iChan) ];
+        end
+    end
+
+    fields = fieldnames(EEG2.chanlocs);
+    for iChan = 1:length(EEG2.chanlocs)
+        for iField = 1:length(fields)
+            MERGEDEEG.chanlocs(EEG1.nbchan+iChan).(fields{iField}) = EEG2.chanlocs(iChan).(fields{iField});
+        end
+    end
+end
+
+% shift events from first dataset
+% for iEvent = 1:length(MERGEDEEG.event)
+%     MERGEDEEG.event(iEvent).latency = MERGEDEEG.event(iEvent).latency-9;
+% end
+
+% add events from second dataset
+% ------------------------------
+MERGEDEEG.event = [];
+%nonMatchingEvents2 = setdiff(1:length(EEG2.event), matchingEvents2);
+nonMatchingEvents2 = 1:length(EEG2.event);
+
+fields = fieldnames(EEG2.event);
+fields = setdiff(fields, 'latency');
+if ~isempty(nonMatchingEvents2) && isfield(EEG2.event, 'latency')
+    for iEvent = nonMatchingEvents2(:)'
+        MERGEDEEG.event(end+1).latency = func2to1(EEG2.event(iEvent).latency); 
+        for iField = 1:length(fields)
+            MERGEDEEG.event(end).(fields{iField}) = EEG2.event(iEvent).(fields{iField});
+        end
+    end
+end
+allLatencies = [ MERGEDEEG.event.latency ];
+if length( MERGEDEEG.event ) == length(allLatencies)
+    [~,inds] = sort(allLatencies);
+    MERGEDEEG.event = MERGEDEEG.event(inds);
+else
+    error('Issue with empty latency field')
+end
+MERGEDEEG = eeg_checkset(MERGEDEEG, 'eventconsistency');
+
+return
+
+
+
+
+% legacy code using the resampling method
 
 ratio = EEG2.srate/EEG1.srate;
 
@@ -166,11 +256,13 @@ end
 fprintf('\n');
 
 % offset raw EEG2 to match EEG1
+% -----------------------------
 newsrate = round(100*EEG2.srate/newfactor(1))/100;
 fprintf('Resampling second dataset to %1.2f (to best match first dataset %1.1% sampling rate\n', newsrate, EEG1.srate)
 TMPEEG2 = pop_resample(EEG2, newsrate);
 
 % shift data
+% ----------
 originalOffset = round(newfactor(2)/newfactor(1));
 fprintf('Shift origin of second dataset by %d samples to match first dataset\n', originalOffset)
 if originalOffset > 0
@@ -191,6 +283,7 @@ elseif size(TMPEEG2.data,2) > size(EEG1.data,2)
 end
 
 % merge datasets
+% --------------
 MERGEDEEG = EEG1;
 TMPEEG2.event(matchingEvents2) = [];
 MERGEDEEG.data(end+1:end+TMPEEG2.nbchan,:) = TMPEEG2.data;
@@ -215,6 +308,7 @@ end
 MERGEDEEG = eeg_checkset(MERGEDEEG, 'eventconsistency');
 
 % return a modified version of EEG2 with changed sampling rate and samples removed
+% --------------------------------------------------------------------------------
 EEG2PRIME = EEG2;
 EEG2PRIME.srate = EEG1.srate*newfactor(1);
 
@@ -229,6 +323,7 @@ elseif originalOffset < 0
 end
 
 % remove event types from list
+% ----------------------------
 function allevents = removeevents(allevents, rmlist)
 
 for iEvent = 1:length(rmlist)
