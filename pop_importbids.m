@@ -542,15 +542,13 @@ for iSubject = opt.subjects
                     if strcmpi(opt.bidschanloc, 'on')
                         [EEG, channelData, elecData] = bids_importchanlocs(EEG, selected_chanfile, selected_elecfile);
                         if isempty(EEG.chanlocs) || ~isfield(EEG.chanlocs, 'theta') || all(cellfun(@isempty, { EEG.chanlocs.theta }))
-                            dipfitdefs;
-                            EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
+                            EEG = bids_chan_lookup(EEG, infoData);
                         end
                     else
                         channelData = bids_loadfile(selected_chanfile);
                         elecData    = bids_loadfile(selected_elecfile);
                         if ~isfield(EEG.chanlocs, 'theta') || all(cellfun(@isempty, { EEG.chanlocs.theta }))
-                            dipfitdefs;
-                            EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
+                            EEG = bids_chan_lookup(EEG, infoData);
                         else
                             disp('The EEG file has channel locations associated with it, we are keeping them');
                         end
@@ -1050,4 +1048,20 @@ DATA.subject = subject;
 DATA.session = session;
 DATA.chanlocs = chanlocs;
 
+% look up channel locations
+% -------------------------
+function EEG = bids_chan_lookup(EEG, infodata)
 
+EGIflag = false;
+if isfield(infodata, 'ManufacturersModelName') && contains(lower(infodata.ManufacturersModelName), 'ges')
+    EGIflag = true;
+end
+if isfield(infodata, 'Manufacturer') && contains(lower(infodata.Manufacturer), 'egi')
+    EGIflag = true;
+end
+if EGIflag
+    EEG = readegilocs(EEG);
+else
+   dipfitdefs;
+   EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
+end
