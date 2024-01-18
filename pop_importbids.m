@@ -597,6 +597,7 @@ for iSubject = opt.subjects
                     BIDS.eInfo = bids.eventInfo;
                     BIDS.eInfoDesc = bids.data.eventdesc;
                     BIDS.tInfo = infoData;
+                    BIDS.bidsstats = stats;
                     if ~isempty(elecData)
                        BIDS.scannedElectrodes = true;
                     end
