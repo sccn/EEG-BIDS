@@ -47,6 +47,12 @@ function [EEG, channelData, elecData] = bids_importchanlocs(EEG, channelFile, el
         end
     end
 
+    if length(chanlocs) == EEG.nbchan+1 && isequal(lower(chanlocs(end).labels), 'cz') % EGI
+        chanlocs(end).type = 'FID';
+        [chanlocs(1:end-1).type] = deal('EEG');
+    end
+    [chanlocs,chaninfo] = eeg_checkchanlocs(chanlocs);
+
     if length(chanlocs) ~= EEG.nbchan
         warning('Different number of channels in channel location file and EEG file');
         % check if the difference is due to non EEG channels
@@ -61,14 +67,11 @@ function [EEG, channelData, elecData] = bids_importchanlocs(EEG, channelFile, el
         if ~isempty(EEG.chanlocs)
             warning('channel location file and EEG file do not have the same number of channels - ignoring channel location BIDS files');
             chanlocs = EEG.chanlocs;
+            chaninfo = EEG.chaninfo;
         else
             error('channel location file and EEG file do not have the same number of channels (and no channel location in the EEG file)');
         end
     end
-
-    if isfield(chanlocs, 'X') && ~isempty(chanlocs(1).X)
-        EEG.chanlocs = convertlocs(chanlocs, 'cart2all');
-    else
-        EEG.chanlocs = chanlocs;
-    end
+    EEG.chanlocs = chanlocs;
+    EEG.chaninfo = chaninfo;
 end
