@@ -157,6 +157,13 @@ if numel(json) == 1
     S = ['{' fmt('\n',tab)];
     for i=1:numel(fn)
         key = fn{i};
+        if isequal(key, 'GeneratedBy')
+            tabin  = '[';
+            tabout = ']';
+        else
+            tabin  = '';
+            tabout = '';
+        end
         if strcmp(optregistry('replacementStyle'),'hex')
             key = regexprep(key,...
                 '^x0x([0-9a-fA-F]{2})', '${native2unicode(hex2dec($1))}');
@@ -164,8 +171,8 @@ if numel(json) == 1
                 '0x([0-9a-fA-F]{2})', '${native2unicode(hex2dec($1))}');
         end
         if isstruct(json), val = json.(fn{i}); else val = json(fn{i}); end
-        S = [S fmt(tab) jsonwrite_char(key) ':' fmt(' ',tab) ...
-            jsonwrite_var(val,tab+1)];
+        S = [S fmt(tab) jsonwrite_char(key) ':' tabin fmt(' ',tab) ...
+            jsonwrite_var(val,tab+1) tabout ];
         if i ~= numel(fn), S = [S ',']; end
         S = [S fmt('\n',tab)];
     end
