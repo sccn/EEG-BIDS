@@ -74,4 +74,4 @@ v7.6 - adding export to non-EEGLAB formats, refactor export
 
 v7.7 - fix importing MEG and MEF files. Better handling of runs. Now tracks tool version in BIDS.
 
-v8.0 - (not released) renamed files, separate file for task info
+v8.0 - renamed files, separate file for task info, adding BIDS statistic output, handling EGI & BVA file better, channel types and units, adding eye-tracking and behavioral support
