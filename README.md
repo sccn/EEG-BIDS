@@ -22,6 +22,10 @@ git clone --recurse-submodules https://github.com/sccn/bids-matlab-tools
 
 Simply place the code in the plugin folder of EEGLAB and it will be automatically detected by EEGLAB. See documentation at [https://github.com/sccn/bids-matlab-tools/wiki](https://github.com/sccn/bids-matlab-tools/wiki).
 
+# zip command to release plugin
+
+zip -r bids-matlab-tools8.0.zip bids-matlab-tools/* -x /bids-matlab-tools/testing/additionaltests/* /bids-matlab-tools/testing/ds004117/* /bids-matlab-tools/testing/hbn_eye_tracking_data/*
+
 # Version history
 
 v1.0 - initial version
