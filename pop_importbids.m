@@ -465,7 +465,7 @@ for iSubject = opt.subjects
                 end
                 
                 % JSON information file
-                infoData = bids_loadfile([ eegFileRaw(1:end-8) '_eeg.json' ], infoFile);
+                infoData = bids_importjson([ eegFileRaw(1:end-8) '_eeg.json' ], '_eeg.json'); % bids_loadfile([ eegFileRaw(1:end-8) '_eeg.json' ], infoFile);
                 bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], infoData);
                     
                 % extract task name
