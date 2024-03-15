@@ -60,7 +60,7 @@ end
 % ---------------
 function res = importtsv( fileName)
 
-res = loadtxt( fileName, 'verbose', 'off', 'delim', 9);
+res = loadtxt( fileName, 'verbose', 'off', 'delim', [ 9 ]);
 
 for iCol = 1:size(res,2)
     % search for NaNs in numerical array

@@ -30,12 +30,19 @@ function [EEG, channelData, elecData] = bids_importchanlocs(EEG, channelFile, el
         return
     end
     for iChan = 2:size(channelData,1)
-        % the fields below are all required
-        chanlocs(iChan-1).labels = channelData{iChan,1};
-        chanlocs(iChan-1).type   = channelData{iChan,2};
-        chanlocs(iChan-1).unit   = channelData{iChan,3};
-        if size(channelData,2) > 3
-            chanlocs(iChan-1).status = channelData{iChan,4};
+        if size(channelData,2) == 1
+            fprintf('Warning: BIDS channel data missing tab characters\n')
+            [chanlocs(iChan-1).labels ,toktmp] = strtok(channelData{iChan,1});
+            [chanlocs(iChan-1).type   ,toktmp] = strtok(toktmp);
+            [chanlocs(iChan-1).unit   ,toktmp] = strtok(toktmp);
+        else
+            % the fields below are all required
+            chanlocs(iChan-1).labels = channelData{iChan,1};
+            chanlocs(iChan-1).type   = channelData{iChan,2};
+            chanlocs(iChan-1).unit   = channelData{iChan,3};
+            if size(channelData,2) > 3
+                chanlocs(iChan-1).status = channelData{iChan,4};
+            end
         end
     end
     for iChan = 2:size(elecData,1)
