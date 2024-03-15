@@ -89,6 +89,8 @@ if ~isempty(listNotFound)
     if errorFlag
         error('BIDS folder do not match')
     end
+else
+    disp('   Files matching %s vs %s\n')
 end
 
 function outstr = relativeFolder( folder, parentFolder )

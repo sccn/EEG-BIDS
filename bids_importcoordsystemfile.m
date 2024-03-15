@@ -30,7 +30,7 @@ if isstr(g), error(g); end
 bids = g.bids;
                         
 % coordinate information
-bids(1).coordsystem = bids_loadfile( coordfile, '');
+bids(1).coordsystem = bids_importjson(coordfile, '_coordsystem.json'); %bids_loadfile( coordfile, '');
 if ~isfield(EEG.chaninfo, 'nodatchans')
     EEG.chaninfo.nodatchans = [];
 end
