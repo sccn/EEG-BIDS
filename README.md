@@ -24,7 +24,7 @@ Simply place the code in the plugin folder of EEGLAB and it will be automaticall
 
 # zip command to release plugin
 
-zip -r bids-matlab-tools8.0.zip bids-matlab-tools/* -x /bids-matlab-tools/testing/additionaltests/* /bids-matlab-tools/testing/ds004117/* /bids-matlab-tools/testing/hbn_eye_tracking_data/*
+zip -r bids-matlab-tools8.0.zip bids-matlab-tools/* -x /bids-matlab-tools/testing/additionaltests/* /bids-matlab-tools/testing/ds004117/* /bids-matlab-tools/testing/hbn_eye_tracking_data/* /bids-matlab-tools/testing/data/*
 
 # Version history
 
