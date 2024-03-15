@@ -186,6 +186,8 @@
 %  'elecexport' - ['on'|'off'|'auto'] export electrode file. Default is
 %                'auto'.
 %
+%  'eventexport' - ['on'|'off'] export event file. Default is 'on'.
+%
 %  'chanlookup' - [file] look up channel locations based on file. Default
 %                 not to look up channel location.
 %
@@ -309,7 +311,8 @@ opt = finputcheck(varargin, {
     'anattype'  ''        {}    'T1w';
     'chanlocs'  ''        {}    '';
     'chanlookup' 'string' {}    '';
-    'elecexport' 'string'  {'on' 'off' 'auto'}    'auto';
+    'elecexport' 'string'   {'on' 'off' 'auto'}    'auto';
+    'eventexport' 'string'  {'on' 'off' 'auto'}    'auto';
     'interactive' 'string'  {'on' 'off'}    'off';
     'defaced'   'string'  {'on' 'off'}    'on';
     'createids' 'string'  {'on' 'off'}    'off';
@@ -786,7 +789,7 @@ for iSubj = 1:length(files)
                 structOut = getElement(files(iSubj), iSess);
                 fileStr    = [ subjectStr '_ses-' files(iSubj).session{iSess} '_task-' char(files(iSubj).task{iSess}) ];
                 fileOutBeh = fullfile(opt.targetdir, subjectStr, [ 'ses-' files(iSubj).session{iSess} ], 'beh', [ subjectStr '_ses-' files(iSubj).session{iSess} '_task-' char(files(iSubj).task{iSess}) '_beh.tsv' ]);
-                copy_data_bids_eeg( structOut, subjectStr, ['ses-' files(iSubj).session{iSet}], fileStr, opt);
+                copy_data_bids_eeg( structOut, subjectStr, ['ses-' files(iSubj).session{iSess}], fileStr, opt);
                 bids_writebehfile(files(iSubj).beh{iSess}, fileOutBeh);
             end
             
@@ -916,8 +919,10 @@ eyeWritenStatus = save_bids_eye_tracking(sIn, fileBase, EEG, opt);
 % write events
 indExt = find(fileOut == '_');
 fileOutRed = fileOut(1:indExt(end)-1);
-bids_writeeventfile(EEG, fileOutRed, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, ...
-    'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse, 'omitsample', fastif(eyeWritenStatus, 'on', 'off'));
+if strcmpi(opt.eventexport, 'on')
+    bids_writeeventfile(EEG, fileOutRed, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, ...
+        'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse, 'omitsample', fastif(eyeWritenStatus, 'on', 'off'));
+end
 
 % Write channel file information (channels.tsv)
 % Note: Consider using here electrodes_to_tsv.m
