@@ -668,13 +668,15 @@ for iSubject = opt.subjects
                     scansRaw = [];
                 end
                 
-                [DATA, dataFileOut] = import_noneeg(dataType, dataFile, dataRaw, subjectID, scansRaw, iFold, strcmpi(opt.metadata, 'on'), strcmpi(opt.bidschanloc, 'on'), useScans, subjectDataFolder, subjectDataFolderOut);
-                
-                if strcmpi(opt.metadata, 'off')
-                    if exist([subjectFolderOut{iFold}(1:end-3), dataType],'dir') ~= 7
-                        mkdir(subjectFolderOut{iFold}(1:end-3), dataType);
+                for iDat = 1:numel(dataFile)
+                    [DATA, dataFileOut] = import_noneeg(dataType, dataFile(iDat), dataRaw{iDat}, subjectID, scansRaw, iFold, strcmpi(opt.metadata, 'on'), strcmpi(opt.bidschanloc, 'on'), useScans, subjectDataFolder, subjectDataFolderOut);
+                    
+                    if strcmpi(opt.metadata, 'off')
+                        if exist([subjectFolderOut{iFold}(1:end-3), dataType],'dir') ~= 7
+                            mkdir(subjectFolderOut{iFold}(1:end-3), dataType);
+                        end
+                        pop_saveset(DATA, dataFileOut);
                     end
-                    pop_saveset(DATA, dataFileOut);
                 end
             end
             
@@ -819,10 +821,10 @@ function [DATA, dataFileOut] = import_noneeg(dataType, dataFile, dataRaw, subjec
 
 disp(['Processing ' dataType ' data'])
 
-for iDat = 1:numel(dataFile)
+
     
     % replace extension tsv with set
-    [~,fileName,fileExt] = fileparts(dataFile(iDat).name);
+    [~,fileName,fileExt] = fileparts(dataFile.name);
     dataFileOut   = fullfile(subjectDataFolderOut, dataType, [fileName '.set']);
     dataFileJSON  = [fileName '.json'];
 
@@ -847,13 +849,13 @@ for iDat = 1:numel(dataFile)
     switch lower(fileExt)
         case '.set' % do nothing
             if onlyMetadata 
-                DATA = pop_loadset( 'filename', dataFile(iDat).name, 'loadmode', 'info' );
+                DATA = pop_loadset( 'filename', dataFile.name, 'loadmode', 'info' );
             else
-                DATA = pop_loadset( 'filename', dataFile(iDat).name );
+                DATA = pop_loadset( 'filename', dataFile.name );
             end
         case '.tsv'
             DATA        = eeg_emptyset;
-            DATA.data   = table2array(dataRaw{iDat})';
+            DATA.data   = table2array(dataRaw)';
             
             if strcmp(dataType,'motion')
                 DATA.srate                  = infoData.SamplingFrequencyEffective;
@@ -867,7 +869,7 @@ for iDat = 1:numel(dataFile)
             end
             
             % find latency channel
-            headers     = dataRaw{1}.Properties.VariableNames;
+            headers     = dataRaw.Properties.VariableNames;
             
             useLatency = 0;
             if strcmp(dataType,'motion')
@@ -971,7 +973,7 @@ for iDat = 1:numel(dataFile)
         otherwise
             error(['No ' dataType 'data found for subject/session ' subjectFolder{iFold}]);
     end
-end
+
 
 if useChanlocs
     chanlocs = [];
