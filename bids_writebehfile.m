@@ -6,13 +6,14 @@
 %
 % Inputs:
 %  beh       - [struct] structure containing behavioral data (event
-%              structue for example)
+%              structure for example)
+%  behinfo   - [struct] column names and description (optional)
 %  fileOut   - [string] filepath of the desired output location with file basename
 %                e.g. ~/BIDS_EXPORT/sub-01/ses-01/eeg/sub-01_ses-01_task-GoNogo
 %
 % Authors: Arnaud Delorme, 2022
 
-function bids_writebehfile(beh, fileOut)
+function bids_writebehfile(beh, behinfo, fileOut)
 
 if isempty(beh)
     return;
@@ -40,7 +41,7 @@ fprintf(fid, '\n');
 
 for iRow = 1:length(beh)
     for iField = 1:length(fields)
-        if isempty(beh(iRow).(fields{iField}))
+        if isempty(beh(iRow).(fields{iField})) || isnan(beh(iRow).(fields{iField}))
             fprintf(fid, 'n/a' );
         else
             fprintf(fid, '%1.4f', beh(iRow).(fields{iField}) );
@@ -50,3 +51,8 @@ for iRow = 1:length(beh)
     fprintf(fid, '\n');
 end
 fclose(fid);
+
+if ~isempty(behinfo)
+    jsonwrite([fileOut(1:end-4) '.json'], behinfo, struct('indent','  '));
+end
+
