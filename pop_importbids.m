@@ -1013,5 +1013,6 @@ if EGIflag
     EEG = readegilocs(EEG);
 else
    dipfitdefs;
+   EEG = eeg_checkchanlocs(EEG);
    EEG = pop_chanedit(EEG, 'cleanlabels', 'on', 'lookup', template_models(2).chanfile);
 end
