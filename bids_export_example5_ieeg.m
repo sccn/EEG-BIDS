@@ -13,13 +13,13 @@ end
 data = [];
 data(end+1).file     = { fullfile(folder, 'sub-01', 'sub-01_ses-20140828T132700_ecephys+image.nwb') };
 data(end+1).file     = { fullfile(folder, 'sub-02', 'sub-02_ses-20160302T164800_ecephys+image.nwb') };
-% data(end+1).file     = { fullfile(folder, 'sub-03', 'sub-03_ses-20150304T164400_ecephys+image.nwb') };
-% data(end+1).file     = { fullfile(folder, 'sub-04', 'sub-04_ses-20120829T175200_ecephys+image.nwb') };
-% data(end+1).file     = { fullfile(folder, 'sub-05', 'sub-05_ses-20121207T173500_ecephys+image.nwb') };
-% data(end+1).file     = { fullfile(folder, 'sub-06', 'sub-06_ses-20131209T113600_ecephys+image.nwb') };
-% data(end+1).file     = { fullfile(folder, 'sub-07', 'sub-07_ses-20160212T171400_ecephys+image.nwb') };
-% data(end+1).file     = { fullfile(folder, 'sub-08', 'sub-08_ses-20161217T120200_ecephys+image.nwb') };
-% data(end+1).file     = { fullfile(folder, 'sub-09', 'sub-09_ses-20170311T170500_ecephys+image.nwb') };
+data(end+1).file     = { fullfile(folder, 'sub-03', 'sub-03_ses-20150304T164400_ecephys+image.nwb') };
+data(end+1).file     = { fullfile(folder, 'sub-04', 'sub-04_ses-20120829T175200_ecephys+image.nwb') };
+data(end+1).file     = { fullfile(folder, 'sub-05', 'sub-05_ses-20121207T173500_ecephys+image.nwb') };
+data(end+1).file     = { fullfile(folder, 'sub-06', 'sub-06_ses-20131209T113600_ecephys+image.nwb') };
+data(end+1).file     = { fullfile(folder, 'sub-07', 'sub-07_ses-20160212T171400_ecephys+image.nwb') };
+data(end+1).file     = { fullfile(folder, 'sub-08', 'sub-08_ses-20161217T120200_ecephys+image.nwb') };
+data(end+1).file     = { fullfile(folder, 'sub-09', 'sub-09_ses-20170311T170500_ecephys+image.nwb') };
 
 % Content for README file
 README = [ 'Re-exporting Dandiset https://dandiarchive.org/dandiset/000576 as BIDS' ];
