@@ -22,13 +22,24 @@ function eeg_writechanfile(EEG, fileOut)
 
 fid = fopen( [ fileOut '_channels.tsv' ], 'w');
 if isempty(EEG.chanlocs)
-    fprintf(fid, 'name\ttype\tunits\n');
-    for iChan = 1:EEG.nbchan
-        fprintf(fid, 'E%d\tEEG\tmicroV\n', iChan); 
+    if contains(fileOut, 'ieeg')
+        fprintf(fid, 'name\ttype\tunits\tlow_cutoff\thigh_cutoff\n');
+        for iChan = 1:EEG.nbchan
+            fprintf(fid, 'E%d\tEEG\tmicroV\tn/a\tn/a\n', iChan); 
+        end
+    else
+        fprintf(fid, 'name\ttype\tunits\n');
+        for iChan = 1:EEG.nbchan
+            fprintf(fid, 'E%d\tEEG\tmicroV\n', iChan); 
+        end
     end
     channelsCount = struct([]);
 else
-    fprintf(fid, 'name\ttype\tunits\n');
+    if contains(fileOut, 'ieeg')
+        fprintf(fid, 'name\ttype\tunits\tlow_cutoff\thigh_cutoff\n');
+    else
+        fprintf(fid, 'name\ttype\tunits\n');
+    end
     acceptedChannelTypes = { 'AUDIO' 'EEG' 'EOG' 'ECG' 'EMG' 'EYEGAZE' 'GSR' 'HEOG' 'MISC' 'PUPIL' 'REF' 'RESP' 'SYSCLOCK' 'TEMP' 'TRIG' 'VEOG' };
     for iChan = 1:EEG.nbchan
         % Type
@@ -51,7 +62,11 @@ else
         end
 
         %Write
-        fprintf(fid, '%s\t%s\t%s\n', EEG.chanlocs(iChan).labels, type, unit);
+        if contains(fileOut, 'ieeg')
+            fprintf(fid, '%s\t%s\t%s\tn/a\tn/a\n', EEG.chanlocs(iChan).labels, type, unit);
+        else
+            fprintf(fid, '%s\t%s\t%s\n', EEG.chanlocs(iChan).labels, type, unit);
+        end
     end
 end
 fclose(fid);

@@ -22,7 +22,7 @@ data(end+1).file     = { fullfile(folder, 'sub-08', 'sub-08_ses-20161217T120200_
 data(end+1).file     = { fullfile(folder, 'sub-09', 'sub-09_ses-20170311T170500_ecephys+image.nwb') };
 
 % Content for README file
-README = [ 'Re-exporting Dandiset https://dandiarchive.org/dandiset/000576 as BIDS' ];
+README = 'Re-exporting Dandiset https://dandiarchive.org/dandiset/000576 as BIDS';
 
 % call to the export function
 bids_export(data, 'targetdir', 'BIDS000576', 'README', README, 'exportformat', 'same');

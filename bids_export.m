@@ -226,6 +226,13 @@
 %              and the export format is set to 'same', files will be automatically
 %              exported in the 'eeglab' format.
 %
+% 'modality' - ['eeg'|'ieeg'|'meg'|'auto'] type of data. 'auto' means the
+%              format is determined from the file extension. Default is
+%              'auto'.
+%
+% 'ctffunc' - ['fileio'|'ctfimport'] function to use to import CTF data
+%             Default 'fileio'.
+%
 % 'deleteExportDir' - ['on'|'off'] remove the target BIDS directory if previously 
 %                     present. This should be almost always 'on'. The
 %                     exception is having multi-task sessions in which each
@@ -290,47 +297,49 @@ if ~exist('jsonwrite')
 end
 
 opt = finputcheck(varargin, {
-    'Name'      'string'  {}    '';
-    'License'   'string'  {}    '';
-    'Authors'   'cell'    {}    {''};
+    'Name'         'string'  {}    '';
+    'License'      'string'  {}    '';
+    'Authors'      'cell'    {}    {''};
     'ReferencesAndLinks' 'cell' {}    {''};
-    'targetdir' 'string'  {}    fullfile(pwd, 'bidsexport');
-    'taskName'  'string'  {}    'unnamed';
-    'codefiles' 'cell'    {}    {};
-    'stimuli'   'cell'    {}    {};
-    'pInfo'     'cell'    {}    {};
-    'eInfo'     'cell'    {}    {};
-    'cInfo'     'cell'    {}    {};
-    'gInfo'     'struct'  {}    struct([]);
-    'tInfo'     'struct'  {}    struct([]);
-    'tInfoeye'  'struct'  {}    struct([]);
-    'pInfoDesc' 'struct'  {}    struct([]);
-    'eInfoDesc' 'struct'  {}    struct([]);
-    'cInfoDesc' 'struct'  {}    struct([]);
-    'behInfo'   'struct'  {}    struct([]);
-    'generatedBy' 'struct'  {}    struct([]);
+    'targetdir'    'string'  {}    fullfile(pwd, 'bidsexport');
+    'taskName'     'string'  {}    'unnamed';
+    'codefiles'    'cell'    {}    {};
+    'stimuli'      'cell'    {}    {};
+    'pInfo'        'cell'    {}    {};
+    'eInfo'        'cell'    {}    {};
+    'cInfo'        'cell'    {}    {};
+    'gInfo'        'struct'  {}    struct([]);
+    'tInfo'        'struct'  {}    struct([]);
+    'tInfoeye'     'struct'  {}    struct([]);
+    'pInfoDesc'    'struct'  {}    struct([]);
+    'eInfoDesc'    'struct'  {}    struct([]);
+    'cInfoDesc'    'struct'  {}    struct([]);
+    'behInfo'      'struct'  {}    struct([]);
+    'generatedBy'  'struct'  {}    struct([]);
     'sourceDatasets' 'struct'  {}    struct([]);
-    'trialtype' 'cell'    {}    {};
-    'renametype' 'cell'   {}    {};
+    'trialtype'    'cell'    {}    {};
+    'renametype'   'cell'   {}    {};
     'checkresponse' 'string'   {}    '';
-    'anattype'  ''        {}    'T1w';
-    'chanlocs'  ''        {}    '';
-    'chanlookup' 'string' {}    '';
-    'elecexport' 'string'   {'on' 'off' 'auto'}    'auto';
-    'eventexport' 'string'  {'on' 'off' 'auto'}    'auto';
+    'anattype'     ''        {}    'T1w';
+    'chanlocs'     ''        {}    '';
+    'chanlookup'   'string' {}    '';
+    'elecexport'   'string'   {'on' 'off' 'auto'}    'auto';
+    'eventexport'  'string'  {'on' 'off' 'auto'}    'auto';
     'eventfieldignore' 'string'  {'on' 'off'}    'on';
-    'interactive' 'string'  {'on' 'off'}    'off';
-    'defaced'   'string'  {'on' 'off'}    'on';
-    'createids' 'string'  {'on' 'off'}    'off';
-    'noevents'  'string'  {'on' 'off'}    'off';
-    'forcesession'  'string'  {'on' 'off'}    'off';
-    'forcerun'      'string'  {'on' 'off'}    'off';
-    'exportformat'  'string'  {'same' 'eeglab' 'edf' 'bdf'}    'eeglab';
+    'interactive'  'string'  {'on' 'off'}    'off';
+    'defaced'      'string'  {'on' 'off'}    'on';
+    'createids'    'string'  {'on' 'off'}    'off';
+    'noevents'     'string'  {'on' 'off'}    'off';
+    'forcesession' 'string'  {'on' 'off'}    'off';
+    'forcerun'     'string'  {'on' 'off'}    'off';
+    'exportformat' 'string'  {'same' 'eeglab' 'edf' 'bdf'}    'eeglab';
     'individualEventsJson' 'string'  {'on' 'off'}    'off';
-    'README'    'string'  {}    '';
-    'CHANGES'   'string'  {}    '' ;
-    'copydata'  'integer' {}    [0 1]; % legacy, does nothing now
-    'importfunc' ''  {}    '';
+    'modality'     'string'  {'ieeg' 'meg' 'eeg' 'auto'}       'auto';
+    'README'       'string'  {}    '';
+    'CHANGES'      'string'  {}    '' ;
+    'copydata'     'integer' {}    [0 1]; % legacy, does nothing now
+    'ctffunc'      'string'    { 'fileio' 'ctfimport' }    'fileio'; ...
+    'importfunc'   ''  {}    '';
     'deleteExportDir' 'string' {'on' 'off'} 'on' ;
     'writePInfoOnly' 'string' {'on' 'off'} 'off'}, 'bids_export');
 if isstr(opt), error(opt); end
@@ -800,7 +809,6 @@ end
 %--------------------------------------------------------------------------
 function copy_data_bids_eeg(sIn, subjectStr, sess, fileStr, opt)
 
-fileBase = fullfile(opt.targetdir, subjectStr, sess, 'eeg', fileStr);
 fileIn   = sIn.file;
 notes    = sIn.notes;
 chanlocs = sIn.chanlocs;
@@ -808,39 +816,33 @@ timeoffset = sIn.timeoffset;
 eventtype  = sIn.eventtype;
 eventindex = sIn.eventindex;
 
-folderOut = fileparts(fileBase);
-
 if isempty(fileIn)
     return
 end
 
-if ~exist(folderOut)
-    mkdir(folderOut);
-end
-
+% import data
 tInfo = opt.tInfo;
 [pathIn,fileInNoExt,ext] = fileparts(fileIn); 
 ext = lower(ext);
-fileOut = [fileBase '_eeg' ext];
-fprintf('Processing file %s\n', fileOut);
+fprintf('Processing file %s\n', fileIn);
 if ~isempty(eventtype) || ~isempty(eventindex) || ~isempty(timeoffset)
     opt.exportformat = 'eeglab';
 end
 if ~isempty(opt.importfunc)
+    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
     EEG = feval(opt.importfunc, fileIn);
 elseif strcmpi(ext, '.bdf') || strcmpi(ext, '.edf')
-    if isequal(opt.exportformat, 'same')
-
-    else
-        copyfile(fileIn, fileOut);
-    end
+    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
     EEG = pop_biosig(fileIn);
 elseif strcmpi(ext, '.vhdr')
+    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
     [fpathin, fname, ext] = fileparts(fileIn);
     EEG = pop_loadbv(fpathin, [fname ext]);
 elseif strcmpi(ext, '.set')
+    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
     EEG = pop_loadset(fileIn);
 elseif strcmpi(ext, '.cnt')
+    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
     EEG = pop_loadcnt(fileIn, 'dataformat', 'auto');
     datFile = [fileIn(1:end-4) '.dat'];
     if exist(datFile,'file')
@@ -848,10 +850,13 @@ elseif strcmpi(ext, '.cnt')
             'fields',{'DatTrial','DatResp','DatType','DatCorrect','DatLatency'},'skipline',20,'timeunit',NaN,'align',0);
     end
 elseif strcmpi(ext, '.mff')
+    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
     EEG = pop_mffimport(fileIn,{'code'});
 elseif strcmpi(ext, '.raw')
+    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
     EEG = pop_readegi(fileIn);
 elseif strcmpi(ext, '.eeg')
+    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
     [tmpPath,tmpFileName,~] = fileparts(fileIn);
     if exist(fullfile(tmpPath, [tmpFileName '.vhdr']), 'file')
         EEG = pop_loadbv( tmpPath, [tmpFileName '.vhdr'] );
@@ -859,13 +864,46 @@ elseif strcmpi(ext, '.eeg')
         error('.eeg files not from BrainVision are currently not supported')
     end
 elseif strcmpi(ext, '.nwb')
+    if strcmpi(opt.modality, 'auto'), opt.modality = 'ieeg'; end
+    if ~exist('pop_nwbimport', 'file')
+        error('NWB-io plugin not present, please install the plugin first')
+    end
     EEG = pop_nwbimport(fileIn, 'importspikes', 'on', 'typefield', 1);
+elseif strcmpi(ext, '.mefd')
+    if strcmpi(opt.modality, 'auto'), opt.modality = 'ieeg'; end
+    modality = 'ieeg';
+    if ~exist('pop_MEF3', 'file')
+        error('MEF plugin not present, please install the MEF3 plugin first')
+    end
+    EEG = pop_MEF3(eegFileRaw); % MEF folder
+elseif strcmpi(ext, '.fif')
+    if strcmpi(opt.modality, 'auto'), opt.modality = 'meg'; end
+    EEG = pop_fileio(eegFileRaw); % fif folder
+elseif strcmpi(ext, '.gz')
+    if strcmpi(opt.modality, 'auto'), opt.modality = 'meg'; end
+    gunzip(eegFileRaw);
+    EEG = pop_fileio(eegFileRaw(1:end-3)); % fif folder
+elseif strcmpi(ext, '.ds')
+    if strcmpi(opt.modality, 'auto'), opt.modality = 'meg'; end
+    if strcmpi(opt.ctffunc, 'fileio')
+        EEG = pop_fileio(eegFileRaw);
+    else
+        EEG = pop_ctf_read(eegFileRaw);
+    end
 else
     error('Data format not supported');
 end
 if strcmpi(opt.noevents, 'on')
     EEG.event = [];
 end
+
+% output folder creation
+fileBase = fullfile(opt.targetdir, subjectStr, sess, opt.modality, fileStr);
+folderOut = fileparts(fileBase);
+if ~exist(folderOut)
+    mkdir(folderOut);
+end
+fileOut = [fileBase '_' opt.modality ext];
 
 % select data subset
 EEG = eeg_selectsegment(EEG, 'eventtype', eventtype, 'eventindex', eventindex, 'timeoffset', timeoffset );        
@@ -880,7 +918,7 @@ if ~isequal(opt.exportformat, 'same') || isequal(ext, '.set')
     end
 else
     % copy the file
-    if ~strcmpi(ext, { '.bdf', '.edf', '.set', '.vhdr', '.ds', '.fiff', '.mefd', '.nwb' })
+    if ~strcmpi(ext, { '.bdf', '.edf', '.set', '.vhdr', '.ds', '.fiff', '.mefd', '.nwb', '.gz' })
         error('''exportformat'' set to copy the file to the BIDS output folder but the file is not BIDS compliant')
     else
         if isequal(ext, '.bdf') || isequal(ext, '.edf')
@@ -945,7 +983,13 @@ end
 % Write electrode file information (electrodes.tsv and coordsystem.json)
 bids_writechanfile(EEG, fileOutRed);
 bids_writeelectrodefile(EEG, fileOutRed, 'export', opt.elecexport);
-bids_writetinfofile(EEG, tInfo, notes, fileOutRed);
+if strcmpi(opt.modality, 'eeg')
+    bids_writetinfofile(EEG, tInfo, notes, fileOutRed);
+elseif strcmpi(opt.modality, 'ieeg')
+    bids_writeieegtinfofile(EEG, tInfo, notes, fileOutRed);
+elseif strcmpi(opt.modality, 'meg')
+    bids_writemegtinfofile(EEG, tInfo, notes, fileOutRed);
+end
 
 % write channel information
 %     cInfo.name.LongName = 'Channel name';
