@@ -534,7 +534,7 @@ elseif ~isstruct(files(1).file)
     end
 end
 participants = { 'participant_id' };
-for iSubj=2:size(opt.pInfo)
+for iSubj=2:length(opt.pInfo)
     if strcmp('participant_id', opt.pInfo{1,1})
         opt.pInfo{iSubj,1} = removeInvalidChar(opt.pInfo{iSubj,1});
         if length(opt.pInfo{iSubj,1}) > 3 && isequal('sub-', opt.pInfo{iSubj,1}(1:4))
@@ -778,7 +778,7 @@ for iSubj = 1:length(files)
             fileStr    = [ fileStr '_ses-' files(iSubj).session{iItem} ];
             sessFolder = [ 'ses-' files(iSubj).session{iItem} ];
         end
-        opt.tInfo.TaskName = defaultTaskName;
+        opt.tInfo(1).TaskName = defaultTaskName;
         if multTaskFlag
             fileStr    = [ fileStr  '_task-' char(files(iSubj).task(iItem)) ];
             opt.tInfo.TaskName = char(files(iSubj).task(iItem));
@@ -819,7 +819,8 @@ if ~exist(folderOut)
 end
 
 tInfo = opt.tInfo;
-[~,~,ext] = fileparts(fileIn);
+[pathIn,fileInNoExt,ext] = fileparts(fileIn); 
+ext = lower(ext);
 fileOut = [fileBase '_eeg' ext];
 fprintf('Processing file %s\n', fileOut);
 if ~isempty(eventtype) || ~isempty(eventindex) || ~isempty(timeoffset)
@@ -829,27 +830,12 @@ if ~isempty(opt.importfunc)
     EEG = feval(opt.importfunc, fileIn);
 elseif strcmpi(ext, '.bdf') || strcmpi(ext, '.edf')
     if isequal(opt.exportformat, 'same')
-        fileIDIn  = fopen(fileIn,'rb','ieee-le');  % see sopen
-        fileIDOut = fopen(fileOut,'wb','ieee-le');  % see sopen
-        if fileIDIn  == -1, error('Cannot read file %s', fileIn); end
-        if fileIDOut == -1, error('Cannot write file %s', fileOut); end
-        data = fread(fileIDIn, Inf);
-        data(9:9+160-1) = ' '; % remove potential identity
-        fwrite(fileIDOut, data);
-        fclose(fileIDIn);
-        fclose(fileIDOut);
-        if strcmpi(ext, '.bdf')
-            tInfo.EEGReference = 'CMS/DRL';
-            tInfo.Manufacturer = 'BIOSEMI';
-        end
+
     else
         copyfile(fileIn, fileOut);
     end
     EEG = pop_biosig(fileIn);
 elseif strcmpi(ext, '.vhdr')
-    if isequal(opt.exportformat, 'same')
-        rename_brainvision_files(fileIn, fileOut, 'rmf', 'off');
-    end
     [fpathin, fname, ext] = fileparts(fileIn);
     EEG = pop_loadbv(fpathin, [fname ext]);
 elseif strcmpi(ext, '.set')
@@ -872,6 +858,8 @@ elseif strcmpi(ext, '.eeg')
     else
         error('.eeg files not from BrainVision are currently not supported')
     end
+elseif strcmpi(ext, '.nwb')
+    EEG = pop_nwbimport(fileIn, 'importspikes', 'on', 'typefield', 1);
 else
     error('Data format not supported');
 end
@@ -882,13 +870,40 @@ end
 % select data subset
 EEG = eeg_selectsegment(EEG, 'eventtype', eventtype, 'eventindex', eventindex, 'timeoffset', timeoffset );        
 
-% export data if necessary
-if ~isequal(opt.exportformat, 'same')
+if ~isequal(opt.exportformat, 'same') || isequal(ext, '.set')
+    % export data if necessary
     [filePathTmp,fileOutNoExt,~] = fileparts(fileOut);
     if isequal(opt.exportformat, 'eeglab')
         pop_saveset(EEG, 'filename', [ fileOutNoExt '.set' ], 'filepath', filePathTmp);
     else
         pop_writeeeg(EEG, fullfile(filePathTmp, [ fileOutNoExt '.' opt.exportformat]), 'TYPE',upper(opt.exportformat));
+    end
+else
+    % copy the file
+    if ~strcmpi(ext, { '.bdf', '.edf', '.set', '.vhdr', '.ds', '.fiff', '.mefd', '.nwb' })
+        error('''exportformat'' set to copy the file to the BIDS output folder but the file is not BIDS compliant')
+    else
+        if isequal(ext, '.bdf') || isequal(ext, '.edf')
+            % anonymize file
+            fprintf('EDF or BDF file detected, anonymizing the file...\n');
+            fileIDIn  = fopen(fileIn,'rb','ieee-le');  % see sopen
+            fileIDOut = fopen(fileOut,'wb','ieee-le');  % see sopen
+            if fileIDIn  == -1, error('Cannot read file %s', fileIn); end
+            if fileIDOut == -1, error('Cannot write file %s', fileOut); end
+            data = fread(fileIDIn, Inf);
+            data(9:9+160-1) = ' '; % remove potential identity
+            fwrite(fileIDOut, data);
+            fclose(fileIDIn);
+            fclose(fileIDOut);
+            if strcmpi(ext, '.bdf')
+                tInfo.EEGReference = 'CMS/DRL';
+                tInfo.Manufacturer = 'BIOSEMI';
+            end
+        elseif isequal(ext, '.vhdr') ||  isequal(ext, '.eeg')
+            rename_brainvision_files(fileIn, fileOut, 'rmf', 'off');
+        else
+            copyfile(fileIn, fileOut);
+        end
     end
 end
 
