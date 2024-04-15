@@ -61,7 +61,7 @@ function vers = eegplugin_bids(fig, trystrs, catchstrs)
     uimenu( bids, 'label', 'Edit BIDS event info', 'callback', comeventinfo, 'userdata', 'study:on');
     uimenu( bids, 'label', 'Import BIDS folder to STUDY', 'separator', 'on', 'callback', comcnt1);
     uimenu( bids, 'label', 'Export STUDY to BIDS folder', 'callback', comcnt2, 'userdata', 'startup:off;study:on');
-    uimenu( bids, 'label', 'Validate BIDS dataset', 'separator', 'on', 'callback', @validatebidsCB, 'userdata', 'startup:on;study:on');
+    uimenu( bids, 'label', 'Validate BIDS dataset', 'separator', 'on', 'callback', 'web(''https://bids-standard.github.io/bids-validator/'')', 'userdata', 'startup:on;study:on');
     
     function validatebidsCB(src,event)
         if plugin_status('bids-validator') == 0

@@ -99,7 +99,7 @@
 %                info.ReferencesAndLinks = { 'Pubmed 122032020' };
 %                info.Name = 'This is a custom task';
 %                info.License = 'Creative commons';
-%                info.generatedBy.Name = 'bids-matlab-tools';
+%                info.generatedBy.Name = {'bids-matlab-tools'};
 %                info.sourceDatasets.DOI = 'xxx';
 %
 %  'tInfo'     - [struct] task information fields. See BIDS specifications.
@@ -186,7 +186,11 @@
 %  'elecexport' - ['on'|'off'|'auto'] export electrode file. Default is
 %                'auto'.
 %
-%  'eventexport' - ['on'|'off'] export event file. Default is 'on'.
+%  'eventexport' - ['on'|'off'|'auto'] export event file. Default is 'auto'.
+%
+%  'eventfieldignore' - ['on'|'off'] ignore event field defined in eInfo if
+%                 it not present in the dataset. Setting to 'off' fills a
+%                 column with 'n/a' for that field. Default is 'on'.
 %
 %  'chanlookup' - [file] look up channel locations based on file. Default
 %                 not to look up channel location.
@@ -303,6 +307,7 @@ opt = finputcheck(varargin, {
     'pInfoDesc' 'struct'  {}    struct([]);
     'eInfoDesc' 'struct'  {}    struct([]);
     'cInfoDesc' 'struct'  {}    struct([]);
+    'behInfo'   'struct'  {}    struct([]);
     'generatedBy' 'struct'  {}    struct([]);
     'sourceDatasets' 'struct'  {}    struct([]);
     'trialtype' 'cell'    {}    {};
@@ -313,6 +318,7 @@ opt = finputcheck(varargin, {
     'chanlookup' 'string' {}    '';
     'elecexport' 'string'   {'on' 'off' 'auto'}    'auto';
     'eventexport' 'string'  {'on' 'off' 'auto'}    'auto';
+    'eventfieldignore' 'string'  {'on' 'off'}    'on';
     'interactive' 'string'  {'on' 'off'}    'off';
     'defaced'   'string'  {'on' 'off'}    'on';
     'createids' 'string'  {'on' 'off'}    'off';
@@ -376,7 +382,7 @@ gInfoFields = { 'ReferencesAndLinks' 'required' 'cell' { 'n/a' };
     'HowToAcknowledge'   'optional' 'char' '';
     'sourceDatasets'     'optional' 'struct' struct([]);
     'Funding'            'optional' 'cell' { 'n/a' };
-    'GeneratedBy'        'required' 'struct' struct('Name', 'bids-matlab-tools', 'Version', bids_matlab_tools_ver);
+    'GeneratedBy'        'required' 'cell' {struct('Name', 'bids-matlab-tools', 'Version', bids_matlab_tools_ver)};
     'DatasetDOI'         'optional' 'char' { 'n/a' }};
 
 if ~isfield(opt.gInfo, 'Name'), opt.gInfo(1).Name = opt.Name; end
@@ -528,7 +534,7 @@ elseif ~isstruct(files(1).file)
     end
 end
 participants = { 'participant_id' };
-for iSubj=2:size(opt.pInfo)
+for iSubj=2:length(opt.pInfo)
     if strcmp('participant_id', opt.pInfo{1,1})
         opt.pInfo{iSubj,1} = removeInvalidChar(opt.pInfo{iSubj,1});
         if length(opt.pInfo{iSubj,1}) > 3 && isequal('sub-', opt.pInfo{iSubj,1}(1:4))
@@ -542,7 +548,7 @@ for iSubj=2:size(opt.pInfo)
         participants{iSubj, 1} = sprintf('sub-%3.3d', iSubj-1);
     end
 end
-if size(opt.pInfo,2) > 1
+if size(opt.pInfo,1) > 1
     if strcmp('participant_id', opt.pInfo{1,1})
         participants(:,2:size(opt.pInfo,2)) = opt.pInfo(:,2:end);
     else
@@ -666,9 +672,9 @@ end
 % check task info
 % ---------------
 if length(unique([files(:).task])) == 1
-    opt.tInfo(1).TaskName = files(1).task{1};
+    defaultTaskName = files(1).task{1};
 else
-    opt.tInfo(1).TaskName = 'mixed';
+    defaultTaskName = 'mixed';
 end
 
 % set beh info (behavioral)
@@ -701,32 +707,37 @@ for iSubj = 1:length(files)
     allsubjntasks(iSubj)    = length(unique(files(iSubj).task));
 end
 
-multsessionflag = 1;
+multSessionFlag = 1;
 if all(allsubjnsessions == 1) && ~strcmpi(opt.forcesession, 'on')
-    multsessionflag = 0;
+    multSessionFlag = 0;
 end
 
-multrunflag = 1;
+multRunFlag = 1;
 if all(allsubjnruns == 1) && ~strcmpi(opt.forcerun, 'on')
-    multrunflag = 0;
+    multRunFlag = 0;
 end
 
-tmpsessrun = [multsessionflag multrunflag];
-if all(tmpsessrun == [0 0])    % Single-Session Single-Run 
-    bidscase = 1;
-elseif all(tmpsessrun == [0 1]) % Single-Session Mult-Run 
-    bidscase = 2;
-elseif all(tmpsessrun == [1 0]) % Mult-Session Single-Run
-    bidscase = 3;
-elseif all(tmpsessrun == [1 1]) % Mult-Session Mult-Run
-    bidscase = 4;
+multTaskFlag = 1;
+if all(allsubjntasks == 1)
+    multTaskFlag = 0;
 end
-if bidscase == 5
-    bidscase = 1; % Mult Task: Single-Session Single-Run
-end
-if bidscase == 6
-    bidscase = 3; % Mult Task: Mult-Session Single-Run
-end
+
+% tmpsessrun = [multsessionflag multrunflag];
+% if all(tmpsessrun == [0 0])    % Single-Session Single-Run 
+%     bidscase = 1;
+% elseif all(tmpsessrun == [0 1]) % Single-Session Mult-Run 
+%     bidscase = 2;
+% elseif all(tmpsessrun == [1 0]) % Mult-Session Single-Run
+%     bidscase = 3;
+% elseif all(tmpsessrun == [1 1]) % Mult-Session Mult-Run
+%     bidscase = 4;
+% end
+% if bidscase == 5
+%     bidscase = 1; % Mult Task: Single-Session Single-Run
+% end
+% if bidscase == 6
+%     bidscase = 3; % Mult Task: Mult-Session Single-Run
+% end
 
 %---------------
 % copy EEG files
@@ -758,63 +769,31 @@ for iSubj = 1:length(files)
         copyfile(files(iSubj).anat, fileOut);
     end
     
-    switch bidscase
-        case 1 % Mult Task: Single-Session Single-Run 
-            for iTask = 1:length(files(iSubj).task)
-                structOut = getElement(files(iSubj), iTask);
-                fileStr    = [ subjectStr  '_task-' char(files(iSubj).task(iTask)) ];
-                fileOutBeh = fullfile(opt.targetdir, subjectStr, 'beh', [ subjectStr  '_task-' char(files(iSubj).task(iTask)) '_beh.tsv' ]);
-                copy_data_bids_eeg( structOut, subjectStr, '', fileStr, opt);
-                bids_writebehfile(files(iSubj).beh{iTask}, fileOutBeh);
+    for iItem = 1:length(files(iSubj).file) % scan files for subject
+        structOut = getElement(files(iSubj), iItem);
+
+        sessFolder  = '';
+        fileStr     = subjectStr;
+        if multSessionFlag
+            fileStr    = [ fileStr '_ses-' files(iSubj).session{iItem} ];
+            sessFolder = [ 'ses-' files(iSubj).session{iItem} ];
+        end
+        opt.tInfo(1).TaskName = defaultTaskName;
+        if multTaskFlag
+            fileStr    = [ fileStr  '_task-' char(files(iSubj).task(iItem)) ];
+            opt.tInfo.TaskName = char(files(iSubj).task(iItem));
+        end
+        if multRunFlag
+            if ~strcmp(files(iSubj).run{iItem}, 'NaN')
+                fileStr    = [ fileStr  '_run-' files(iSubj).run{iItem} ];
             end
-            
-        case 2 % Single-Session Mult-Run
-            
-            for iRun = 1:length(files(iSubj).run)
-                structOut = getElement(files(iSubj), iRun);
-                if strcmp(files(iSubj).run{iRun}, 'NaN')
-                    fileStr   = [ subjectStr  '_task-' char(files(iSubj).task(iRun)) ];
-                    fileOutBeh = fullfile(opt.targetdir, subjectStr, 'beh', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_beh.tsv' ]);
-                else
-                    fileStr   = [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' files(iSubj).run{iRun} ];
-                    fileOutBeh = fullfile(opt.targetdir, subjectStr, 'beh', [ subjectStr  '_task-' char(files(iSubj).task(iRun)) '_run-' files(iSubj).run{iRun} '_beh.tsv' ]);
-                end
-                copy_data_bids_eeg( structOut, subjectStr, '', fileStr, opt);
-                bids_writebehfile(files(iSubj).beh{iRun}, fileOutBeh);
-            end
-            
-        case 3 % Mult-Session Single-Run
-            
-            for iSess = 1:length(unique(files(iSubj).session))
-                structOut = getElement(files(iSubj), iSess);
-                fileStr    = [ subjectStr '_ses-' files(iSubj).session{iSess} '_task-' char(files(iSubj).task{iSess}) ];
-                fileOutBeh = fullfile(opt.targetdir, subjectStr, [ 'ses-' files(iSubj).session{iSess} ], 'beh', [ subjectStr '_ses-' files(iSubj).session{iSess} '_task-' char(files(iSubj).task{iSess}) '_beh.tsv' ]);
-                copy_data_bids_eeg( structOut, subjectStr, ['ses-' files(iSubj).session{iSess}], fileStr, opt);
-                bids_writebehfile(files(iSubj).beh{iSess}, fileOutBeh);
-            end
-            
-        case 4 % Mult-Task Mult-Session Mult-Run
-            
-            uniqueSess = unique(files(iSubj).session);
-            for iSess = 1:length(uniqueSess)
-                runindx = strmatch(uniqueSess{iSess}, files(iSubj).session, 'exact');
-                for iSet = runindx(:)'
-                    structOut = getElement(files(iSubj), iSet);
-                    if strcmp(files(iSubj).run{iSet},'NaN')
-                        fileStr      = [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) ];
-                        fileOutBeh = fullfile(opt.targetdir, subjectStr, [ 'ses-', files(iSubj).session{iSet} ], 'beh', [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_beh.tsv' ]);
-                    else
-                        fileStr      = [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} ];
-                        fileOutBeh = fullfile(opt.targetdir, subjectStr, [ 'ses-', files(iSubj).session{iSet} ], 'beh', [ subjectStr '_ses-' files(iSubj).session{iSet} '_task-' char(files(iSubj).task(iSet)) '_run-' files(iSubj).run{iSet} '_beh.tsv' ]);
-                    end
-                    copy_data_bids_eeg( structOut, subjectStr, ['ses-' files(iSubj).session{iSet}], fileStr, opt);
-                    bids_writebehfile(files(iSubj).beh{iSet}, fileOutBeh);
-                end
-            end
-                        
-        otherwise
-            error('Case not supported')
+        end        
+
+        fileOutBeh = fullfile(opt.targetdir, subjectStr, sessFolder, 'beh', [fileStr '_beh.tsv' ]);
+        copy_data_bids_eeg( structOut, subjectStr, sessFolder, fileStr, opt);
+        bids_writebehfile(files(iSubj).beh{iItem}, opt.behInfo, fileOutBeh);
     end
+
 end
 
 %--------------------------------------------------------------------------
@@ -840,7 +819,8 @@ if ~exist(folderOut)
 end
 
 tInfo = opt.tInfo;
-[~,~,ext] = fileparts(fileIn);
+[pathIn,fileInNoExt,ext] = fileparts(fileIn); 
+ext = lower(ext);
 fileOut = [fileBase '_eeg' ext];
 fprintf('Processing file %s\n', fileOut);
 if ~isempty(eventtype) || ~isempty(eventindex) || ~isempty(timeoffset)
@@ -850,27 +830,12 @@ if ~isempty(opt.importfunc)
     EEG = feval(opt.importfunc, fileIn);
 elseif strcmpi(ext, '.bdf') || strcmpi(ext, '.edf')
     if isequal(opt.exportformat, 'same')
-        fileIDIn  = fopen(fileIn,'rb','ieee-le');  % see sopen
-        fileIDOut = fopen(fileOut,'wb','ieee-le');  % see sopen
-        if fileIDIn  == -1, error('Cannot read file %s', fileIn); end
-        if fileIDOut == -1, error('Cannot write file %s', fileOut); end
-        data = fread(fileIDIn, Inf);
-        data(9:9+160-1) = ' '; % remove potential identity
-        fwrite(fileIDOut, data);
-        fclose(fileIDIn);
-        fclose(fileIDOut);
-        if strcmpi(ext, '.bdf')
-            tInfo.EEGReference = 'CMS/DRL';
-            tInfo.Manufacturer = 'BIOSEMI';
-        end
+
     else
         copyfile(fileIn, fileOut);
     end
     EEG = pop_biosig(fileIn);
 elseif strcmpi(ext, '.vhdr')
-    if isequal(opt.exportformat, 'same')
-        rename_brainvision_files(fileIn, fileOut, 'rmf', 'off');
-    end
     [fpathin, fname, ext] = fileparts(fileIn);
     EEG = pop_loadbv(fpathin, [fname ext]);
 elseif strcmpi(ext, '.set')
@@ -893,6 +858,8 @@ elseif strcmpi(ext, '.eeg')
     else
         error('.eeg files not from BrainVision are currently not supported')
     end
+elseif strcmpi(ext, '.nwb')
+    EEG = pop_nwbimport(fileIn, 'importspikes', 'on', 'typefield', 1);
 else
     error('Data format not supported');
 end
@@ -903,13 +870,40 @@ end
 % select data subset
 EEG = eeg_selectsegment(EEG, 'eventtype', eventtype, 'eventindex', eventindex, 'timeoffset', timeoffset );        
 
-% export data if necessary
-if ~isequal(opt.exportformat, 'same')
+if ~isequal(opt.exportformat, 'same') || isequal(ext, '.set')
+    % export data if necessary
     [filePathTmp,fileOutNoExt,~] = fileparts(fileOut);
     if isequal(opt.exportformat, 'eeglab')
         pop_saveset(EEG, 'filename', [ fileOutNoExt '.set' ], 'filepath', filePathTmp);
     else
         pop_writeeeg(EEG, fullfile(filePathTmp, [ fileOutNoExt '.' opt.exportformat]), 'TYPE',upper(opt.exportformat));
+    end
+else
+    % copy the file
+    if ~strcmpi(ext, { '.bdf', '.edf', '.set', '.vhdr', '.ds', '.fiff', '.mefd', '.nwb' })
+        error('''exportformat'' set to copy the file to the BIDS output folder but the file is not BIDS compliant')
+    else
+        if isequal(ext, '.bdf') || isequal(ext, '.edf')
+            % anonymize file
+            fprintf('EDF or BDF file detected, anonymizing the file...\n');
+            fileIDIn  = fopen(fileIn,'rb','ieee-le');  % see sopen
+            fileIDOut = fopen(fileOut,'wb','ieee-le');  % see sopen
+            if fileIDIn  == -1, error('Cannot read file %s', fileIn); end
+            if fileIDOut == -1, error('Cannot write file %s', fileOut); end
+            data = fread(fileIDIn, Inf);
+            data(9:9+160-1) = ' '; % remove potential identity
+            fwrite(fileIDOut, data);
+            fclose(fileIDIn);
+            fclose(fileIDOut);
+            if strcmpi(ext, '.bdf')
+                tInfo.EEGReference = 'CMS/DRL';
+                tInfo.Manufacturer = 'BIOSEMI';
+            end
+        elseif isequal(ext, '.vhdr') ||  isequal(ext, '.eeg')
+            rename_brainvision_files(fileIn, fileOut, 'rmf', 'off');
+        else
+            copyfile(fileIn, fileOut);
+        end
     end
 end
 
@@ -919,9 +913,11 @@ eyeWritenStatus = save_bids_eye_tracking(sIn, fileBase, EEG, opt);
 % write events
 indExt = find(fileOut == '_');
 fileOutRed = fileOut(1:indExt(end)-1);
-if strcmpi(opt.eventexport, 'on')
-    bids_writeeventfile(EEG, fileOutRed, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, ...
-        'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse, 'omitsample', fastif(eyeWritenStatus, 'on', 'off'));
+if ~strcmpi(opt.eventexport, 'off')
+    if strcmpi(opt.eventexport, 'on') || ~isempty(EEG.event)
+        bids_writeeventfile(EEG, fileOutRed, 'eInfo', opt.eInfo, 'eInfoDesc', opt.eInfoDesc, 'individualEventsJson', opt.individualEventsJson, ...
+            'ignoreemptyfields', opt.eventfieldignore, 'renametype', opt.renametype, 'stimuli', opt.stimuli, 'checkresponse', opt.checkresponse, 'omitsample', fastif(eyeWritenStatus, 'on', 'off'));
+    end
 end
 
 % Write channel file information (channels.tsv)

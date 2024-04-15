@@ -55,7 +55,12 @@
 %                           file specifically for this dataset. Default is 'off' to only have a single
 %                           top-level events.json file for the entire dataset
 %
+% 'ignoreemptyfields' ['on'|'off'] ignore event field defined in eInfo if
+%                 it not present in the dataset. Setting to 'off' fills a
+%                 column with 'n/a' for that field. Default is 'on'.
+%
 % Authors: Dung Truong, Arnaud Delorme, 2022
+
 function bids_writeeventfile(EEG, fileOut, varargin)
 opt = finputcheck(varargin, {
     'stimuli'    'cell'    {}    {};
@@ -65,6 +70,7 @@ opt = finputcheck(varargin, {
     'renametype' 'cell'   {}    {};
     'trialtype'  'cell'   {}    {};
     'checkresponse' 'string'   {}    '';
+    'ignoreemptyfields' 'string'  {'on' 'off'}    'on';
     'individualEventsJson' 'string'  {'on' 'off'}    'off';
     }, 'write_events_files');
 if isstr(opt), error(opt); end
@@ -131,141 +137,155 @@ if ~isempty(EEG.event)
     opt.eInfo = opt.eInfo(newOrder,:);
     
     % scan events
+    eventFields = fieldnames(EEG.event);
     for iEvent = 1:length(EEG.event)
         
         str = {};
         for iField = 1:size(opt.eInfo,1)
-            if iEvent == 1
-                if strcmpi(opt.omitsample, 'off') || ~isequal(opt.eInfo{iField,1}, 'sample')
+
+            if iField > 2 && isempty(strmatch(opt.eInfo{iField,2}, eventFields, 'exact')) && strcmpi(opt.ignoreemptyfields, 'on')
+                if iEvent == 1
+                    fprintf('Field %s not found in the dataset events and ignored\n', opt.eInfo{iField,2} )
                     if iField == size(opt.eInfo,1)
-                        fprintf(fid, '%s\n', opt.eInfo{iField,1});
-                    else
-                        fprintf(fid, '%s\t', opt.eInfo{iField,1});
+                        fprintf(fid, '\n');
                     end
                 end
-            end
-
-
-            tmpField = opt.eInfo{iField,2};
-            if strcmpi(tmpField, 'n/a')
-                str{end+1} = tmpField;
             else
-                switch opt.eInfo{iField,1}
-                    
-                    case 'onset'
-                        onset = (EEG.event(iEvent).(tmpField)-1)/EEG.srate;
-                        str{end+1} = num2str(onset, 10);
-                        
-                    case 'duration'
-                        if isfield(EEG.event, tmpField) && ~isempty(EEG.event(iEvent).(tmpField))
-                            duration = num2str(EEG.event(iEvent).(tmpField)/EEG.srate, 10);
+
+                if iEvent == 1
+                    if strcmpi(opt.omitsample, 'off') || ~isequal(opt.eInfo{iField,1}, 'sample')
+                        if iField == 1
+                            fprintf(fid, '%s', opt.eInfo{iField,1});
                         else
-                            duration = 'n/a';
+                            fprintf(fid, '\t%s', opt.eInfo{iField,1});
                         end
-                        if isempty(duration) || strcmpi(duration, 'NaN')
-                            duration = 'n/a';
+                        if iField == size(opt.eInfo,1)
+                            fprintf(fid, '\n');
                         end
-                        str{end+1} = duration;
-                        
-                    case 'sample'
-                        if ~strcmpi(opt.omitsample, 'on')
-                            if isfield(EEG.event, tmpField)
-                                sample = num2str(EEG.event(iEvent).(tmpField)-1);
+                    end
+                end
+
+                tmpField = opt.eInfo{iField,2};
+                if strcmpi(tmpField, 'n/a')
+                    str{end+1} = tmpField;
+                else
+                    switch opt.eInfo{iField,1}
+
+                        case 'onset'
+                            onset = (EEG.event(iEvent).(tmpField)-1)/EEG.srate;
+                            str{end+1} = num2str(onset, 10);
+
+                        case 'duration'
+                            if isfield(EEG.event, tmpField) && ~isempty(EEG.event(iEvent).(tmpField))
+                                duration = num2str(EEG.event(iEvent).(tmpField)/EEG.srate, 10);
                             else
-                                sample = 'n/a';
+                                duration = 'n/a';
                             end
-                            if isempty(sample) || strcmpi(sample, 'NaN')
-                                sample = 'n/a';
+                            if isempty(duration) || strcmpi(duration, 'NaN')
+                                duration = 'n/a';
                             end
-                            str{end+1} = sample;
-                        end
+                            str{end+1} = duration;
 
-                    case 'trial_type'
-                        % trial type (which is the experimental condition - not the same as EEGLAB)
-                        if isfield(EEG.event(iEvent), tmpField) && ~isempty(EEG.event(iEvent).(tmpField))
-                            trialType = EEG.event(iEvent).(tmpField);
-                            if isnumeric(trialType)
-                                trialType = num2str(trialType);
+                        case 'sample'
+                            if ~strcmpi(opt.omitsample, 'on')
+                                if isfield(EEG.event, tmpField)
+                                    sample = num2str(EEG.event(iEvent).(tmpField)-1);
+                                else
+                                    sample = 'n/a';
+                                end
+                                if isempty(sample) || strcmpi(sample, 'NaN')
+                                    sample = 'n/a';
+                                end
+                                str{end+1} = sample;
                             end
-                            str{end+1} = trialType;
-                        end
 
-                    case 'response_time'
-                        if isfield(EEG.event, tmpField)
-                            response_time = num2str(EEG.event(iEvent).(tmpField));
-                        else
-                            response_time = 'n/a';
-                        end
-                        if isempty(response_time) || strcmpi(response_time, 'NaN')
-                            response_time = 'n/a';
-                        end
-                        str{end+1} = response_time;
-                        
-                    case 'stim_file'
-                        if isempty(tmpField)
-                            indStim = strmatch(EEG.event(iEvent).type, opt.stimuli(:,1));
-                            if ~isempty(indStim)
-                                stim_file = opt.stimuli{indStim, 2};
+                        case 'trial_type'
+                            % trial type (which is the experimental condition - not the same as EEGLAB)
+                            if isfield(EEG.event(iEvent), tmpField) && ~isempty(EEG.event(iEvent).(tmpField))
+                                trialType = EEG.event(iEvent).(tmpField);
+                                if isnumeric(trialType)
+                                    trialType = num2str(trialType);
+                                end
+                                str{end+1} = trialType;
+                            end
+
+                        case 'response_time'
+                            if isfield(EEG.event, tmpField)
+                                response_time = num2str(EEG.event(iEvent).(tmpField));
+                            else
+                                response_time = 'n/a';
+                            end
+                            if isempty(response_time) || strcmpi(response_time, 'NaN')
+                                response_time = 'n/a';
+                            end
+                            str{end+1} = response_time;
+
+                        case 'stim_file'
+                            if isempty(tmpField)
+                                indStim = strmatch(EEG.event(iEvent).type, opt.stimuli(:,1));
+                                if ~isempty(indStim)
+                                    stim_file = opt.stimuli{indStim, 2};
+                                else
+                                    stim_file = 'n/a';
+                                end
+                            elseif isfield(EEG.event, tmpField)
+                                if ~isempty(opt.stimuli)
+                                    error('Cannot use "stim_file" as a BIDS event field and use the "stimuli" option')
+                                end
+                                stim_file = num2str(EEG.event(iEvent).(tmpField));
                             else
                                 stim_file = 'n/a';
                             end
-                        elseif isfield(EEG.event, tmpField)
-                            if ~isempty(opt.stimuli)
-                                error('Cannot use "stim_file" as a BIDS event field and use the "stimuli" option')
+                            if isempty(stim_file) || strcmpi(stim_file, 'NaN')
+                                stim_file = 'n/a';
                             end
-                            stim_file = num2str(EEG.event(iEvent).(tmpField));
-                        else
-                            stim_file = 'n/a';
-                        end
-                        if isempty(stim_file) || strcmpi(stim_file, 'NaN')
-                            stim_file = 'n/a';
-                        end
-                        str{end+1} = stim_file;
-                        
-                    case 'value'
-                        if  isfield(EEG.event, tmpField) && ~isempty(EEG.event(iEvent).(tmpField))
-                            if isempty(opt.renametype)
-                                eventValue = num2str(EEG.event(iEvent).(tmpField));
-                            else
-                                posType = strmatch(num2str(EEG.event(iEvent).(tmpField)), opt.renametype(:,1), 'exact');
-                                if ~isempty(posType)
-                                    eventValue = opt.renametype{posType,2};
-                                else
+                            str{end+1} = stim_file;
+
+                        case 'value'
+                            if  isfield(EEG.event, tmpField) && ~isempty(EEG.event(iEvent).(tmpField))
+                                if isempty(opt.renametype)
                                     eventValue = num2str(EEG.event(iEvent).(tmpField));
+                                else
+                                    posType = strmatch(num2str(EEG.event(iEvent).(tmpField)), opt.renametype(:,1), 'exact');
+                                    if ~isempty(posType)
+                                        eventValue = opt.renametype{posType,2};
+                                    else
+                                        eventValue = num2str(EEG.event(iEvent).(tmpField));
+                                    end
                                 end
-                            end
-                            if ~isempty(opt.checkresponse)
-                                if iEvent+1 <= length(EEG.event) && strcmpi(EEG.event(iEvent+1).type, opt.checkresponse) && ~strcmpi(EEG.event(iEvent).type, opt.checkresponse)
-                                    eventValue = [ eventValue '_with_reponse' ];
-                                    response_time = (EEG.event(iEvent+1).latency - EEG.event(iEvent).latency)/EEG.srate;
-                                    str{end-1} = num2str(response_time*1000,'%1.0f');
+                                if ~isempty(opt.checkresponse)
+                                    if iEvent+1 <= length(EEG.event) && strcmpi(EEG.event(iEvent+1).type, opt.checkresponse) && ~strcmpi(EEG.event(iEvent).type, opt.checkresponse)
+                                        eventValue = [ eventValue '_with_reponse' ];
+                                        response_time = (EEG.event(iEvent+1).latency - EEG.event(iEvent).latency)/EEG.srate;
+                                        str{end-1} = num2str(response_time*1000,'%1.0f');
+                                    end
                                 end
+                            else
+                                eventValue = 'n/a';
                             end
-                        else
-                            eventValue = 'n/a';
-                        end
-                        if isequal(eventValue, 'NaN') || isempty(eventValue)
-                            eventValue = 'n/a';
-                        end
-                        str{end+1} = eventValue;
-                        
-                    otherwise
-                        if isfield(EEG.event, opt.eInfo{iField,2})
-                            tmpVal = EEG.event(iEvent).(opt.eInfo{iField,2});
-                            if isnumeric(tmpVal)
-                                tmpVal = num2str(tmpVal);
-                            elseif iscell(tmpVal)
-                                tmpVal = tmpVal{1};
+                            if isequal(eventValue, 'NaN') || isempty(eventValue)
+                                eventValue = 'n/a';
                             end
-                            if isequal(tmpVal, 'NaN') || isempty(tmpVal)
+                            str{end+1} = eventValue;
+
+                        otherwise
+                            if isfield(EEG.event, opt.eInfo{iField,2})
+                                tmpVal = EEG.event(iEvent).(opt.eInfo{iField,2});
+                                if isnumeric(tmpVal)
+                                    tmpVal = num2str(tmpVal);
+                                elseif iscell(tmpVal)
+                                    tmpVal = tmpVal{1};
+                                end
+                                if isequal(tmpVal, 'NaN') || isempty(tmpVal)
+                                    tmpVal = 'n/a';
+                                end
+                            else
                                 tmpVal = 'n/a';
                             end
-                        else
-                            tmpVal = 'n/a';
-                        end
-                        assert(ischar(tmpVal));
-                        str{end+1} = tmpVal;
-                end % switch
+                            assert(ischar(tmpVal));
+                            str{end+1} = tmpVal;
+                    end % switch
+                end
             end
         end
         strConcat = sprintf('%s\t', str{:});

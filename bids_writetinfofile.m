@@ -14,7 +14,7 @@
 
 function tInfo = bids_writetinfofile( EEG, tInfo, notes, fileOutRed)
 
-channelsCount = eeg_getchantype(EEG);
+[~,channelsCount] = eeg_getchantype(EEG);
 
 % Write task information (eeg.json) Note: depends on channels
 % requiredChannelTypes: 'EEG', 'EOG', 'ECG', 'EMG', 'MISC'. Other channel
