@@ -54,7 +54,7 @@ end
 
 % Assign channel types based on channel name
 % types retrived from https://bids-specification.readthedocs.io/en/stable/glossary.html#objects.columns.type__eeg_channels
-types = {'EEG', 'EMG', 'EOG', 'ECG', 'EKG', 'TRIG', 'GSR', 'PPG', 'MISC'};
+types = {'EEG', 'MEG', 'SEEG', 'EMG', 'EOG', 'ECG', 'EKG', 'EMG', 'TRIG', 'GSR', 'PPG', 'MISC'};
 for i = 1:length(EEG.chanlocs)
     label = EEG.chanlocs(i).labels;
     matchIdx = cellfun(@(x) contains(lower(label), lower(x)), types);
