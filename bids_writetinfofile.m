@@ -85,4 +85,4 @@ tInfoFields = {...
     'SubjectArtefactDescription' 'OPTIONAL' 'char' '' };
 tInfo = bids_checkfields(tInfo, tInfoFields, 'tInfo');
 
-jsonwrite([fileOutRed '_ieeg.json' ], tInfo,struct('indent','  '));
+jsonwrite([fileOutRed '_eeg.json' ], tInfo,struct('indent','  '));
