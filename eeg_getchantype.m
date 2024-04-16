@@ -54,7 +54,7 @@ end
 
 % Assign channel types based on channel name
 % types retrived from https://bids-specification.readthedocs.io/en/stable/glossary.html#objects.columns.type__eeg_channels
-types = {'EEG', 'MEG', 'SEEG', 'EMG', 'EOG', 'ECG', 'EKG', 'EMG', 'TRIG', 'GSR', 'PPG', 'MISC'};
+types = {'EEG', 'MEG', 'MEGREF', 'SEEG', 'EMG', 'EOG', 'ECG', 'EKG', 'EMG', 'TRIG', 'GSR', 'PPG', 'MISC'};
 for i = 1:length(EEG.chanlocs)
     label = EEG.chanlocs(i).labels;
     matchIdx = cellfun(@(x) contains(lower(label), lower(x)), types);
@@ -73,7 +73,7 @@ function channelsCount = count_channel(EEG)
 if isempty(EEG.chanlocs)
     channelsCount = struct([]);
 else
-    acceptedChannelTypes = { 'AUDIO' 'EEG' 'MEG' 'SEEG' 'EOG' 'ECG' 'EMG' 'EYEGAZE' 'GSR' 'HEOG' 'MISC' 'PUPIL' 'REF' 'RESP' 'SYSCLOCK' 'TEMP' 'TRIG' 'VEOG' };
+    acceptedChannelTypes = { 'AUDIO' 'EEG' 'MEG' 'MEGREF' 'SEEG' 'EOG' 'ECG' 'EMG' 'EYEGAZE' 'GSR' 'HEOG' 'MISC' 'PUPIL' 'REF' 'RESP' 'SYSCLOCK' 'TEMP' 'TRIG' 'VEOG' };
     channelsCount = [];
     channelsCount.EEG = 0;
     for iChan = 1:EEG.nbchan
