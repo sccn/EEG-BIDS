@@ -12,11 +12,11 @@
 %
 % Authors: Arnaud Delorme, 2024
 
-function tInfo = bids_writeieegtinfofile( EEG, tInfo, notes, fileOutRed)
+function tInfo = bids_writemegtinfofile( EEG, tInfo, notes, fileOutRed)
 
 [~,channelsCount] = eeg_getchantype(EEG);
 
-% Write task information (ieeg.json) Note: depends on channels
+% Write task information (meg.json) Note: depends on channels
 % requiredChannelTypes: 'EEG', 'EOG', 'ECG', 'EMG', 'MISC'. Other channel
 % types are currently not valid output for ieeg.json.
 nonEmptyChannelTypes = fieldnames(channelsCount);
@@ -54,14 +54,16 @@ tInfoFields = {...
     'iEEGReference' 'REQUIRED' 'char' 'Unknown';
     'SamplingFrequency' 'REQUIRED' '' '';
     'PowerLineFrequency' 'REQUIRED' '' 'n/a';
+    'DewarPosition' 'REQUIRED' '' '';
     'SoftwareFilters' 'REQUIRED' 'struct' 'n/a';
-    ...
-    'HardwareFilters' 'RECOMMENDED' 'struct' '';
-    'ElectrodeManufacturer' 'RECOMMENDED' 'struct' '';
-    'ElectrodeManufacturersModelName' 'RECOMMENDED' 'struct' '';
+    'DigitizedLandmarks', 'REQUIRED', '' '';
+    'DigitizedHeadPoints', 'REQUIRED', '' '';
+    ...    
+    'MEGChannelCount' 'RECOMMENDED' '' '';
+    'MEGREFChannelCount' 'RECOMMENDED' '' '';
+    'EEGChannelCount' 'RECOMMENDED' '' '';
     'ECOGChannelCount' 'RECOMMENDED' '' '';
     'SEEGChannelCount' 'RECOMMENDED' '' '';
-    'EEGChannelCount' 'RECOMMENDED' '' '';
     'EOGChannelCount' 'RECOMMENDED' '' 0;
     'ECGChannelCount' 'RECOMMENDED' '' 0;
     'EMGChannelCount' 'RECOMMENDED' '' 0;
@@ -70,29 +72,36 @@ tInfoFields = {...
     'RecordingDuration' 'RECOMMENDED' '' 'n/a';
     'RecordingType' 'RECOMMENDED' 'char' '';
     'EpochLength' 'RECOMMENDED' '' 'n/a';
-    'iEEGGround'  'RECOMMENDED ' 'char' '';
-    'iEEGPlacementScheme' 'RECOMMENDED' 'char' '';
-    'iEEGElectrodeGroups' 'RECOMMENDED' 'char' '';
-    'SubjectArtefactDescription' 'OPTIONAL' 'char' '';
+    'ContinuousHeadLocalization' 'RECOMMENDED' '' '';
+    'HeadCoilFrequency' 'RECOMMENDED' '' '';
+    'MaxMovement' 'RECOMMENDED' '' '';
+    'SubjectArtefactDescription' 'RECOMMENDED' 'char' '';
+    'AssociatedEmptyRoom' 'RECOMMENDED' '' '';
+    'HardwareFilters' 'RECOMMENDED' 'struct' '';    
     ...
-    'ElectricalStimulation' 'OPTIONAL' 'char' '';
+    'ElectricalStimulation' 'OPTIONAL' '' '';
     'ElectricalStimulationParameters' 'OPTIONAL' 'char' '';
     ...
     'Manufacturer' 'RECOMMENDED' 'char' '';
-    'ManufacturersModelName' 'OPTIONAL' 'char' '';
+    'ManufacturersModelName' 'RECOMMENDED' 'char' '';
     'SoftwareVersions' 'RECOMMENDED' 'char' '';
     'DeviceSerialNumber' 'RECOMMENDED' 'char' '';
     ...
-    'TaskName' 'REQUIRED' '' '';
-    'TaskDescription' 'RECOMMENDED' '' '';
+    'TaskName' 'REQUIRED' 'char' '';
+    'TaskDescription' 'RECOMMENDED' 'char' '';
     'Instructions' 'RECOMMENDED' 'char' '';
     'CogAtlasID' 'RECOMMENDED' 'char' '';
     'CogPOID' 'RECOMMENDED' 'char' '';
     ...
     'InstitutionName' 'RECOMMENDED' 'char' '';
     'InstitutionAddress' 'RECOMMENDED' 'char' '';
-    'InstitutionalDepartmentName' ' RECOMMENDED' 'char' '';
+    'InstitutionalDepartmentName' 'RECOMMENDED' 'char' '';
+    ...
+    'EEGPlacementScheme' 'OPTIONAL' 'char' '';
+    'CapManufacturer' ' OPTIONAL' 'char' '';
+    'CapManufacturersModelName' ' OPTIONAL' 'char' '';
+    'EEGReference' ' OPTIONAL' 'char' '';
     };
 tInfo = bids_checkfields(tInfo, tInfoFields, 'tInfo');
 
-jsonwrite([fileOutRed '_ieeg.json' ], tInfo,struct('indent','  '));
+jsonwrite([fileOutRed '_meg.json' ], tInfo,struct('indent','  '));
