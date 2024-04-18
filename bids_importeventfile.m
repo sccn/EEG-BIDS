@@ -29,6 +29,7 @@ g = finputcheck(varargin,  {'eventDescFile'   'string'   [] '';
                             'usevislab'       'string'   { 'on' 'off'} 'off' }, 'eeg_importeventsfiles', 'ignore');
 if isstr(g), error(g); end
 
+% use Kay's old implementation
 if strcmpi(g.usevislab, 'on')
     [EEG, bids, eventData, eventDesc] = eeg_importeventsfiles(EEG, eventfile, varargin{:}); %change to Kay's function
     return;
@@ -39,7 +40,7 @@ bids = g.bids;
 % ---------
 % load files
 eventData = bids_loadfile( eventfile, '');
-eventDesc = bids_loadfile( g.eventDescFile, '');
+eventDesc = bids_importjson(g.eventDescFile, '_events.json');
 
 % ----------
 % event data
@@ -89,21 +90,11 @@ else
     EEG.event = events; 
     EEG = eeg_checkset(EEG, 'makeur'); % add urevent
     EEG = eeg_checkset(EEG, 'eventconsistency');
-end    
 
-% import HED tags if exists
-if ~isempty(g.eventDescFile)
-    if plugin_status('HEDTools')
-        try 
-            fMap = fieldMap.createfMapFromJson(g.eventDescFile);
-            if fMap.hasAnnotation()
-                EEG.etc.tags = fMap.getStruct();
-            end
-        catch ME
-            warning('Unable to import HED tags. Check your _events.json file');
-        end
-    end
-end
+    % save BIDS information in raw form
+    bids.eInfoDesc = eventDesc;
+    EEG.BIDS = bids;
+end    
 
 function nameout = cleanvarname(namein)
 
