@@ -51,7 +51,7 @@ function curjsondata = bids_importjson(curFile, ext)
     end
 
     function res = isTopLevel(curfile)
-        res = false;
+        res = true;
         if ~isempty(curfile)
             curpath = fileparts(curfile);
             files = dir(curpath);
@@ -63,6 +63,7 @@ function curjsondata = bids_importjson(curFile, ext)
                     end
                 end
             end
+            res = false;
         end
     end
 end
