@@ -382,6 +382,7 @@ function [EEG, STUDY, command] = pop_participantinfo(EEG,STUDY, varargin)
         for idx=1:length(fields)
             field = fields{idx};
             pInfoDesc.(field).Description = pInfoBIDS.(field).Description;
+            
             % Only add Units and Levels to pInfoDesc if they have values
             if ~isempty(pInfoBIDS.(field).Units)
                 pInfoDesc.(field).Units = pInfoBIDS.(field).Units;
@@ -781,6 +782,9 @@ function [EEG, STUDY, command] = pop_participantinfo(EEG,STUDY, varargin)
                     else
                         pBIDS.(pFields{p}).Levels = struct;
                     end
+                end
+                if ~isfield(pBIDS.(pFields{p}), 'Description')
+                    pBIDS.(pFields{p}).Description = '';
                 end
             end
         end 

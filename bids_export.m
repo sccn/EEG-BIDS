@@ -726,9 +726,9 @@ if all(allsubjnruns == 1) && ~strcmpi(opt.forcerun, 'on')
     multRunFlag = 0;
 end
 
-multTaskFlag = 1;
-if all(allsubjntasks == 1)
-    multTaskFlag = 0;
+hasTaskFlag = 0;
+if all(allsubjntasks >= 1)
+    hasTaskFlag = 1;
 end
 
 % tmpsessrun = [multsessionflag multrunflag];
@@ -788,7 +788,7 @@ for iSubj = 1:length(files)
             sessFolder = [ 'ses-' files(iSubj).session{iItem} ];
         end
         opt.tInfo(1).TaskName = defaultTaskName;
-        if multTaskFlag
+        if hasTaskFlag
             fileStr    = [ fileStr  '_task-' char(files(iSubj).task(iItem)) ];
             opt.tInfo.TaskName = char(files(iSubj).task(iItem));
         end
