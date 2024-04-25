@@ -726,9 +726,9 @@ if all(allsubjnruns == 1) && ~strcmpi(opt.forcerun, 'on')
     multRunFlag = 0;
 end
 
-multTaskFlag = 1;
-if all(allsubjntasks == 1)
-    multTaskFlag = 0;
+hasTaskFlag = 0;
+if all(allsubjntasks >= 1)
+    hasTaskFlag = 1;
 end
 
 % tmpsessrun = [multsessionflag multrunflag];
@@ -788,7 +788,7 @@ for iSubj = 1:length(files)
             sessFolder = [ 'ses-' files(iSubj).session{iItem} ];
         end
         opt.tInfo(1).TaskName = defaultTaskName;
-        if multTaskFlag
+        if hasTaskFlag
             fileStr    = [ fileStr  '_task-' char(files(iSubj).task(iItem)) ];
             opt.tInfo.TaskName = char(files(iSubj).task(iItem));
         end
@@ -820,82 +820,17 @@ if isempty(fileIn)
     return
 end
 
-% import data
-tInfo = opt.tInfo;
-[pathIn,fileInNoExt,ext] = fileparts(fileIn); 
-ext = lower(ext);
-fprintf('Processing file %s\n', fileIn);
+% force EEGLAB export if anything is done on the file
 if ~isempty(eventtype) || ~isempty(eventindex) || ~isempty(timeoffset)
+    fprintf('File will be exported in EEGLAB formet because of segment selection\n')
     opt.exportformat = 'eeglab';
 end
-if ~isempty(opt.importfunc)
-    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
-    EEG = feval(opt.importfunc, fileIn);
-elseif strcmpi(ext, '.bdf') || strcmpi(ext, '.edf')
-    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
-    EEG = pop_biosig(fileIn);
-elseif strcmpi(ext, '.vhdr')
-    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
-    [fpathin, fname, ext] = fileparts(fileIn);
-    EEG = pop_loadbv(fpathin, [fname ext]);
-elseif strcmpi(ext, '.set')
-    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
-    EEG = pop_loadset(fileIn);
-elseif strcmpi(ext, '.cnt')
-    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
-    EEG = pop_loadcnt(fileIn, 'dataformat', 'auto');
-    datFile = [fileIn(1:end-4) '.dat'];
-    if exist(datFile,'file')
-        EEG = pop_importevent(EEG, 'indices',1:length(EEG.event), 'append','no', 'event', datFile,...
-            'fields',{'DatTrial','DatResp','DatType','DatCorrect','DatLatency'},'skipline',20,'timeunit',NaN,'align',0);
-    end
-elseif strcmpi(ext, '.mff')
-    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
-    EEG = pop_mffimport(fileIn,{'code'});
-elseif strcmpi(ext, '.raw')
-    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
-    EEG = pop_readegi(fileIn);
-elseif strcmpi(ext, '.eeg')
-    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
-    [tmpPath,tmpFileName,~] = fileparts(fileIn);
-    if exist(fullfile(tmpPath, [tmpFileName '.vhdr']), 'file')
-        EEG = pop_loadbv( tmpPath, [tmpFileName '.vhdr'] );
-    else
-        error('.eeg files not from BrainVision are currently not supported')
-    end
-elseif strcmpi(ext, '.nwb')
-    if strcmpi(opt.modality, 'auto'), opt.modality = 'ieeg'; end
-    if ~exist('pop_nwbimport', 'file')
-        error('NWB-io plugin not present, please install the plugin first')
-    end
-    EEG = pop_nwbimport(fileIn, 'importspikes', 'on', 'typefield', 1);
-elseif strcmpi(ext, '.mefd')
-    if strcmpi(opt.modality, 'auto'), opt.modality = 'ieeg'; end
-    modality = 'ieeg';
-    if ~exist('pop_MEF3', 'file')
-        error('MEF plugin not present, please install the MEF3 plugin first')
-    end
-    EEG = pop_MEF3(eegFileRaw); % MEF folder
-elseif strcmpi(ext, '.fif')
-    if strcmpi(opt.modality, 'auto'), opt.modality = 'meg'; end
-    EEG = pop_fileio(eegFileRaw); % fif folder
-elseif strcmpi(ext, '.gz')
-    if strcmpi(opt.modality, 'auto'), opt.modality = 'meg'; end
-    gunzip(eegFileRaw);
-    EEG = pop_fileio(eegFileRaw(1:end-3)); % fif folder
-elseif strcmpi(ext, '.ds')
-    if strcmpi(opt.modality, 'auto'), opt.modality = 'meg'; end
-    if strcmpi(opt.ctffunc, 'fileio')
-        EEG = pop_fileio(eegFileRaw);
-    else
-        EEG = pop_ctf_read(eegFileRaw);
-    end
-else
-    error('Data format not supported');
-end
-if strcmpi(opt.noevents, 'on')
-    EEG.event = [];
-end
+
+% import data
+tInfo = opt.tInfo;
+[pathIn,fileInNoExt,ext] = fileparts(fileIn);
+fprintf('Processing file %s\n', fileIn);
+[EEG,opt.modality] = eeg_import(fileIn, 'modality', opt.modality, 'noevents', opt.noevents, 'importfunc', opt.importfunc);
 
 % output folder creation
 fileBase = fullfile(opt.targetdir, subjectStr, sess, opt.modality, fileStr);

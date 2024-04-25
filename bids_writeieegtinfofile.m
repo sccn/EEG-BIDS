@@ -16,9 +16,9 @@ function tInfo = bids_writeieegtinfofile( EEG, tInfo, notes, fileOutRed)
 
 [~,channelsCount] = eeg_getchantype(EEG);
 
-% Write task information (eeg.json) Note: depends on channels
+% Write task information (ieeg.json) Note: depends on channels
 % requiredChannelTypes: 'EEG', 'EOG', 'ECG', 'EMG', 'MISC'. Other channel
-% types are currently not valid output for eeg.json.
+% types are currently not valid output for ieeg.json.
 nonEmptyChannelTypes = fieldnames(channelsCount);
 for i=1:numel(nonEmptyChannelTypes)
     if strcmp(nonEmptyChannelTypes{i}, 'MISC')
@@ -50,6 +50,7 @@ if ~isempty(notes)
     tInfo.SubjectArtefactDescription = notes;
 end
 
+% https://bids-specification.readthedocs.io/en/stable/modality-specific-files/intracranial-electroencephalography.html
 tInfoFields = {...
     'iEEGReference' 'REQUIRED' 'char' 'Unknown';
     'SamplingFrequency' 'REQUIRED' '' '';

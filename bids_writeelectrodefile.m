@@ -35,7 +35,7 @@ if isfield(EEG.chaninfo, 'filename') && isequal(flagExport, 'auto')
     end
 end
 
-if ~isequal(flagExport, 'off') && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && any(cellfun(@(x)~isempty(x), { EEG.chanlocs.X }))
+if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && any(cellfun(@(x)~isempty(x), { EEG.chanlocs.X }))
     fid = fopen( [ fileOut '_electrodes.tsv' ], 'w');
     fprintf(fid, 'name\tx\ty\tz\n');
     
