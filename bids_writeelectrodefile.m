@@ -21,6 +21,11 @@ else
     flagExport = 'auto';
 end
 isTemplate = false;
+% case { 32 33 }, fileloc = 'GSN-HydroCel-32.sfp';
+% case { 64 65 }, fileloc = 'GSN65v2_0.sfp';
+% case { 128 129 }, fileloc = 'GSN129.sfp';
+% case { 256 257 }, fileloc = 'GSN-HydroCel-257.sfp';
+% 
 if isfield(EEG.chaninfo, 'filename') && isequal(flagExport, 'auto')
     if ~isempty(strfind(EEG.chaninfo.filename, 'standard-10-5-cap385.elp')) || ...
             ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005.elc'))||...
@@ -30,7 +35,7 @@ if isfield(EEG.chaninfo, 'filename') && isequal(flagExport, 'auto')
     end
 end
 
-if isequal(flagExport, 'on') && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && any(cellfun(@(x)~isempty(x), { EEG.chanlocs.X }))
+if ~isequal(flagExport, 'off') && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && any(cellfun(@(x)~isempty(x), { EEG.chanlocs.X }))
     fid = fopen( [ fileOut '_electrodes.tsv' ], 'w');
     fprintf(fid, 'name\tx\ty\tz\n');
     
