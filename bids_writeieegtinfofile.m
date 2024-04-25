@@ -50,6 +50,7 @@ if ~isempty(notes)
     tInfo.SubjectArtefactDescription = notes;
 end
 
+% https://bids-specification.readthedocs.io/en/stable/modality-specific-files/intracranial-electroencephalography.html
 tInfoFields = {...
     'iEEGReference' 'REQUIRED' 'char' 'Unknown';
     'SamplingFrequency' 'REQUIRED' '' '';
