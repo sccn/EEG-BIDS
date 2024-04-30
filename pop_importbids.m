@@ -536,13 +536,9 @@ for iSubject = opt.subjects
                     % check for group information: get from participants
                     % file if doesn't exist
                     if isempty(EEG.group) && sum(ismember(lower(bids.participants(1,:)),'group'))
-                        bids.participantsTable = cell2table(bids.participants(2:end,:),'VariableNames',bids.participants(1,:));
-                        [~,eegFileRawOnly] = fileparts(eegFileRaw);
-                        isub = strtok(eegFileRawOnly,'_');
-                        isubRow = find(ismember(bids.participantsTable.participant_id,isub));
-                        igroup = bids.participantsTable{isubRow(1), ismember(lower(bids.participants(1,:)),'group')};
-                        if ~isempty(igroup{1})
-                            EEG.group = igroup{1};
+                        igroup = bids.participants{iSubject,ismember(lower(bids.participants(1,:)),'group')};
+                        if ~isempty(igroup)
+                            EEG.group = igroup;
                         end
                     end
 
