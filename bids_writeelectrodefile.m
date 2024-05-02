@@ -20,16 +20,10 @@ if nargin > 2
 else
     flagExport = 'auto';
 end
-isTemplate = false;
-% case { 32 33 }, fileloc = 'GSN-HydroCel-32.sfp';
-% case { 64 65 }, fileloc = 'GSN65v2_0.sfp';
-% case { 128 129 }, fileloc = 'GSN129.sfp';
-% case { 256 257 }, fileloc = 'GSN-HydroCel-257.sfp';
-% 
+
 if isfield(EEG.chaninfo, 'filename') && isequal(flagExport, 'auto')
-    if ~isempty(strfind(EEG.chaninfo.filename, 'standard-10-5-cap385.elp')) || ...
-            ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005.elc'))||...
-            ~isempty(strfind(EEG.chaninfo.filename, 'standard_1005.ced'))
+    templates = {'GSN-HydroCel-32.sfp', 'GSN65v2_0.sfp', 'GSN129.sfp', 'GSN-HydroCel-257.sfp', 'standard-10-5-cap385.elp', 'standard_1005.elc', 'standard_1005.ced'};
+    if any(contains(EEG.chaninfo.filename, templates))
         flagExport = 'off';
         disp('Template channel location detected, not exporting electrodes.tsv file');
     end
@@ -40,7 +34,7 @@ if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(
     fprintf(fid, 'name\tx\ty\tz\n');
     
     for iChan = 1:EEG.nbchan
-        if isempty(EEG.chanlocs(iChan).X) || isnan(EEG.chanlocs(iChan).X)
+        if isempty(EEG.chanlocs(iChan).X) || isnan(EEG.chanlocs(iChan).X) || contains(fileOut, 'ieeg')
             fprintf(fid, '%s\tn/a\tn/a\tn/a\n', EEG.chanlocs(iChan).labels );
         else
             fprintf(fid, '%s\t%2.6f\t%2.6f\t%2.6f\n', EEG.chanlocs(iChan).labels, EEG.chanlocs(iChan).X, EEG.chanlocs(iChan).Y, EEG.chanlocs(iChan).Z );
