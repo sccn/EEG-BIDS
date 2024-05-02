@@ -920,10 +920,13 @@ bids_writechanfile(EEG, fileOutRed);
 bids_writeelectrodefile(EEG, fileOutRed, 'export', opt.elecexport);
 if strcmpi(opt.modality, 'eeg')
     bids_writetinfofile(EEG, tInfo, notes, fileOutRed);
+    EEG.etc.datatype = 'eeg';
 elseif strcmpi(opt.modality, 'ieeg')
     bids_writeieegtinfofile(EEG, tInfo, notes, fileOutRed);
+    EEG.etc.datatype = 'ieeg';
 elseif strcmpi(opt.modality, 'meg')
     bids_writemegtinfofile(EEG, tInfo, notes, fileOutRed);
+    EEG.etc.datatype = 'meg';
 end
 
 % write channel information
