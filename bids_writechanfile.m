@@ -25,7 +25,7 @@ if isempty(EEG.chanlocs)
     if contains(fileOut, 'ieeg')
         fprintf(fid, 'name\ttype\tunits\tlow_cutoff\thigh_cutoff\n');
         for iChan = 1:EEG.nbchan
-            fprintf(fid, 'E%d\tEEG\tmicroV\tn/a\tn/a\n', iChan); 
+            fprintf(fid, 'E%d\tiEEG\tmicroV\tn/a\tn/a\n', iChan); 
         end
     else
         fprintf(fid, 'name\ttype\tunits\n');

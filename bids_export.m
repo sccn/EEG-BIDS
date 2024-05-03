@@ -915,10 +915,13 @@ bids_writechanfile(EEG, fileOutRed);
 bids_writeelectrodefile(EEG, fileOutRed, 'export', opt.elecexport);
 if strcmpi(opt.modality, 'eeg')
     bids_writetinfofile(EEG, tInfo, notes, fileOutRed);
+    EEG.etc.datatype = 'eeg';
 elseif strcmpi(opt.modality, 'ieeg')
     bids_writeieegtinfofile(EEG, tInfo, notes, fileOutRed);
+    EEG.etc.datatype = 'ieeg';
 elseif strcmpi(opt.modality, 'meg')
     bids_writemegtinfofile(EEG, tInfo, notes, fileOutRed);
+    EEG.etc.datatype = 'meg';
 end
 
 % write channel information
@@ -1108,7 +1111,7 @@ fid = fopen(fileName, 'w', 'n', 'UTF-8');
 if fid == -1, error('Cannot write file - make sure you have writing permission'); end
 for iRow=1:size(matlabArray,1)
     for iCol=1:size(matlabArray,2)
-        if isempty(matlabArray{iRow,iCol})
+        if isempty(matlabArray{iRow,iCol}) || isnan(matlabArray{iRow,iCol})
             %disp('Empty value detected, replacing by n/a');
             fprintf(fid, 'n/a');
         elseif ischar(matlabArray{iRow,iCol})
