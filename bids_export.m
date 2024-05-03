@@ -1111,7 +1111,7 @@ fid = fopen(fileName, 'w', 'n', 'UTF-8');
 if fid == -1, error('Cannot write file - make sure you have writing permission'); end
 for iRow=1:size(matlabArray,1)
     for iCol=1:size(matlabArray,2)
-        if isempty(matlabArray{iRow,iCol}) || isnan(matlabArray{iRow,iCol})
+        if isempty(matlabArray{iRow,iCol}) || all(isnan(matlabArray{iRow,iCol}))
             %disp('Empty value detected, replacing by n/a');
             fprintf(fid, 'n/a');
         elseif ischar(matlabArray{iRow,iCol})
