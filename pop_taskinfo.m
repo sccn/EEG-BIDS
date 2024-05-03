@@ -59,6 +59,7 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
     uicontrol('Style', 'text', 'string', 'For several tasks, script using bids_export', 'BackgroundColor',bg,'fontsize',fontSize,'Units', 'normalized', 'Position', [efLeftMargin top efWidth tfHeight]); 
     top = top - tfHeight - 0.01;
     uicontrol('Style', 'text', 'string', 'README (short introduction to the experiment):','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight]);
+    uicontrol('Style', 'pushbutton', 'string', 'Show template:','fontsize',fontSize,'BackgroundColor',bg,'ForegroundColor',fg, 'HorizontalAlignment','left','Units', 'normalized', 'Position', [leftMargin+0.2 top halfWidth*0.2 tfHeight], 'Callback', @default_readme);
     top = top - tfHeight*2.2;
     uicontrol('Style', 'edit', 'string', '', 'tag', 'README','fontsize',fontSize, 'HorizontalAlignment', 'left', 'max', 3,'Units', 'normalized', 'Position', [leftMargin top fullWidth tfHeight*2.5]);
     top = top - tfHeight - 0.01;
@@ -342,6 +343,14 @@ function [EEG,com] = pop_taskinfo(EEG, varargin)
     end
 
     function editedCB(src,event)
+    end
+    
+    function default_readme(src, event)
+        [res, hist] = pop_comments(bids_template_README());
+        if ~isempty(hist)
+            readme_field = findobj('Tag', 'README');
+            readme_field.String = res;
+        end
     end
 
     function string_out = reformatchartostring(char_in)
