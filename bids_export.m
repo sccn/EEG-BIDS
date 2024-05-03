@@ -627,6 +627,9 @@ end
 
 % Write README files (README)
 % ---------------------------
+if isempty(opt.README)
+    opt.README = bids_template_README();
+end
 if ~isempty(opt.README)
     if exist(opt.README) ~= 2
         fid = fopen(fullfile(opt.targetdir, 'README'), 'w');
