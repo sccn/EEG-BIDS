@@ -302,7 +302,7 @@ opt = finputcheck(varargin, {
     'Authors'      'cell'    {}    {''};
     'ReferencesAndLinks' 'cell' {}    {''};
     'targetdir'    'string'  {}    fullfile(pwd, 'bidsexport');
-    'taskName'     'string'  {}    'unnamed';
+    'taskName'     'string'  {}    '';
     'codefiles'    'cell'    {}    {};
     'stimuli'      'cell'    {}    {};
     'pInfo'        'cell'    {}    {};
@@ -343,11 +343,11 @@ opt = finputcheck(varargin, {
     'deleteExportDir' 'string' {'on' 'off'} 'on' ;
     'writePInfoOnly' 'string' {'on' 'off'} 'off'}, 'bids_export');
 if isstr(opt), error(opt); end
+if ~isempty(opt.taskName)
+    fprintf(2, 'Task name input is deprecated and not used, use tInfo.taskname instead\n');
+end
 if size(opt.stimuli,1) == 1 || size(opt.stimuli,2) == 1
     opt.stimuli = reshape(opt.stimuli, [2 length(opt.stimuli)/2])';
-end
-if any(contains(opt.taskName, '_')) || any(contains(opt.taskName, ' '))
-    error('Task name cannot contain underscore or space character(s)');
 end
 
 % deleting folder
@@ -463,7 +463,11 @@ for iSubj = 1:length(files)
         files(iSubj).session = ones(1, length(files(iSubj).file));
     end
     if ~isfield(files(iSubj), 'task') || isempty(files(iSubj).task)
-        [files(iSubj).task{1:length(files(iSubj).file)}] = deal(opt.taskName);
+        if isfield(opt.tInfo, 'TaskName')
+            [files(iSubj).task{1:length(files(iSubj).file)}] = deal(opt.tInfo.TaskName);
+        else
+            error('''TaskName'' is a required field for tInfo input; alternatively you can assign a task to each input dataset');
+        end
     end
     
     % notes
@@ -543,7 +547,7 @@ elseif ~isstruct(files(1).file)
     end
 end
 participants = { 'participant_id' };
-for iSubj=2:length(opt.pInfo)
+for iSubj=2:size(opt.pInfo,1)
     if strcmp('participant_id', opt.pInfo{1,1})
         opt.pInfo{iSubj,1} = removeInvalidChar(opt.pInfo{iSubj,1});
         if length(opt.pInfo{iSubj,1}) > 3 && isequal('sub-', opt.pInfo{iSubj,1}(1:4))
@@ -620,9 +624,6 @@ for iField = 1:length(fields)
     if ~isfield(opt.eInfoDesc, fields{iField}), opt.eInfoDesc(1).(fields{iField}) = struct([]); end
     opt.eInfoDesc.(fields{iField}) = bids_checkfields(opt.eInfoDesc.(fields{iField}), eInfoDescFields, 'eInfoDesc');
 end
-if strcmpi(opt.individualEventsJson, 'off')
-    jsonwrite(fullfile(opt.targetdir, ['task-' opt.taskName '_events.json' ]), opt.eInfoDesc,struct('indent','  '));
-end
 
 % Write README files (README)
 % ---------------------------
@@ -676,14 +677,6 @@ if ~isempty(opt.stimuli)
         end
         opt.stimuli{iStim,2} = [ fileName,Ext ];
     end
-end
-
-% check task info
-% ---------------
-if length(unique([files(:).task])) == 1
-    defaultTaskName = files(1).task{1};
-else
-    defaultTaskName = 'mixed';
 end
 
 % set beh info (behavioral)
@@ -787,10 +780,12 @@ for iSubj = 1:length(files)
             fileStr    = [ fileStr '_ses-' files(iSubj).session{iItem} ];
             sessFolder = [ 'ses-' files(iSubj).session{iItem} ];
         end
-        opt.tInfo(1).TaskName = defaultTaskName;
         if hasTaskFlag
             fileStr    = [ fileStr  '_task-' char(files(iSubj).task(iItem)) ];
-            opt.tInfo.TaskName = char(files(iSubj).task(iItem));
+            opt.tInfo.TaskName = char(files(iSubj).task(iItem)); % will be written below
+        end
+        if strcmpi(opt.individualEventsJson, 'off') % top level file overwriten every iteration but that's OK
+            jsonwrite(fullfile(opt.targetdir, ['task-' opt.tInfo.TaskName '_events.json' ]), opt.eInfoDesc, struct('indent','  '));
         end
         if multRunFlag
             if ~strcmp(files(iSubj).run{iItem}, 'NaN')

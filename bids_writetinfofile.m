@@ -84,5 +84,8 @@ tInfoFields = {...
     'SoftwareVersions' 'RECOMMENDED' 'char' '';
     'SubjectArtefactDescription' 'OPTIONAL' 'char' '' };
 tInfo = bids_checkfields(tInfo, tInfoFields, 'tInfo');
+if any(contains(tInfo.TaskName, '_')) || any(contains(tInfo.TaskName, ' '))
+    error('Task name cannot contain underscore or space character(s)');
+end
 
 jsonwrite([fileOutRed '_eeg.json' ], tInfo,struct('indent','  '));
