@@ -40,11 +40,12 @@ if ~isfield(tInfo, 'EEGReference')
 end
 if EEG.trials == 1
     tInfo.RecordingType = 'continuous';
+    tInfo.RecordingDuration = EEG.pnts/EEG.srate;
 else
     tInfo.RecordingType = 'epoched';
     tInfo.EpochLength = EEG.pnts/EEG.srate;
+    tInfo.RecordingDuration = (EEG.pnts/EEG.srate)*EEG.trials;
 end
-tInfo.RecordingDuration = EEG.pnts/EEG.srate;
 tInfo.SamplingFrequency = EEG.srate;
 if ~isempty(notes)
     tInfo.SubjectArtefactDescription = notes;
