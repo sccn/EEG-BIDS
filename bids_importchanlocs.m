@@ -25,7 +25,11 @@
 function [EEG, channelData, elecData] = bids_importchanlocs(EEG, channelFile, elecFile)
     channelData = bids_loadfile(channelFile, '');
     elecData    = bids_loadfile(elecFile, '');
-    chanlocs = [];
+    if isfield(EEG, 'chanlocs')
+        chanlocs = EEG.chanlocs;
+    else
+        chanlocs = [];
+    end
     if isempty(channelData) && isempty(elecData)
         return
     end

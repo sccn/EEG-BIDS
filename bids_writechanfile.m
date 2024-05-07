@@ -18,7 +18,7 @@
 %
 % Authors: Dung Truong, Arnaud Delorme, 2022
 
-function eeg_writechanfile(EEG, fileOut)
+function bids_writechanfile(EEG, fileOut)
 
 fid = fopen( [ fileOut '_channels.tsv' ], 'w');
 if isempty(EEG.chanlocs)
