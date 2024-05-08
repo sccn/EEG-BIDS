@@ -5,15 +5,28 @@
 %    curjsondata = bids_importjson(curFile, ext)
 %
 % Inputs:
-%  curFile      - [string] path to the current json file
+%  curFile      - [string] full path to the current json file
 %  ext          - [string] BIDS post fix extension of the file. 
-%                 e.g. _events.tsv
+%                 e.g. _events.json
 %
 % Outputs:
 %   curjsondata     - [struct] json data imported as matlab structure
 %
 % Author: Dung Truong, 2024
-function curjsondata = bids_importjson(curFile, ext)
+function curjsondata = bids_importjson(curFile, ext, oriFile)
+    if nargin < 1
+       help bids_importjson
+       return
+    end
+    if nargin < 2
+        % no extension is provided. Default to using the filename
+        splitted = strsplit(curFile, '_');
+        ext = ['_' splitted{end}];
+    end
+    if nargin < 3
+        % no extension is provided. Default to using the filename
+        oriFile = curFile;
+    end
     % resolve wildcard if applicable
     curFileDir = dir(curFile);
     if ~isempty(curFileDir)
@@ -26,7 +39,21 @@ function curjsondata = bids_importjson(curFile, ext)
     end
     if ~isTopLevel(curFile)
         upperFile = fullfile(fileparts(fileparts(curFile)), ['*' ext]);
-        upperjsondata = bids_importjson(upperFile, ext);
+        % resolve wildcard if applicable
+        upperFileDir = dir(upperFile);
+        if ~isempty(upperFileDir)
+            for u=1:numel(upperFileDir)
+                % check using rule 2.b and 2.c
+                % of https://bids-specification.readthedocs.io/en/stable/common-principles.html#the-inheritance-principle
+                upperFileName = upperFileDir(u).name;
+                upperFileName_parts = strsplit(upperFileName, '_');
+                if contains(oriFile, upperFileName_parts)
+                    upperFile = fullfile(curFileDir(u).folder, curFileDir(u).name);
+                    break
+                end
+            end
+        end
+        upperjsondata = bids_importjson(upperFile, ext, oriFile);
         
         % mergeStructures credit: https://www.mathworks.com/matlabcentral/fileexchange/131718-mergestructures-merge-or-concatenate-nested-structures?s_tid=mwa_osa_a
         curjsondata = mergeStructures(curjsondata, upperjsondata);
