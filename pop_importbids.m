@@ -654,32 +654,37 @@ for iSubject = opt.subjects
             
             % import data of other tpyes than EEG, MEG, iEEG
             for iMod = 1:numel(otherModality)
-
-                dataType    = otherModality{iMod}; 
-                dataFile    = eval([dataType 'File']);
-                dataRaw     = eval([dataType 'Data']); % cell array containing tables
-                subjectID   = bids.participants{iSubject,pInd}; 
-                subjectDataFolder       = subjectFolder{iFold}(1:end-3);
-                subjectDataFolderOut    = subjectFolderOut{iFold}(1:end-3); 
-                 
-                if isfield(bids.data(iSubject-1,iFold,1), 'scans')
-                    scansRaw  = bids.data(iSubject-1,iFold,1).scans;
-                else
-                    scansRaw = [];
-                end
-                
-                for iDat = 1:numel(dataFile)
-                    [DATA, dataFileOut] = import_noneeg(dataType, dataFile(iDat), dataRaw{iDat}, subjectID, scansRaw, iFold, strcmpi(opt.metadata, 'on'), strcmpi(opt.bidschanloc, 'on'), useScans, subjectDataFolder, subjectDataFolderOut);
-                    
-                    if strcmpi(opt.metadata, 'off')
-                        if exist([subjectFolderOut{iFold}(1:end-3), dataType],'dir') ~= 7
-                            mkdir(subjectFolderOut{iFold}(1:end-3), dataType);
-                        end
-                        pop_saveset(DATA, dataFileOut);
+                try
+                    dataType    = otherModality{iMod}; 
+                    dataFile    = eval([dataType 'File']);
+                    dataRaw     = eval([dataType 'Data']); % cell array containing tables
+                    subjectID   = bids.participants{iSubject,pInd}; 
+                    subjectDataFolder       = subjectFolder{iFold}(1:end-3);
+                    subjectDataFolderOut    = subjectFolderOut{iFold}(1:end-3); 
+                     
+                    if isfield(bids.data(iSubject-1,iFold,1), 'scans')
+                        scansRaw  = bids.data(iSubject-1,iFold,1).scans;
+                    else
+                        scansRaw = [];
                     end
+                    
+                    for iDat = 1:numel(dataFile)
+                        
+                            [DATA, dataFileOut] = import_noneeg(dataType, dataFile(iDat), dataRaw{iDat}, subjectID, scansRaw, iFold, strcmpi(opt.metadata, 'on'), strcmpi(opt.bidschanloc, 'on'), useScans, subjectDataFolder, subjectDataFolderOut);
+                            
+                            if strcmpi(opt.metadata, 'off')
+                                if exist([subjectFolderOut{iFold}(1:end-3), dataType],'dir') ~= 7
+                                    mkdir(subjectFolderOut{iFold}(1:end-3), dataType);
+                                end
+                                pop_saveset(DATA, dataFileOut);
+                            end
+                        
+                    end
+                catch exception
+                    fprintf('Error importing non i/M/EEG modality %s. Skipped\n', dataType);
+                    fprintf(getReport(exception));
                 end
             end
-            
             fclose all;
         end
     end
@@ -821,23 +826,38 @@ function [DATA, dataFileOut] = import_noneeg(dataType, dataFile, dataRaw, subjec
 
 disp(['Processing ' dataType ' data'])
 
-
-    
     % replace extension tsv with set
     [~,fileName,fileExt] = fileparts(dataFile.name);
     dataFileOut   = fullfile(subjectDataFolderOut, dataType, [fileName '.set']);
-    dataFileJSON  = [fileName '.json'];
 
-    % JSON information file
-    infoFile        = searchparent([subjectFolder, dataType], dataFileJSON);
-    infoData        = bids_loadfile(infoFile.name, infoFile);
+    % check for json file that might be applicable to the current file in current directory using rule 2.b and 2.c
+    % of https://bids-specification.readthedocs.io/en/stable/common-principles.html#the-inheritance-principle
+    bids_entity = strsplit(fileName, '_');
+    bids_entity = bids_entity{end};
+    dataFileJSON = fullfile([subjectFolder, dataType], ['*_' bids_entity '.json']);
+    % resolve wildcard if applicable
+    dataFileJSONDir = dir(dataFileJSON);
+    if ~isempty(dataFileJSONDir)
+        for u=1:numel(dataFileJSONDir)
+            dataFileJSONName_parts = strsplit(dataFileJSONDir(u).name, '_');
+            dataFileJSONName_parts = dataFileJSONName_parts(1:end-1); % only consider the suffices
+            if all(cellfun(@(x) contains(fileName, x), dataFileJSONName_parts))
+                dataFileJSON = fullfile(dataFileJSONDir(u).folder, dataFileJSONDir(u).name);
+                break
+            end
+        end
+    end
+    infoData        = bids_importjson(dataFileJSON);    
     
     % check or construct needed channel files according to the data type
     switch dataType
         case 'motion'
-            channelFileMotion   = [fileName(1:end-6) 'channels.tsv']; % replace _motion with _channels
-            channelFile         = searchparent([subjectFolder, dataType], channelFileMotion);
-            channelData         = bids_loadfile(channelFile(1).name, channelFile);
+            % look for associated *_channels.tsv
+            % since *_motion.json share the same principle and already
+            % looked up above, we only change the postfix
+            channelFileMotion   = [dataFileJSON(1:end-numel('motion.json')) 'channels.tsv']; % replace 'motion.json' with 'channels.tsv'
+            % channelFile         = searchparent([subjectFolder, dataType], channelFileMotion);
+            channelData         = bids_loadfile(channelFileMotion); %channelFile(1).name, channelFile);
         case 'physio'
             % channel file (for physio data, hidden in json file as 'columns')
             channelData = {'name', 'type', 'units'};
@@ -858,8 +878,16 @@ disp(['Processing ' dataType ' data'])
             DATA.data   = table2array(dataRaw)';
             
             if strcmp(dataType,'motion')
-                DATA.srate                  = infoData.SamplingFrequencyEffective;
-                DATA.etc.nominal_srate      = infoData.SamplingFrequency;
+                if isfield(infoData, 'SamplingFrequencyEffective')
+                    % 'SamplingFrequencyEffective' can be used if nominal
+                    % https://bids-specification.readthedocs.io/en/stable/modality-specific-files/motion.html#motion-specific-fields
+                    DATA.srate                      = infoData.SamplingFrequencyEffective;
+                    if isfield(infoData, 'SamplingFrequency')
+                        DATA.etc.nominal_srate      = infoData.SamplingFrequency;
+                    end
+                else
+                    DATA.srate                  = infoData.SamplingFrequency;
+                end
             else
                 try
                     DATA.srate  = infoData.SamplingFrequencyEffective; % Actual sampling rate used in motion data. Note that the unit of the time must be in second.
