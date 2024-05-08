@@ -772,7 +772,7 @@ fileList = fileList(isGoodFile);
 function fileList = filterFiles(fileList, taskList)
 keepInd = zeros(1,length(fileList));
 for iFile = 1:length(fileList)
-    if contains(fileList(iFile).name, taskList))
+    if contains(fileList(iFile).name, taskList)
         keepInd(iFile) = 1;
     end
 end
