@@ -48,7 +48,7 @@ function curjsondata = bids_importjson(curFile, ext, oriFile)
                 upperFileName = upperFileDir(u).name;
                 upperFileName_parts = strsplit(upperFileName, '_');
                 if contains(oriFile, upperFileName_parts)
-                    upperFile = fullfile(curFileDir(u).folder, curFileDir(u).name);
+                    upperFile = fullfile(upperFileDir(u).folder, upperFileDir(u).name);
                     break
                 end
             end
