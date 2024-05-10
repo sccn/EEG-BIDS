@@ -16,7 +16,7 @@ Refer to the [wiki documentation](https://github.com/sccn/EEG-BIDS/wiki).
 
 [data2bids.m](https://www.fieldtriptoolbox.org/example/bids/) is a Fieldtrip function to export BIDS data. This includes EEG and maybe fMRI. This function can only be used from the command line.
 
-[EEG-BIDS](https://github.com/sccn/EEG-BIDS) (this program) is the most popular tool to export EEG data using both a graphical interface and/or command line(more than half of the BIDS datasets on OpenNeuro were exported using EEG-BIDS and it has more than 2200 installs in EEGLAB). A compiled stand-alone version will also be released soon.
+[EEG-BIDS](https://github.com/sccn/EEG-BIDS) (this program) is the most popular tool to export EEG data using both a graphical interface and/or command line (more than half of the BIDS datasets on OpenNeuro were exported using EEG-BIDS and it has more than 2200 installs in EEGLAB). A compiled stand-alone version will also be released soon.
 
 # EEG-BIDS export capabilities
 
