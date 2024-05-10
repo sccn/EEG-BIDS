@@ -1,19 +1,19 @@
-% eegplugin_bids() - EEGLAB plugin for importing data saved
+% eegplugin_eegbids() - EEGLAB plugin for importing data saved
 %             by the finders course (Matlab converted)
 %
 % Usage:
-%   >> eegplugin_bids(fig, trystrs, catchstrs);
+%   >> eegplugin_eegbids(fig, trystrs, catchstrs);
 %
 % Inputs:
 %   fig        - [integer]  EEGLAB figure
 %   trystrs    - [struct] "try" strings for menu callbacks.
 %   catchstrs  - [struct] "catch" strings for menu callbacks.
 
-function vers = eegplugin_bids(fig, trystrs, catchstrs)
+function vers = eegplugin_eegbids(fig, trystrs, catchstrs)
 
     vers = bids_matlab_tools_ver;
     if nargin < 3
-        error('eegplugin_bids requires 3 arguments');
+        error('eegplugin_eegbids requires 3 arguments');
     end
     
     % add folder to path
