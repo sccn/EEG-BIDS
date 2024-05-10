@@ -33,7 +33,7 @@ Accepted EEG input formats are all files that EEGLAB can read.
 * EMG export: ✖ (upcoming)
 * MEG export: ✖ (upcoming)
 
-# EEG-BIDS import capabilities
+# EEG-BIDS import capabilities for EEGLAB
 
 * EEG-BIDS allows importing BIDS datasets into EEGLAB.
 * iEEG import: ✔ (all formats)
