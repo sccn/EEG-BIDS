@@ -27,7 +27,7 @@ Accepted EEG input formats are all files that EEGLAB can read.
 * Eye-tracking export: ✔ (beta)
 * HED event export: ✔
 * BEH export: ✔
-* MRI export: ✔
+* MRI export: ✔ (no conversion)
 * fMRI export: ✖
 * Motion-cap export: ✖ (upcoming)
 * EMG export: ✖ (upcoming)
