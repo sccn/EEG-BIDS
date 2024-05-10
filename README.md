@@ -18,6 +18,36 @@ Refer to the [wiki documentation](https://github.com/sccn/EEG-BIDS/wiki).
 
 [EEG-BIDS](https://github.com/sccn/EEG-BIDS) (this program) is the most popular tool to export EEG data using both a graphical interface and/or command line(more than half of the BIDS datasets on OpenNeuro were exported using EEG-BIDS and it has more than 2200 installs in EEGLAB). A compiled stand-alone version will also be released soon.
 
+# EEG-BIDS export capabilities
+
+Accepted EEG input formats are all files that EEGLAB can read. 
+
+EEG export: ✔ (as .set, .edf, .bdf, or .vhmk files)
+iEEG export: ✔ (as .set, .edf or .nwb)
+Eye-tracking export: ✔ (beta)
+HED event export: ✔
+BEH export: ✔
+MRI export: ✔
+fMRI export: ✖
+Motion-cap export: ✖ (upcoming)
+EMG export: ✖ (upcoming)
+MEG export: ✖ (upcoming)
+
+# EEG-BIDS import capabilities
+
+EEG-BIDS allows importing BIDS datasets into EEGLAB.
+
+EEG import: ✔ (all formats)
+EEG import: ✔ (all formats)
+MEG import: ✔ (.ds and .fif files supported, more formats upcoming)
+Eye-tracking import: ✖ (upcoming)
+HED event import: ✔
+BEH import: ✔
+MRI import: n/a
+fMRI import: n/a
+Motion-cap import: ✔ (beta)
+EMG import: ✖ (upcoming)
+
 # Cloning
 
 Make sure you clone with submodules
