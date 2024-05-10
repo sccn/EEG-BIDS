@@ -35,9 +35,10 @@ Accepted EEG input formats are all files that EEGLAB can read.
 
 # EEG-BIDS import capabilities for EEGLAB
 
-* EEG-BIDS allows importing BIDS datasets into EEGLAB.
-* iEEG import: ✔ (all formats)
+EEG-BIDS allows importing BIDS datasets into EEGLAB. This is the type of information that can be imported.
+
 * EEG import: ✔ (all formats)
+* iEEG import: ✔ (all formats)
 * MEG import: ✔ (.ds and .fif files supported, more formats upcoming)
 * Eye-tracking import: ✖ (upcoming)
 * HED event import: ✔
