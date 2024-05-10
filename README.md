@@ -22,31 +22,30 @@ Refer to the [wiki documentation](https://github.com/sccn/EEG-BIDS/wiki).
 
 Accepted EEG input formats are all files that EEGLAB can read. 
 
-EEG export: ✔ (as .set, .edf, .bdf, or .vhmk files)
-iEEG export: ✔ (as .set, .edf or .nwb)
-Eye-tracking export: ✔ (beta)
-HED event export: ✔
-BEH export: ✔
-MRI export: ✔
-fMRI export: ✖
-Motion-cap export: ✖ (upcoming)
-EMG export: ✖ (upcoming)
-MEG export: ✖ (upcoming)
+* EEG export: ✔ (as .set, .edf, .bdf, or .vhmk files)
+* iEEG export: ✔ (as .set, .edf or .nwb)
+* Eye-tracking export: ✔ (beta)
+* HED event export: ✔
+* BEH export: ✔
+* MRI export: ✔
+* fMRI export: ✖
+* Motion-cap export: ✖ (upcoming)
+* EMG export: ✖ (upcoming)
+* MEG export: ✖ (upcoming)
 
 # EEG-BIDS import capabilities
 
-EEG-BIDS allows importing BIDS datasets into EEGLAB.
-
-EEG import: ✔ (all formats)
-EEG import: ✔ (all formats)
-MEG import: ✔ (.ds and .fif files supported, more formats upcoming)
-Eye-tracking import: ✖ (upcoming)
-HED event import: ✔
-BEH import: ✔
-MRI import: n/a
-fMRI import: n/a
-Motion-cap import: ✔ (beta)
-EMG import: ✖ (upcoming)
+* EEG-BIDS allows importing BIDS datasets into EEGLAB.
+* iEEG import: ✔ (all formats)
+* EEG import: ✔ (all formats)
+* MEG import: ✔ (.ds and .fif files supported, more formats upcoming)
+* Eye-tracking import: ✖ (upcoming)
+* HED event import: ✔
+* BEH import: ✔
+* MRI import: n/a
+* fMRI import: n/a
+* Motion-cap import: ✔ (beta)
+* EMG import: ✖ (upcoming)
 
 # Cloning
 
