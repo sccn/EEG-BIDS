@@ -25,7 +25,7 @@ Accepted EEG input formats are all files that EEGLAB can read.
 * EEG export: ✔ (as .set, .edf, .bdf, or .vhmk files)
 * iEEG export: ✔ (as .set, .edf or .nwb)
 * Eye-tracking export: ✔ (beta)
-* HED event export: ✔
+* HED export: ✔
 * BEH export: ✔
 * MRI export: ✔ (no conversion)
 * fMRI export: ✖
@@ -41,7 +41,7 @@ EEG-BIDS allows importing BIDS datasets into EEGLAB. This is the type of informa
 * iEEG import: ✔ (all formats)
 * MEG import: ✔ (.ds and .fif files supported, more formats upcoming)
 * Eye-tracking import: ✖ (upcoming)
-* HED event import: ✔
+* HED import: ✔
 * BEH import: ✔
 * MRI import: n/a
 * fMRI import: n/a
