@@ -6,7 +6,7 @@ The EEG-BIDS (formerly known as **BIDS-MATLAB-tools**) repository contains a col
 
 Refer to the [wiki documentation](https://github.com/sccn/EEG-BIDS/wiki). 
 
-# EEG-BIDS vs BIDS-MATLAB vs EEG2BIDS vs EZBIDS vs data2bids.m
+# EEG-BIDS vs other BIDS software
 
 [BIDS-MATLAB](https://bids-matlab.readthedocs.io/en/latest/) is a project to import BIDS data. BIDS-MATLAB maps the BIDS directory architectures to MATLAB structures but does not import or convert data like EEG-BIDS. In theory, EEG-BIDS could use BIDS-MATLAB to get the BIDS directory architectures into MATLAB and then convert it to an EEGLAB STUDY. However, in 2021, BIDS-MATLAB could not yet import all the relevant EEG, MEG, and iEEG files. 
 
