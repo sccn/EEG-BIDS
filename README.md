@@ -1,3 +1,5 @@
+![EEG-BIDS](https://github.com/sccn/EEG-BIDS/assets/1872705/47675a55-6573-47d7-abec-48e364d5ad8a)
+
 # EEG-BIDS
 
 The EEG-BIDS (formerly known as **BIDS-MATLAB-tools**) repository contains a collection of functions that import and export BIDS-formated experiments. The code is tailored for use as an [EEGLAB](http://eeglab.org) plugin but may also be used independently of EEGLAB. Conversion of data format from non-supported BIDS binary format requires that EEGLAB be installed (supported formats are EEGLAB .set files, EDF files, BDF files, and Brain Vision Exchange Format files).
