@@ -33,6 +33,10 @@
 % THE POSSIBILITY OF SUCH DAMAGE.
 
 function bids_exporter(varargin)
+    if ~exist('pop_studywizard')
+        error('This tool is not available in this EEGLAB version. Use the latest EEGLAB version.')
+    end
+    
     if nargin == 0
         str = [  'This tool allows you to select binary EEG files' 10 ...
                  'and format them to a BIDS dataset. For more information' 10 ...
