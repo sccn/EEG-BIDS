@@ -123,6 +123,9 @@ else
 end
   
 % rearrange information in BIDS structures
+if ~isfield(EEG, 'BIDS')
+    EEG(1).BIDS = struct([]);
+end
 if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'README')
     options = [options 'README' {EEG(1).BIDS.gInfo.README}];
     EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'README');
@@ -184,13 +187,6 @@ if fileAbsent
     error('Datasets need to be saved before being exported');
 end
 saved = any(cellfun(@(x)isequal(x, 'no'), { EEG.saved }));
-if saved && nargin < 3
-    res = questdlg2('Some datasets need to be resaved. Do you want to resaved them now?', 'Save datasets', 'Cancel', 'Continue', 'Continue');
-    if ~strcmpi(res, 'Continue')
-        return;
-    end
-    EEG = pop_saveset(EEG, 'savemode', 'resave');
-end
 
 for iSubj = 1:length(uniqueSubjects)
     indS = strmatch( uniqueSubjects{iSubj}, allSubjects, 'exact' );
