@@ -61,8 +61,8 @@ function bids_exporter(varargin)
                 errordlg('Operation aborted as a task name is required')
             end
         end
-
-        if ~isempty(ALLEEG)
+        
+	if ~isempty(ALLEEG)
             pop_exportbids(STUDY, ALLEEG, 'taskName', taskName)
         end
     elseif nargin == 1 && exist(varargin{1}, 'file')

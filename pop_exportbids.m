@@ -138,7 +138,7 @@ end
 bidsFieldsFromALLEEG = fieldnames(EEG(1).BIDS); % All EEG should share same BIDS info  -> using EEG(1)
 % tInfo.SubjectArtefactDescription is not shared, arguments passed as `notes` below
 for f=1:numel(bidsFieldsFromALLEEG)
-    if ~isequal(bidsFieldsFromALLEEG{f}, 'behavioral')
+    if ~isequal(bidsFieldsFromALLEEG{f}, 'behavioral') && ~isequal(bidsFieldsFromALLEEG{f}, 'bidsstats')
         options = [options bidsFieldsFromALLEEG{f} {EEG(1).BIDS.(bidsFieldsFromALLEEG{f})}];
     else
         warning('Warning: cannot re-export behavioral data yet')
