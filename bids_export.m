@@ -790,7 +790,7 @@ for iSubj = 1:length(files)
         end
         if hasTaskFlag
             fileStr    = [ fileStr  '_task-' char(files(iSubj).task(iItem)) ];
-            opt.tInfo.TaskName = char(files(iSubj).task(iItem)); % will be written below
+            opt.tInfo(1).TaskName = char(files(iSubj).task(iItem)); % will be written below
         end
         if strcmpi(opt.individualEventsJson, 'off') % top level file overwriten every iteration but that's OK
             jsonwrite(fullfile(opt.targetdir, ['task-' opt.tInfo.TaskName '_events.json' ]), opt.eInfoDesc, struct('indent','  '));
