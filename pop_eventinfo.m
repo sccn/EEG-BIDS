@@ -88,8 +88,8 @@ function [EEG, STUDY, command] = pop_eventinfo(EEG, STUDY, varargin)
         tbl.ColumnFormat = {[] [] [] [] [] units unitPrefixes []};
         uicontrol(f, 'Style', 'pushbutton', 'String', 'Add BIDS field', 'Units', 'normalized', 'Position', [0.01 0.49 0.22 0.05], 'Callback', {@addFieldCB, tbl});
         uicontrol(f, 'Style', 'pushbutton', 'String', 'Remove BIDS field', 'Units', 'normalized', 'Position', [0.24 0.49 0.22 0.05], 'Callback', {@removeFieldCB, tbl, bidsFields});
-        uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0 0.1 0.05], 'Callback', @okCB); 
-        uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0 0.1 0.05], 'Callback', @cancelCB); 
+        uicontrol(f, 'Style', 'pushbutton', 'String', 'Ok', 'Units', 'normalized', 'Position', [0.85 0.05 0.1 0.05], 'Callback', @okCB); 
+        uicontrol(f, 'Style', 'pushbutton', 'String', 'Cancel', 'Units', 'normalized', 'Position', [0.7 0.05 0.1 0.05], 'Callback', @cancelCB); 
 
         % pre-populate table
         bidsFields = fieldnames(eventBIDS);

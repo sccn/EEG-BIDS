@@ -39,12 +39,12 @@ function bids_exporter(varargin)
     
     if nargin == 0
         str = [  'This tool allows you to select binary EEG files' 10 ...
-                 'and format them to a BIDS dataset. For more information' 10 ...
-                 'see the online help at https://eegbids.org'];
+            'and format them to a BIDS dataset. For more information' 10 ...
+            'see the online help at https://eegbids.org'];
 
         [~, ~, err, ~] = inputgui('geometry', { 1 1 }, 'geomvert', [1 3], 'uilist', ...
-                                  { { 'style' 'text' 'string' 'Welcome to the EEG-BIDS exporter tool!' 'fontweight' 'bold' }  { 'style' 'text' 'string' str } }, 'okbut', 'continue');
-        
+            { { 'style' 'text' 'string' 'Welcome to the EEG-BIDS exporter tool!' 'fontweight' 'bold' }  { 'style' 'text' 'string' str } }, 'okbut', 'continue');
+
         if isempty(err), return; end
         [STUDY, ALLEEG] = pop_studywizard();
         if isempty(ALLEEG), return; end
@@ -62,9 +62,8 @@ function bids_exporter(varargin)
             end
         end
         
-	if ~isempty(ALLEEG)
-            pop_exportbids(STUDY, ALLEEG, 'taskName', taskName)
-        end
+        STUDY.task = taskName;
+        pop_exportbids(STUDY, ALLEEG);
     elseif nargin == 1 && exist(varargin{1}, 'file')
         pop_runscript(varargin{1});
     end

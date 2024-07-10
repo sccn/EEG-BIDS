@@ -90,7 +90,7 @@ if nargin < 3 && ~ischar(STUDY)
     if ~isfield(EEG(1).BIDS.tInfo, 'PowerLineFrequency') || isnan(EEG(1).BIDS.tInfo.PowerLineFrequency)
         uiList = { { 'style' 'text' 'string' 'You must specify power line frequency' } ...
                    { 'style' 'popupmenu' 'string' {'50' '60' }} };
-        res = inputgui('uilist', uiList, 'geometry', {[ 1 0.4 ]});
+        res = inputgui('title', 'Missing required information', 'uilist', uiList, 'geometry', {[ 1 0.4 ]});
         if isempty(res), return; end
         for iEEG = 1:length(EEG)
             if res{1} == 1
@@ -133,6 +133,9 @@ end
 if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'TaskName')
     options = [options 'taskName' {EEG(1).BIDS.gInfo.TaskName}];
     EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'TaskName');
+end
+if isfield(STUDY, 'task')
+    options = [options { 'taskName' STUDY.task }];
 end
 
 bidsFieldsFromALLEEG = fieldnames(EEG(1).BIDS); % All EEG should share same BIDS info  -> using EEG(1)
