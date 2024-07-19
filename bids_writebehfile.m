@@ -41,10 +41,14 @@ fprintf(fid, '\n');
 
 for iRow = 1:length(beh)
     for iField = 1:length(fields)
-        if isempty(beh(iRow).(fields{iField})) || isnan(beh(iRow).(fields{iField}))
+        if isempty(beh(iRow).(fields{iField})) || any(isnan(beh(iRow).(fields{iField})))
             fprintf(fid, 'n/a' );
         else
-            fprintf(fid, '%1.4f', beh(iRow).(fields{iField}) );
+            if ischar(beh(iRow).(fields{iField}))
+                fprintf(fid, '%s',    beh(iRow).(fields{iField}) );
+            else
+                fprintf(fid, '%1.4f', beh(iRow).(fields{iField}) );
+            end
         end
         if iField < length(fields), fprintf(fid, '\t'); end
     end

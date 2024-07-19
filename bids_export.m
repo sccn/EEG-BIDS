@@ -517,7 +517,7 @@ for iSubj = 1:length(files)
         % convert all runs and session to cell array of string
         if ~iscell(files(iSubj).run)     files(iSubj).run = mattocell(files(iSubj).run); end
         if ~iscell(files(iSubj).session) files(iSubj).session = mattocell(files(iSubj).session); end
-        clear strs;
+        strs = {};
         for iVal = 1:length(files(iSubj).task)
             files(iSubj).run{    iVal} = num2str(files(iSubj).run{    iVal});
             files(iSubj).session{iVal} = num2str(files(iSubj).session{iVal});
@@ -790,7 +790,7 @@ for iSubj = 1:length(files)
         end
         if hasTaskFlag
             fileStr    = [ fileStr  '_task-' char(files(iSubj).task(iItem)) ];
-            opt.tInfo.TaskName = char(files(iSubj).task(iItem)); % will be written below
+            opt.tInfo(1).TaskName = char(files(iSubj).task(iItem)); % will be written below
         end
         if strcmpi(opt.individualEventsJson, 'off') % top level file overwriten every iteration but that's OK
             jsonwrite(fullfile(opt.targetdir, ['task-' opt.tInfo.TaskName '_events.json' ]), opt.eInfoDesc, struct('indent','  '));
