@@ -2,18 +2,26 @@
 %                     common event types latencies. This is useful for 
 %                     aligning the data from 2 subjects recorded
 %                     simultaneously or from 2 modalities in the same
-%                     subject.
+%                     subject or to merge hyperscanning data.
 % Usage:
 %         >> [MERGEDEEG, EEG2PRIME] = eeg_mergechannels(EEG1, EEG2, varargin);
 % Inputs:
 %       EEG1 - first EEGLAB dataset
-%       EEG2 - second EEGLAB dataset
+%       EEG2 - second EEGLAB dataset to be aligned with the first one. 
 %
 % Optional inputs:
-%       MERGEDEEG - contains the merged EEG datasets
+% 'finalevents'  - ['first'|'second'|'merge'|'mergediff'] how should the
+%                  final events look like. 'first' uses only the event from
+%                  the first dataset. 'second' uses only the event from
+%                  the second dataset after recalculating their latency.
+%                  'merge' merges the events. 'mergediff' (the default)
+%                  only merge the events from the second data which are not
+%                  in the first one.
 %
 % Output:
-%  OUTEEG  - output EEG structure with the two datasets merged
+%  MERGEDEEG  - output EEG structure with the two datasets merged. The
+%               merged dataset has the same sample as EEG1 and additional
+%               channels from EEG2.
 %
 % Example:
 %  EEG1.event = struct('type', {'a' 'b' 'c' 'c' 'd' 'f' });
@@ -59,6 +67,8 @@ end
 g = finputcheck( varargin, { ...
     'eventfield1'   'string'    {}   '';
     'eventfield2'   'string'    {}   '';
+    'tolerance'     'real'      {}   10;
+    'finalevents'   'string'    { 'first' 'second' 'merge' 'mergediff' }   'mergediff';
         } );
 if ischar(g)
     error(g)
@@ -134,6 +144,11 @@ fprintf('Matching events structure 2 are %s -> {%s}\n', int2str(matchingEvents2)
 % ------------------------------------------
 latency1 = [EEG1.event(matchingEvents1).latency];
 latency2 = [EEG2.event(matchingEvents2).latency];
+if length(latency1) < 2
+    error('At least two common events are needed to align datasets')
+elseif length(latency1) == 2
+    fprintf(2, 'Two common events have been found. This is enough to align the two datasets but not to check that the alignment is consistent accross all events.')
+end
 [~, ~, ~, slope, intercept] = fastregress(latency1, latency2);
 
 func1to2 = @(x)x*slope+intercept;
@@ -147,8 +162,15 @@ for iEvent = 1:min(50, length(latency1))
     fprintf('%8s                    ', sprintf('%1.1f', latency1(iEvent)));
 end
 fprintf('\n');
+flag = false;
 for iEvent = 1:min(50, length(latency2in1))
     fprintf('%8s (off by %3d ms)    ', sprintf('%1.1f', latency2in1(iEvent)), round(abs(latency2in1(iEvent)-latency1(iEvent))));
+    if round(abs(latency2in1(iEvent)-latency1(iEvent))) > g.tolerance
+        flag = true;
+    end
+end
+if flag
+    error('Alignment within %1.1f millisecond failed. Increase tolerance.', g.tolerance);
 end
 fprintf('\n');
 
@@ -196,28 +218,34 @@ end
 
 % add events from second dataset
 % ------------------------------
-MERGEDEEG.event = [];
-%nonMatchingEvents2 = setdiff(1:length(EEG2.event), matchingEvents2);
-nonMatchingEvents2 = 1:length(EEG2.event);
+if ~strcmpi(g.finalevents, 'first')
+    if strcmpi(g.finalevents, 'second')
+        MERGEDEEG.event = [];
+    elseif strcmpi(g.finalevents, 'merge')
+        nonMatchingEvents2 = 1:length(EEG2.event);
+    else
+        nonMatchingEvents2 = setdiff(1:length(EEG2.event), matchingEvents2);
+    end
 
-fields = fieldnames(EEG2.event);
-fields = setdiff(fields, 'latency');
-if ~isempty(nonMatchingEvents2) && isfield(EEG2.event, 'latency')
-    for iEvent = nonMatchingEvents2(:)'
-        MERGEDEEG.event(end+1).latency = func2to1(EEG2.event(iEvent).latency); 
-        for iField = 1:length(fields)
-            MERGEDEEG.event(end).(fields{iField}) = EEG2.event(iEvent).(fields{iField});
+        fields = fieldnames(EEG2.event);
+    fields = setdiff(fields, 'latency');
+    if ~isempty(nonMatchingEvents2) && isfield(EEG2.event, 'latency')
+        for iEvent = nonMatchingEvents2(:)'
+            MERGEDEEG.event(end+1).latency = func2to1(EEG2.event(iEvent).latency); 
+            for iField = 1:length(fields)
+                MERGEDEEG.event(end).(fields{iField}) = EEG2.event(iEvent).(fields{iField});
+            end
         end
     end
+    allLatencies = [ MERGEDEEG.event.latency ];
+    if length( MERGEDEEG.event ) == length(allLatencies)
+        [~,inds] = sort(allLatencies);
+        MERGEDEEG.event = MERGEDEEG.event(inds);
+    else
+        error('Issue with empty latency field')
+    end
+    MERGEDEEG = eeg_checkset(MERGEDEEG, 'eventconsistency');
 end
-allLatencies = [ MERGEDEEG.event.latency ];
-if length( MERGEDEEG.event ) == length(allLatencies)
-    [~,inds] = sort(allLatencies);
-    MERGEDEEG.event = MERGEDEEG.event(inds);
-else
-    error('Issue with empty latency field')
-end
-MERGEDEEG = eeg_checkset(MERGEDEEG, 'eventconsistency');
 
 return
 

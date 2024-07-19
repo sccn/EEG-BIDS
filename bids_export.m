@@ -517,7 +517,7 @@ for iSubj = 1:length(files)
         % convert all runs and session to cell array of string
         if ~iscell(files(iSubj).run)     files(iSubj).run = mattocell(files(iSubj).run); end
         if ~iscell(files(iSubj).session) files(iSubj).session = mattocell(files(iSubj).session); end
-        clear strs;
+        strs = {};
         for iVal = 1:length(files(iSubj).task)
             files(iSubj).run{    iVal} = num2str(files(iSubj).run{    iVal});
             files(iSubj).session{iVal} = num2str(files(iSubj).session{iVal});
