@@ -54,7 +54,9 @@ EEG-BIDS allows importing BIDS datasets into EEGLAB. This is the type of informa
 
 Make sure you clone with submodules
 
+```
 git clone --recurse-submodules https://github.com/sccn/EEG-BIDS
+```
 
 # Use with EEGLAB
 
@@ -62,7 +64,9 @@ Simply place the code in the EEGLAB plugin folder, and EEGLAB will automatically
 
 # zip command to release plugin
 
+```
 zip -r EEG-BIDS8.0.zip EEG-BIDS/* -x /EEG-BIDS/testing/additionaltests/* /EEG-BIDS/testing/ds004117/* /EEG-BIDS/testing/hbn_eye_tracking_data/* /EEG-BIDS/testing/data/*
+```
 
 # Version history
 
