@@ -6,7 +6,7 @@ The EEG-BIDS (formerly known as **BIDS-MATLAB-tools**) repository contains a col
 
 # Documentation
 
-Refer to the [wiki documentation](https://github.com/sccn/EEG-BIDS/wiki). 
+Refer to the [wiki documentation](https://github.com/sccn/EEG-BIDS/wiki) or the submenus of this plugin if you are on the EEGLAB website.
 
 # EEG-BIDS vs other BIDS software
 
