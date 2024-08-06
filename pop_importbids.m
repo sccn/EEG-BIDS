@@ -541,6 +541,16 @@ for iSubject = opt.subjects
                             error('No EEG data found for subject/session %s', subjectFolder{iFold});
                     end
                     EEG = eeg_checkset(EEG);
+
+                    % check for group information: get from participants
+                    % file if doesn't exist
+                    if isempty(EEG.group) && sum(ismember(lower(bids.participants(1,:)),'group'))
+                        igroup = bids.participants{iSubject,ismember(lower(bids.participants(1,:)),'group')};
+                        if ~isempty(igroup)
+                            EEG.group = igroup;
+                        end
+                    end
+
                     EEGnodata = EEG;
                     EEGnodata.data = [];
                     bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('EEG', EEGnodata));

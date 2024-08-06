@@ -90,7 +90,7 @@ if nargin < 3 && ~ischar(STUDY)
     if ~isfield(EEG(1).BIDS.tInfo, 'PowerLineFrequency') || isnan(EEG(1).BIDS.tInfo.PowerLineFrequency)
         uiList = { { 'style' 'text' 'string' 'You must specify power line frequency' } ...
                    { 'style' 'popupmenu' 'string' {'50' '60' }} };
-        res = inputgui('uilist', uiList, 'geometry', {[ 1 0.4 ]});
+        res = inputgui('title', 'Missing required information', 'uilist', uiList, 'geometry', {[ 1 0.4 ]});
         if isempty(res), return; end
         for iEEG = 1:length(EEG)
             if res{1} == 1
@@ -123,6 +123,9 @@ else
 end
   
 % rearrange information in BIDS structures
+if ~isfield(EEG, 'BIDS')
+    EEG(1).BIDS = struct([]);
+end
 if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'README')
     options = [options 'README' {EEG(1).BIDS.gInfo.README}];
     EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'README');
@@ -131,11 +134,14 @@ if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'TaskName')
     options = [options 'taskName' {EEG(1).BIDS.gInfo.TaskName}];
     EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'TaskName');
 end
+if isfield(STUDY, 'task')
+    options = [options { 'taskName' STUDY.task }];
+end
 
 bidsFieldsFromALLEEG = fieldnames(EEG(1).BIDS); % All EEG should share same BIDS info  -> using EEG(1)
 % tInfo.SubjectArtefactDescription is not shared, arguments passed as `notes` below
 for f=1:numel(bidsFieldsFromALLEEG)
-    if ~isequal(bidsFieldsFromALLEEG{f}, 'behavioral')
+    if ~isequal(bidsFieldsFromALLEEG{f}, 'behavioral') && ~isequal(bidsFieldsFromALLEEG{f}, 'bidsstats')
         options = [options bidsFieldsFromALLEEG{f} {EEG(1).BIDS.(bidsFieldsFromALLEEG{f})}];
     else
         warning('Warning: cannot re-export behavioral data yet')
@@ -184,13 +190,6 @@ if fileAbsent
     error('Datasets need to be saved before being exported');
 end
 saved = any(cellfun(@(x)isequal(x, 'no'), { EEG.saved }));
-if saved && nargin < 3
-    res = questdlg2('Some datasets need to be resaved. Do you want to resaved them now?', 'Save datasets', 'Cancel', 'Continue', 'Continue');
-    if ~strcmpi(res, 'Continue')
-        return;
-    end
-    EEG = pop_saveset(EEG, 'savemode', 'resave');
-end
 
 for iSubj = 1:length(uniqueSubjects)
     indS = strmatch( uniqueSubjects{iSubj}, allSubjects, 'exact' );
