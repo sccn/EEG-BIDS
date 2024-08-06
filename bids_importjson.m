@@ -84,7 +84,7 @@ function curjsondata = bids_importjson(curFile, ext, oriFile)
             files = dir(curpath);
             if ~isempty(files)
                 for f=1:numel(files)
-                    if ~files(f).isdir && strcmp(files(f).name, 'README')
+                    if ~files(f).isdir && (strcmp(files(f).name, 'README') || strcmp(files(f).name, 'dataset_description.json'))
                         res = true;
                         return
                     end

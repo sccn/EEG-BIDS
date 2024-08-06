@@ -378,7 +378,7 @@ for iSubject = opt.subjects
                                     if isempty(ind) && ~isempty(allFiles)
                                         ind = strmatch( '.mefd', cellfun(@(x)x(end-4:end), allFiles, 'uniformoutput', false) ); % MEFD
                                         if isempty(ind) && ~isempty(allFiles)
-                                            fprintf(2, 'No EEG file found for subject %s\n', bids.participants{iSubject,pInd});
+                                            fprintf(2, 'No EEG/MEG file found for subject %s\n', bids.participants{iSubject,pInd});
                                         end
                                     end
                                 end
@@ -464,21 +464,30 @@ for iSubject = opt.subjects
                     end
                 end
                 
-                % JSON information file
-                infoData = bids_importjson([ eegFileRaw(1:end-8) '_eeg.json' ], '_eeg.json'); % bids_loadfile([ eegFileRaw(1:end-8) '_eeg.json' ], infoFile);
-                bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], infoData);
-                    
-                % extract task name
+                % extract task name and modality
                 underScores = find(tmpFileName == '_');
-                if ~strcmpi(tmpFileName(underScores(end)+1:end), 'eeg')
-                    if ~strcmpi(tmpFileName(underScores(end)+1:end), 'ieeg')
+                if ~strcmpi(tmpFileName(underScores(end)+1:end), 'ieeg')
+                    if ~strcmpi(tmpFileName(underScores(end)+1:end), 'eeg')
                         if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg.fif')
                             if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg')
                                 error('Data file name does not contain eeg, ieeg, or meg'); % theoretically impossible
+                            else
+                                modality = 'meg';
                             end
+                        else
+                            modality = 'meg';
                         end
+                    else
+                        modality = 'eeg';
                     end
+                else
+                    modality = 'ieeg';
                 end
+                
+                % JSON information file
+                infoData = bids_importjson([ eegFileRaw(1:end-8) '_' modality '.json' ], ['_' modality '.json']); % bids_loadfile([ eegFileRaw(1:end-8) '_eeg.json' ], infoFile);
+                bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], infoData);
+
                 if contains(tmpFileName,'task')
                     tStart = strfind(tmpFileName,'_task')+1;
                     tEnd = underScores - tStart; 
