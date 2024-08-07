@@ -427,7 +427,7 @@ for iSubject = opt.subjects
                 [~,tmpFileName,fileExt] = fileparts(eegFileName);
                 eegFileRaw     = fullfile(subjectFolder{   iFold}, eegFileName);
                 eegFileNameOut = fullfile(subjectFolderOut{iFold}, [ tmpFileName '.set' ]);
-                
+
                 % what is the run
                 iRun = 1;
                 ind = strfind(eegFileRaw, '_run-');
@@ -438,32 +438,35 @@ for iSubject = opt.subjects
                     if isnan(iRun)
                         iRun = str2double(tmpEegFileRaw(1:indUnder(1)-2)); % rare case run 5H in ds003190/sub-01/ses-01/eeg/sub-01_ses-01_task-ctos_run-5H_eeg.eeg
                         if isnan(iRun)
-                            error('Problem converting run information'); 
+                            error('Problem converting run information');
                         end
                     end
-                    % check for BEH file
-                    filePathTmp = fileparts(eegFileRaw);
-                    behFileTmp = fullfile(filePathTmp,'..', 'beh', [eegFileRaw(1:ind(1)-1) '_beh.tsv' ]);
-                    if exist(behFileTmp, 'file')
+                end
+
+                % try to load the BEH file with the same name
+                [filePathTmp, fileBaseTmp ] = fileparts(eegFileRaw);
+                behFileTmp = fullfile(filePathTmp, '..', 'beh', [fileBaseTmp(1:end-4) '_beh.tsv' ]);
+                if exist(behFileTmp, 'file')
+                    try
                         behData = readtable(behFileTmp,'FileType','text');
-                    else
+                    catch
+                        disp('Warning: could not load BEH file');
                         behData = [];
                     end
                 else
-                    % check for BEH file
-                    [filePathTmp, fileBaseTmp ] = fileparts(eegFileRaw);
-                    behFileTmp = fullfile(filePathTmp, '..', 'beh', [fileBaseTmp(1:end-4) '_beh.tsv' ]);
-                    if exist(behFileTmp, 'file')
-                        try
+                    if ~isempty(ind)
+                        % check for BEH file without the run
+                        filePathTmp = fileparts(eegFileRaw);
+                        behFileTmp = fullfile(filePathTmp,'..', 'beh', [eegFileRaw(1:ind(1)-1) '_beh.tsv' ]);
+                        if exist(behFileTmp, 'file')
                             behData = readtable(behFileTmp,'FileType','text');
-                        catch
+                        else
                             disp('Warning: could not load BEH file');
+                            behData = [];
                         end
-                    else
-                        behData = [];
                     end
                 end
-                
+
                 % JSON information file
                 infoData = bids_importjson([ eegFileRaw(1:end-8) '_eeg.json' ], '_eeg.json'); % bids_loadfile([ eegFileRaw(1:end-8) '_eeg.json' ], infoFile);
                 bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], infoData);
