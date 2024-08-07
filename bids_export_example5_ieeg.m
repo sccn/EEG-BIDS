@@ -25,5 +25,5 @@ data(end+1).file     = { fullfile(folder, 'sub-09', 'sub-09_ses-20170311T170500_
 README = 'Re-exporting Dandiset https://dandiarchive.org/dandiset/000576 as BIDS';
 
 % call to the export function
-bids_export(data, 'targetdir', 'BIDS000576', 'README', README, 'exportformat', 'same');
+bids_export(data, 'targetdir', 'BIDS000576', 'taskName', 'ieeg task', 'README', README, 'exportformat', 'same');
 

@@ -446,12 +446,12 @@ for iSubject = opt.subjects
                 % try to load the BEH file with the same name
                 [filePathTmp, fileBaseTmp ] = fileparts(eegFileRaw);
                 behFileTmp = fullfile(filePathTmp, '..', 'beh', [fileBaseTmp(1:end-4) '_beh.tsv' ]);
+                behData = [];
                 if exist(behFileTmp, 'file')
                     try
                         behData = readtable(behFileTmp,'FileType','text');
                     catch
                         disp('Warning: could not load BEH file');
-                        behData = [];
                     end
                 else
                     if ~isempty(ind)
@@ -462,7 +462,6 @@ for iSubject = opt.subjects
                             behData = readtable(behFileTmp,'FileType','text');
                         else
                             disp('Warning: could not load BEH file');
-                            behData = [];
                         end
                     end
                 end

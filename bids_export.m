@@ -305,7 +305,9 @@ opt = finputcheck(varargin, {
     'Authors'      'cell'    {}    {''};
     'ReferencesAndLinks' 'cell' {}    {''};
     'targetdir'    'string'  {}    fullfile(pwd, 'bidsexport');
+    'TaskName'     'string'  {}    '';
     'taskName'     'string'  {}    '';
+    'taskname'     'string'  {}    '';
     'codefiles'    'cell'    {}    {};
     'stimuli'      'cell'    {}    {};
     'pInfo'        'cell'    {}    {};
@@ -350,6 +352,14 @@ if isstr(opt), error(opt); end
 if ~isempty(opt.taskName)
     fprintf(2, 'Task name input is deprecated and not used, use tInfo.TaskName instead\n');
     opt.tInfo(1).TaskName = opt.taskName;
+end
+if ~isempty(opt.taskname)
+    fprintf(2, 'Task name input is deprecated and not used, use tInfo.TaskName instead\n');
+    opt.tInfo(1).TaskName = opt.taskname;
+end
+if ~isempty(opt.TaskName)
+    fprintf(2, 'Task name input is deprecated and not used, use tInfo.TaskName instead\n');
+    opt.tInfo(1).TaskName = opt.TaskName;
 end
 if size(opt.stimuli,1) == 1 || size(opt.stimuli,2) == 1
     opt.stimuli = reshape(opt.stimuli, [2 length(opt.stimuli)/2])';
