@@ -229,6 +229,8 @@ bids.data.eventdesc = [];
 bids.data.eventinfo = [];
 inconsistentChannels = 0;
 inconsistentEvents   = 0;
+faileddatasets = [];
+
 if isempty(opt.subjects)
     opt.subjects = 2:size(bids.participants,1); % indices into the participants.tsv file, ignoring first header row
 else
@@ -422,254 +424,257 @@ for iSubject = opt.subjects
             
             % skip most import if set file with no need for modication
             for iFile = 1:length(eegFileRawAll)
-                
-                eegFileName = eegFileRawAll{iFile};
-                [~,tmpFileName,fileExt] = fileparts(eegFileName);
-                eegFileRaw     = fullfile(subjectFolder{   iFold}, eegFileName);
-                eegFileNameOut = fullfile(subjectFolderOut{iFold}, [ tmpFileName '.set' ]);
-                
-                % what is the run
-                iRun = 1;
-                ind = strfind(eegFileRaw, '_run-');
-                if ~isempty(ind)
-                    tmpEegFileRaw = eegFileRaw(ind(1)+5:end);
-                    indUnder = find(tmpEegFileRaw == '_');
-                    iRun = str2double(tmpEegFileRaw(1:indUnder(1)-1));
-                    if isnan(iRun)
-                        iRun = str2double(tmpEegFileRaw(1:indUnder(1)-2)); % rare case run 5H in ds003190/sub-01/ses-01/eeg/sub-01_ses-01_task-ctos_run-5H_eeg.eeg
+                try
+                    eegFileName = eegFileRawAll{iFile};
+                    [~,tmpFileName,fileExt] = fileparts(eegFileName);
+                    eegFileRaw     = fullfile(subjectFolder{   iFold}, eegFileName);
+                    eegFileNameOut = fullfile(subjectFolderOut{iFold}, [ tmpFileName '.set' ]);
+                    
+                    % what is the run
+                    iRun = 1;
+                    ind = strfind(eegFileRaw, '_run-');
+                    if ~isempty(ind)
+                        tmpEegFileRaw = eegFileRaw(ind(1)+5:end);
+                        indUnder = find(tmpEegFileRaw == '_');
+                        iRun = str2double(tmpEegFileRaw(1:indUnder(1)-1));
                         if isnan(iRun)
-                            error('Problem converting run information'); 
+                            iRun = str2double(tmpEegFileRaw(1:indUnder(1)-2)); % rare case run 5H in ds003190/sub-01/ses-01/eeg/sub-01_ses-01_task-ctos_run-5H_eeg.eeg
+                            if isnan(iRun)
+                                error('Problem converting run information'); 
+                            end
                         end
-                    end
-                    % check for BEH file
-                    filePathTmp = fileparts(eegFileRaw);
-                    behFileTmp = fullfile(filePathTmp,'..', 'beh', [eegFileRaw(1:ind(1)-1) '_beh.tsv' ]);
-                    if exist(behFileTmp, 'file')
-                        behData = readtable(behFileTmp,'FileType','text');
-                    else
-                        behData = [];
-                    end
-                else
-                    % check for BEH file
-                    [filePathTmp, fileBaseTmp ] = fileparts(eegFileRaw);
-                    behFileTmp = fullfile(filePathTmp, '..', 'beh', [fileBaseTmp(1:end-4) '_beh.tsv' ]);
-                    if exist(behFileTmp, 'file')
-                        try
+                        % check for BEH file
+                        filePathTmp = fileparts(eegFileRaw);
+                        behFileTmp = fullfile(filePathTmp,'..', 'beh', [eegFileRaw(1:ind(1)-1) '_beh.tsv' ]);
+                        if exist(behFileTmp, 'file')
                             behData = readtable(behFileTmp,'FileType','text');
-                        catch
-                            disp('Warning: could not load BEH file');
+                        else
+                            behData = [];
                         end
                     else
-                        behData = [];
+                        % check for BEH file
+                        [filePathTmp, fileBaseTmp ] = fileparts(eegFileRaw);
+                        behFileTmp = fullfile(filePathTmp, '..', 'beh', [fileBaseTmp(1:end-4) '_beh.tsv' ]);
+                        if exist(behFileTmp, 'file')
+                            try
+                                behData = readtable(behFileTmp,'FileType','text');
+                            catch
+                                disp('Warning: could not load BEH file');
+                            end
+                        else
+                            behData = [];
+                        end
                     end
-                end
-                
-                % extract task name and modality
-                underScores = find(tmpFileName == '_');
-                if ~strcmpi(tmpFileName(underScores(end)+1:end), 'ieeg')
-                    if ~strcmpi(tmpFileName(underScores(end)+1:end), 'eeg')
-                        if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg.fif')
-                            if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg')
-                                error('Data file name does not contain eeg, ieeg, or meg'); % theoretically impossible
+                    
+                    % extract task name and modality
+                    underScores = find(tmpFileName == '_');
+                    if ~strcmpi(tmpFileName(underScores(end)+1:end), 'ieeg')
+                        if ~strcmpi(tmpFileName(underScores(end)+1:end), 'eeg')
+                            if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg.fif')
+                                if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg')
+                                    error('Data file name does not contain eeg, ieeg, or meg'); % theoretically impossible
+                                else
+                                    modality = 'meg';
+                                end
                             else
                                 modality = 'meg';
                             end
                         else
-                            modality = 'meg';
+                            modality = 'eeg';
                         end
                     else
-                        modality = 'eeg';
+                        modality = 'ieeg';
                     end
-                else
-                    modality = 'ieeg';
-                end
-                
-                % JSON information file
-                infoData = bids_importjson([ eegFileRaw(1:end-8) '_' modality '.json' ], ['_' modality '.json']); % bids_loadfile([ eegFileRaw(1:end-8) '_eeg.json' ], infoFile);
-                bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], infoData);
-
-                if contains(tmpFileName,'task')
-                    tStart = strfind(tmpFileName,'_task')+1;
-                    tEnd = underScores - tStart; 
-                    tEnd = min(tEnd(tEnd>0)) + tStart - 1;
-                    task = tmpFileName(tStart:tEnd);
-                end
-                
-                if ~strcmpi(fileExt, '.set') || strcmpi(opt.bidsevent, 'on') || strcmpi(opt.bidschanloc, 'on') || ~strcmpi(opt.outputdir, bidsFolder)
-                    fprintf('Importing file: %s\n', eegFileRaw);
-                    switch lower(fileExt)
-                        case '.set' % do nothing
-                            if strcmpi(opt.metadata, 'on')
-                                EEG = pop_loadset( 'filename', eegFileRaw, 'loadmode', 'info' );
-                            else
-                                EEG = pop_loadset( 'filename', eegFileName, 'filepath', subjectFolder{iFold});
-                            end
-                        case {'.bdf','.edf'}
-                            EEG = pop_biosig( eegFileRaw ); % no way to read meta data only (because events in channel)
-                        case '.eeg'
-                            [tmpPath,tmpFileName,~] = fileparts(eegFileRaw);
-                            if exist(fullfile(tmpPath, [tmpFileName '.vhdr']), 'file')
-                                ext = '.vhdr'; 
-                            elseif exist(fullfile(tmpPath, [tmpFileName '.VHDR']), 'file'), 
-                                ext = '.VHDR'; 
-                            else
-                                fprintf(2, 'Warning: eeg file found without BVA header file\n');
-                                break;
-                            end
-                            if strcmpi(opt.metadata, 'on')
-                                EEG = pop_loadbv( tmpPath, [tmpFileName ext], [], [], true );
-                            else
-                                EEG = pop_loadbv( tmpPath, [tmpFileName ext] );
-                            end
-                        case '.fif'
-                            EEG = pop_fileio(eegFileRaw); % fif folder
-                        case '.gz'
-                            gunzip(eegFileRaw);
-                            EEG = pop_fileio(eegFileRaw(1:end-3)); % fif folder
-                        case '.ds'
-                            if strcmpi(opt.ctffunc, 'fileio')
-                                EEG = pop_fileio(eegFileRaw);
-                            else
-                                EEG = pop_ctf_read(eegFileRaw);
-                            end
-                        case '.mefd'
-                            if ~exist('pop_MEF3', 'file')
-                                error('MEF plugin not present, please install the MEF3 plugin first')
-                            end
-                            EEG = pop_MEF3(eegFileRaw); % MEF folder
-                        otherwise
-                            error('No EEG data found for subject/session %s', subjectFolder{iFold});
-                    end
-                    EEG = eeg_checkset(EEG);
-
-                    % check for group information: get from participants
-                    % file if doesn't exist
-                    if isempty(EEG.group) && sum(ismember(lower(bids.participants(1,:)),'group'))
-                        igroup = bids.participants{iSubject,ismember(lower(bids.participants(1,:)),'group')};
-                        if ~isempty(igroup)
-                            EEG.group = igroup;
-                        end
-                    end
-
-                    EEGnodata = EEG;
-                    EEGnodata.data = [];
-                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('EEG', EEGnodata));
                     
-                    % channel location data
-                    % ---------------------
-                    selected_chanfile = bids_get_file(eegFileRaw(1:end-8), '_channels.tsv', channelFile);
-                    selected_elecfile = bids_get_file(eegFileRaw(1:end-8), '_electrodes.tsv', elecFile);
-                    if strcmpi(opt.bidschanloc, 'on')
-                        [EEG, channelData, elecData] = bids_importchanlocs(EEG, selected_chanfile, selected_elecfile);
-                        if isempty(EEG.chanlocs) || ~isfield(EEG.chanlocs, 'theta') || all(cellfun(@isempty, { EEG.chanlocs.theta }))
-                            EEG = bids_chan_lookup(EEG, infoData);
+                    % JSON information file
+                    infoData = bids_importjson([ eegFileRaw(1:end-8) '_' modality '.json' ], ['_' modality '.json']); % bids_loadfile([ eegFileRaw(1:end-8) '_eeg.json' ], infoFile);
+                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], infoData);
+    
+                    if contains(tmpFileName,'task')
+                        tStart = strfind(tmpFileName,'_task')+1;
+                        tEnd = underScores - tStart; 
+                        tEnd = min(tEnd(tEnd>0)) + tStart - 1;
+                        task = tmpFileName(tStart:tEnd);
+                    end
+                    
+                    if ~strcmpi(fileExt, '.set') || strcmpi(opt.bidsevent, 'on') || strcmpi(opt.bidschanloc, 'on') || ~strcmpi(opt.outputdir, bidsFolder)
+                        fprintf('Importing file: %s\n', eegFileRaw);
+                        switch lower(fileExt)
+                            case '.set' % do nothing
+                                if strcmpi(opt.metadata, 'on')
+                                    EEG = pop_loadset( 'filename', eegFileRaw, 'loadmode', 'info' );
+                                else
+                                    EEG = pop_loadset( 'filename', eegFileName, 'filepath', subjectFolder{iFold});
+                                end
+                            case {'.bdf','.edf'}
+                                EEG = pop_biosig( eegFileRaw ); % no way to read meta data only (because events in channel)
+                            case '.eeg'
+                                [tmpPath,tmpFileName,~] = fileparts(eegFileRaw);
+                                if exist(fullfile(tmpPath, [tmpFileName '.vhdr']), 'file')
+                                    ext = '.vhdr'; 
+                                elseif exist(fullfile(tmpPath, [tmpFileName '.VHDR']), 'file'), 
+                                    ext = '.VHDR'; 
+                                else
+                                    fprintf(2, 'Warning: eeg file found without BVA header file\n');
+                                    break;
+                                end
+                                if strcmpi(opt.metadata, 'on')
+                                    EEG = pop_loadbv( tmpPath, [tmpFileName ext], [], [], true );
+                                else
+                                    EEG = pop_loadbv( tmpPath, [tmpFileName ext] );
+                                end
+                            case '.fif'
+                                EEG = pop_fileio(eegFileRaw); % fif folder
+                            case '.gz'
+                                gunzip(eegFileRaw);
+                                EEG = pop_fileio(eegFileRaw(1:end-3)); % fif folder
+                            case '.ds'
+                                if strcmpi(opt.ctffunc, 'fileio')
+                                    EEG = pop_fileio(eegFileRaw);
+                                else
+                                    EEG = pop_ctf_read(eegFileRaw);
+                                end
+                            case '.mefd'
+                                if ~exist('pop_MEF3', 'file')
+                                    error('MEF plugin not present, please install the MEF3 plugin first')
+                                end
+                                EEG = pop_MEF3(eegFileRaw); % MEF folder
+                            otherwise
+                                error('No EEG data found for subject/session %s', subjectFolder{iFold});
                         end
-                    else
-                        channelData = bids_loadfile(selected_chanfile);
-                        elecData    = bids_loadfile(selected_elecfile);
-                        if ~isfield(EEG.chanlocs, 'theta') || all(cellfun(@isempty, { EEG.chanlocs.theta }))
-                            EEG = bids_chan_lookup(EEG, infoData);
+                        EEG = eeg_checkset(EEG);
+    
+                        % check for group information: get from participants
+                        % file if doesn't exist
+                        if isempty(EEG.group) && sum(ismember(lower(bids.participants(1,:)),'group'))
+                            igroup = bids.participants{iSubject,ismember(lower(bids.participants(1,:)),'group')};
+                            if ~isempty(igroup)
+                                EEG.group = igroup;
+                            end
+                        end
+    
+                        EEGnodata = EEG;
+                        EEGnodata.data = [];
+                        bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('EEG', EEGnodata));
+                        
+                        % channel location data
+                        % ---------------------
+                        selected_chanfile = bids_get_file(eegFileRaw(1:end-8), '_channels.tsv', channelFile);
+                        selected_elecfile = bids_get_file(eegFileRaw(1:end-8), '_electrodes.tsv', elecFile);
+                        if strcmpi(opt.bidschanloc, 'on')
+                            [EEG, channelData, elecData] = bids_importchanlocs(EEG, selected_chanfile, selected_elecfile);
+                            if isempty(EEG.chanlocs) || ~isfield(EEG.chanlocs, 'theta') || all(cellfun(@isempty, { EEG.chanlocs.theta }))
+                                EEG = bids_chan_lookup(EEG, infoData);
+                            end
                         else
-                            disp('The EEG file has channel locations associated with it, we are keeping them');
+                            channelData = bids_loadfile(selected_chanfile);
+                            elecData    = bids_loadfile(selected_elecfile);
+                            if ~isfield(EEG.chanlocs, 'theta') || all(cellfun(@isempty, { EEG.chanlocs.theta }))
+                                EEG = bids_chan_lookup(EEG, infoData);
+                            else
+                                disp('The EEG file has channel locations associated with it, we are keeping them');
+                            end
+                        end
+                        
+                        % look up EEG channel type
+                        disp('Looking up/checking channel type from channel labels');
+                        EEG = eeg_getchantype(EEG);
+                        
+                        bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('chaninfo', { channelData }));
+                        bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('elecinfo', { elecData }));
+                        
+                        % event data
+                        % ----------
+                        if strcmpi(opt.bidsevent, 'on')
+                            eventfile              = bids_get_file(eegFileRaw(1:end-8), '_events.tsv', eventFile);
+                            selected_eventdescfile = bids_get_file(eegFileRaw(1:end-8), '_events.json', eventDescFile);
+                    
+			                if ~isempty(eventfile)
+				                [EEG, bids, eventData, eventDesc] = bids_importeventfile(EEG, eventfile, 'bids', bids, 'eventDescFile', selected_eventdescfile, 'eventtype', opt.eventtype); 
+				                if isempty(eventData), error('bidsevent on but events.tsv has no data'); end
+				                bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
+				                bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
+			                end
+                        end
+                        
+                        % coordsystem file
+                        % ----------------
+                        if strcmpi(opt.bidscoord, 'on')
+                            coordFile = bids_get_file(eegFileRaw(1:end-8), '_coordsystem.json', coordFile);                   
+                            [EEG, bids] = bids_importcoordsystemfile(EEG, coordFile, 'bids', bids); 
+                        end
+    
+                        % copy information inside dataset
+                        EEG.subject = bids.participants{iSubject,pInd};
+                        EEG.session = iFold;
+                        EEG.run = iRun;
+                        EEG.task = task(6:end); % task is currently of format "task-<Task name>"
+                        
+                        % build `EEG.BIDS` from `bids`
+                        BIDS.gInfo = bids.dataset_description;
+                        BIDS.gInfo.README = bids.README;
+                        BIDS.gInfo.CHANGES = bids.CHANGES;
+                        BIDS.pInfo = [bids.participants(1,:); bids.participants(iSubject,:)]; % header -> iSubject info
+                        BIDS.pInfoDesc = bids.participantsJSON;
+                        BIDS.eInfo = bids.eventInfo;
+                        BIDS.eInfoDesc = bids.data.eventdesc;
+                        BIDS.tInfo = infoData;
+                        BIDS.bidsstats = stats;
+                        if ~isempty(elecData)
+                           BIDS.scannedElectrodes = true;
+                        end
+                        if ~isempty(behData)
+                            behData = table2struct(behData);
+                        end
+                        BIDS.behavioral = behData;
+                        EEG.BIDS = BIDS;
+                        
+                        if strcmpi(opt.metadata, 'off')
+                            if exist(subjectFolderOut{iFold},'dir') ~= 7
+                                mkdir(subjectFolderOut{iFold});
+                            end
+                            EEG = pop_saveset( EEG, eegFileNameOut);
                         end
                     end
                     
-                    % look up EEG channel type
-                    disp('Looking up/checking channel type from channel labels');
-                    EEG = eeg_getchantype(EEG);
+                    % building study command
+                    commands = [ commands { 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,pInd} 'session' iFold 'task' task(6:end) 'run' iRun } ];
                     
-                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('chaninfo', { channelData }));
-                    bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('elecinfo', { elecData }));
-                    
-                    % event data
-                    % ----------
-                    if strcmpi(opt.bidsevent, 'on')
-                        eventfile              = bids_get_file(eegFileRaw(1:end-8), '_events.tsv', eventFile);
-                        selected_eventdescfile = bids_get_file(eegFileRaw(1:end-8), '_events.json', eventDescFile);
-                
-			            if ~isempty(eventfile)
-				            [EEG, bids, eventData, eventDesc] = bids_importeventfile(EEG, eventfile, 'bids', bids, 'eventDescFile', selected_eventdescfile, 'eventtype', opt.eventtype); 
-				            if isempty(eventData), error('bidsevent on but events.tsv has no data'); end
-				            bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventinfo', {eventData}));
-				            bids.data = setallfields(bids.data, [iSubject-1,iFold,iFile], struct('eventdesc', {eventDesc}));
-			            end
+                    % custom numerical fields
+                    for iCol = 2:size(bids.participants,2)
+                        commands = [ commands { bids.participants{1,iCol} bids.participants{iSubject,iCol} } ];
                     end
-                    
-                    % coordsystem file
-                    % ----------------
-                    if strcmpi(opt.bidscoord, 'on')
-                        coordFile = bids_get_file(eegFileRaw(1:end-8), '_coordsystem.json', coordFile);                   
-                        [EEG, bids] = bids_importcoordsystemfile(EEG, coordFile, 'bids', bids); 
-                    end
-
-                    % copy information inside dataset
-                    EEG.subject = bids.participants{iSubject,pInd};
-                    EEG.session = iFold;
-                    EEG.run = iRun;
-                    EEG.task = task(6:end); % task is currently of format "task-<Task name>"
-                    
-                    % build `EEG.BIDS` from `bids`
-                    BIDS.gInfo = bids.dataset_description;
-                    BIDS.gInfo.README = bids.README;
-                    BIDS.gInfo.CHANGES = bids.CHANGES;
-                    BIDS.pInfo = [bids.participants(1,:); bids.participants(iSubject,:)]; % header -> iSubject info
-                    BIDS.pInfoDesc = bids.participantsJSON;
-                    BIDS.eInfo = bids.eventInfo;
-                    BIDS.eInfoDesc = bids.data.eventdesc;
-                    BIDS.tInfo = infoData;
-                    BIDS.bidsstats = stats;
-                    if ~isempty(elecData)
-                       BIDS.scannedElectrodes = true;
-                    end
-                    if ~isempty(behData)
-                        behData = table2struct(behData);
-                    end
-                    BIDS.behavioral = behData;
-                    EEG.BIDS = BIDS;
-                    
-                    if strcmpi(opt.metadata, 'off')
-                        if exist(subjectFolderOut{iFold},'dir') ~= 7
-                            mkdir(subjectFolderOut{iFold});
+                    if isstruct(behData) && ~isempty(behData)
+                        behFields = fieldnames(behData);
+                        if length(behData) > 1
+                            warning('Behavioral data length larger than 1, only retaining the first element');
                         end
-                        EEG = pop_saveset( EEG, eegFileNameOut);
+                        for iFieldBeh = 1:length(behFields)
+                            commands = [ commands { behFields{iFieldBeh} [behData(1).(behFields{iFieldBeh})] } ];
+                        end
                     end
-                end
-                
-                % building study command
-                commands = [ commands { 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,pInd} 'session' iFold 'task' task(6:end) 'run' iRun } ];
-                
-                % custom numerical fields
-                for iCol = 2:size(bids.participants,2)
-                    commands = [ commands { bids.participants{1,iCol} bids.participants{iSubject,iCol} } ];
-                end
-                if isstruct(behData) && ~isempty(behData)
-                    behFields = fieldnames(behData);
-                    if length(behData) > 1
-                        warning('Behavioral data length larger than 1, only retaining the first element');
+                    count = count+1;
+                    
+                    % check dataset consistency
+                    bData = bids.data(iSubject-1,iFold,iFile);
+                    if ~isempty(bData.chaninfo)
+                        if size(bData.chaninfo,1)-1 ~= bData.EEG.nbchan
+                            warning('Warning: inconsistency detected, %d channels in BIDS file vs %d in EEG file for %s\n', size(bData.chaninfo,1)-1, bData.EEG.nbchan, [tmpFileName,fileExt]);
+                            inconsistentChannels = inconsistentChannels+1;
+                        end
                     end
-                    for iFieldBeh = 1:length(behFields)
-                        commands = [ commands { behFields{iFieldBeh} [behData(1).(behFields{iFieldBeh})] } ];
+                    %{
+                    if ~isempty(bData.eventinfo)
+                        if size(bData.eventinfo,1)-1 ~= length(bData.EEG.event)
+                            fprintf(2, 'Warning: inconsistency detected, %d events in BIDS file vs %d in EEG file for %s\n', size(bData.eventinfo,1)-1, length(bData.EEG.event), [tmpFileName,fileExt]);
+                            inconsistentEvents = inconsistentEvents+1;
+                        end
                     end
+                    %}
+                catch ME
+                    faileddatasets = [faileddatasets eegFileRaw];
                 end
-                count = count+1;
-                
-                % check dataset consistency
-                bData = bids.data(iSubject-1,iFold,iFile);
-                if ~isempty(bData.chaninfo)
-                    if size(bData.chaninfo,1)-1 ~= bData.EEG.nbchan
-                        warning('Warning: inconsistency detected, %d channels in BIDS file vs %d in EEG file for %s\n', size(bData.chaninfo,1)-1, bData.EEG.nbchan, [tmpFileName,fileExt]);
-                        inconsistentChannels = inconsistentChannels+1;
-                    end
-                end
-                %{
-                if ~isempty(bData.eventinfo)
-                    if size(bData.eventinfo,1)-1 ~= length(bData.EEG.event)
-                        fprintf(2, 'Warning: inconsistency detected, %d events in BIDS file vs %d in EEG file for %s\n', size(bData.eventinfo,1)-1, length(bData.EEG.event), [tmpFileName,fileExt]);
-                        inconsistentEvents = inconsistentEvents+1;
-                    end
-                end
-                %}
-            end % end for eegFileRaw
+            end % end for eegFileRawAll
             
             % import data of other tpyes than EEG, MEG, iEEG
             for iMod = 1:numel(otherModality)
@@ -732,6 +737,11 @@ if strcmpi(opt.metadata, 'off')
         commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'');', bidsFolder);
     end
 end
+
+% track failed datasets
+STUDY.etc.bidsimportinfo = [];
+STUDY.etc.bidsimportinfo.totaldatasetcount  = numel(eegFileRawAll);
+STUDY.etc.bidsimportinfo.faileddatasets     = faileddatasets;
 
 % import HED tags if exists in top level events.json
 % -----------------------------
