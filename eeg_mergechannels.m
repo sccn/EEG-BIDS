@@ -133,8 +133,17 @@ end
 
 event1str = evenType1(matchingEvents1);
 event2str = evenType2(matchingEvents2);
-fprintf('Matching events structure 1 are %s -> {%s}\n', int2str(matchingEvents1), sprintf('''%s'' ', event1str{:}));
-fprintf('Matching events structure 2 are %s -> {%s}\n', int2str(matchingEvents2), sprintf('''%s'' ', event2str{:}));
+fprintf('Matching events structure 1 are ');
+for iEvent = 1:length(matchingEvents1)
+    fprintf('%s(%d)\t', event1str{iEvent}, matchingEvents1(iEvent));
+end
+fprintf('\n');
+fprintf('Matching events structure 2 are ');
+for iEvent = 1:length(matchingEvents2)
+    fprintf('%s(%d)\t', event2str{iEvent}, matchingEvents2(iEvent));
+end
+fprintf('\n');
+
 % now align the two structures
 
 % find matching fields (assuming correct orders)
@@ -170,6 +179,7 @@ for iEvent = 1:min(50, length(latency2in1))
     end
 end
 if flag
+    figure; plot(latency1, latency2, '.');
     error('Alignment within %1.1f millisecond failed. Increase tolerance.', g.tolerance);
 end
 fprintf('\n');
