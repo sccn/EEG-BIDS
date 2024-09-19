@@ -42,10 +42,10 @@ function bids_exporter(varargin)
                  'and format them to a BIDS dataset. For more information' 10 ...
                  'see the online help at https://eegbids.org'];
 
-        [~, ~, err, ~] = inputgui('geometry', { 1 1 }, 'geomvert', [1 3], 'uilist', ...
-                                  { { 'style' 'text' 'string' 'Welcome to the EEG-BIDS exporter tool!' 'fontweight' 'bold' }  { 'style' 'text' 'string' str } }, 'okbut', 'continue');
+        [~, userdat] = inputgui('geometry', { 1 1 }, 'geomvert', [1 3], 'uilist', ...
+                                  { { 'style' 'text' 'string' 'Welcome to the EEG-BIDS exporter tool!' 'fontweight' 'bold' }  { 'style' 'text' 'string' str } }, 'okbut', 'continue', 'userdata', 'data');
         
-        if isempty(err), return; end
+        if isempty(userdat), return; end
         [STUDY, ALLEEG] = pop_studywizard();
         if isempty(ALLEEG), return; end
 
@@ -62,7 +62,7 @@ function bids_exporter(varargin)
             end
         end
         
-	if ~isempty(ALLEEG)
+	    if ~isempty(ALLEEG)
             pop_exportbids(STUDY, ALLEEG, 'taskName', taskName)
         end
     elseif nargin == 1 && exist(varargin{1}, 'file')
