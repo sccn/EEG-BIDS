@@ -20,6 +20,10 @@ Refer to the [wiki documentation](https://github.com/sccn/EEG-BIDS/wiki) or the 
 
 [EEG-BIDS](https://github.com/sccn/EEG-BIDS) (this program) is the most popular tool to export EEG data using both a graphical interface and/or command line (more than half of the BIDS datasets on OpenNeuro were exported using EEG-BIDS and it has more than 2200 installs in EEGLAB). A compiled stand-alone version will also be released soon.
 
+# Standalone version
+
+A standalone version of the plugin is available when [downloading EEGLAB](https://sccn.ucsd.edu/eeglab/download.php). The standalone plugin version is distributed with EEGLAB because it uses EEGLAB resources. After download EEGLAB, use the executable named EEGBIDS (Mac) or EEGBIDS.bat (Windows). 
+
 # EEG-BIDS export capabilities
 
 Accepted EEG input formats are all files that EEGLAB can read. 
