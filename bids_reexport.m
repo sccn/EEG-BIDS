@@ -1,5 +1,5 @@
 % BIDS_REEXPORT - re-export BIDS dataset (dataset which was imported in
-%                 EEGLAB)
+%                 EEGLAB) as a BIDS derivative
 % Usage:
 %   bids_reexport(ALLEEG, key, val);
 %
@@ -13,6 +13,7 @@
 %                generatedBy.Description = 'A validated EEG pipeline';
 %                generatedBy.Version = '0.1';
 %                generatedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
+%                generatedBy.desc = 'filtered'; % optional description for file naming
 %
 %  'checkderivative' - [string] provide a folder as a string containing 
 %                the original BIDS repository and check that the folder
@@ -58,18 +59,24 @@ end
 
 opt = finputcheck(varargin, { ...
     'generatedBy'     'struct'  {}    struct([]); ...
-    'checkderivative' 'string'  {}    '';
-    'targetdir'    'string'  {}    fullfile(pwd, 'bidsexport');;
+    'checkderivative' 'string'  {}    ''; ...
+    'targetdir'       'string'  {}    fullfile(pwd, 'bidsexport'); ...
     }, 'bids_reexport');
 if isstr(opt), error(opt); end
+
+% Set up derivative directory
+derivativeDir = fullfile(opt.targetdir, 'derivatives', 'eeglab');
+if ~exist(derivativeDir, 'dir')
+    mkdir(derivativeDir);
+end
 
 % export the data
 % ---------------
 if isempty(opt.generatedBy)
-    opt.generatedBy(1).Name = 'NEMAR-pipeline';
-    opt.generatedBy.Description = 'A validated EEG pipeline';
-    opt.generatedBy.Version = '0.1';
-    opt.generatedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
+    opt.generatedBy(1).Name = 'EEGLAB';
+    opt.generatedBy(1).Description = 'EEGLAB BIDS derivative processing pipeline';
+    opt.generatedBy(1).Version = eeg_getversion;
+    opt.generatedBy(1).CodeURL = 'https://github.com/sccn/eeglab';
 end
 
 tasks = unique({ ALLEEG1.task });
@@ -87,16 +94,86 @@ if ~isfield(BIDS.gInfo, 'CHANGES')
     BIDS.gInfo.CHANGES = '';
 end
 
-BIDS.gInfo.generatedBy = opt.generatedBy;
-BIDS.gInfo.sourceDatasets.DOI = BIDS.gInfo.DatasetDOI;
-BIDS.gInfo = rmfield(BIDS.gInfo, 'DatasetDOI');
-BIDS.gInfo.CHANGES = [ BIDS.gInfo.CHANGES 10 10 'Processed using the NEMAR pipeline (see README file)' ];
-BIDS.gInfo.README = [ BIDS.gInfo.README 10 10 ...
-    'The original dataset was processed using the NEMAR EEG processing ' 10 ... 
-    'pipeline (see nemar.org). This is the derivative EEG dataset where' 10 ...
-    'the data has been automatically cleaned.' ];
+% Set up derivative dataset description while preserving existing values
+if ~isfield(BIDS.gInfo, 'Name')
+    BIDS.gInfo.Name = 'EEGLAB derivatives';
+end
+if ~isfield(BIDS.gInfo, 'BIDSVersion')
+    BIDS.gInfo.BIDSVersion = '1.8.0';
+end
+if ~isfield(BIDS.gInfo, 'PipelineDescription')
+    BIDS.gInfo.PipelineDescription.Name = opt.generatedBy(1).Name;
+    BIDS.gInfo.PipelineDescription.Version = opt.generatedBy(1).Version;
+    BIDS.gInfo.PipelineDescription.Description = opt.generatedBy(1).Description;
+end
+if ~isfield(BIDS.gInfo, 'GeneratedBy')
+    BIDS.gInfo.GeneratedBy = opt.generatedBy;
+end
 
-options = { 'targetdir', opt.targetdir, ...
+% Handle source dataset tracking
+if isfield(BIDS.gInfo, 'DatasetDOI')
+    if ~isfield(BIDS.gInfo, 'SourceDatasets')
+        BIDS.gInfo.SourceDatasets.DOI = BIDS.gInfo.DatasetDOI;
+    end
+    BIDS.gInfo = rmfield(BIDS.gInfo, 'DatasetDOI');
+end
+
+% Write derivative dataset description
+jsonwrite(fullfile(derivativeDir, 'dataset_description.json'), BIDS.gInfo, struct('indent','  '));
+
+% Prepare data structure for export
+data.file = cell(1, length(ALLEEG1));
+for i = 1:length(ALLEEG1)
+    data.file{i} = fullfile(ALLEEG1(i).filepath, ALLEEG1(i).filename);
+end
+data.run     = [ ALLEEG1.run ];
+data.session = [ ALLEEG1.session ];
+data.task    = { ALLEEG1.task };
+
+% Compare with original data if available
+if ~isempty(opt.checkderivative)
+    try
+        % Import original BIDS dataset
+        [~, ALLEEG2] = pop_importbids(opt.checkderivative, 'subjects', 1);
+        
+        % Compare first dataset to determine changes
+        eeg_compare_bids(ALLEEG1(1), ALLEEG2(1));
+        
+        % Only add desc if changes were detected
+        if ALLEEG1(1).etc.compare.data_changed || ...
+           ALLEEG1(1).etc.compare.events_changed || ...
+           ALLEEG1(1).etc.compare.chanlocs_changed
+            
+            % Build desc based on what changed
+            changes = {};
+            if ALLEEG1(1).etc.compare.data_changed
+                changes{end+1} = 'data';
+            end
+            if ALLEEG1(1).etc.compare.events_changed
+                changes{end+1} = 'events';
+            end
+            if ALLEEG1(1).etc.compare.chanlocs_changed
+                changes{end+1} = 'electrodes';
+            end
+            
+            % Set desc in generatedBy
+            if isfield(opt.generatedBy, 'desc')
+                desc = opt.generatedBy.desc;
+                if ~isempty(changes)
+                    desc = [desc '_' strjoin(changes, '_')];
+                end
+            else
+                desc = strjoin(changes, '_');
+            end
+            opt.generatedBy.desc = desc;
+        end
+    catch
+        warning('Could not load or compare with original dataset.');
+    end
+end
+
+% Set up export options
+options = { 'targetdir', derivativeDir, ...
     'taskName', tasks,...
     'gInfo', BIDS.gInfo, ...
     'pInfo', BIDS.pInfo, ...
@@ -107,31 +184,18 @@ options = { 'targetdir', opt.targetdir, ...
     'tInfo', BIDS.tInfo, ...
     'eInfo', BIDS.eInfo, ...
     'forcesession', 'on', ...
-    'forcerun', 'on' };
+    'forcerun', 'on', ...
+    'generatedBy', opt.generatedBy };
 
 if BIDS.scannedElectrodes
     options = [ options { 'elecexport' 'on' } ];
 end
 
-data.file = { fullfile(ALLEEG1(1).filepath, ALLEEG1(1).filename) ...
-              fullfile(ALLEEG1(2).filepath, ALLEEG1(2).filename) };
-data.run     = [ ALLEEG1.run ];
-data.session = [ ALLEEG1.session ];
-data.task    = { ALLEEG1.task };
+% Export the data
 bids_export(data, options{:});
 
-% import data
-% -------------
-[~, ALLEEG2] = pop_importbids(opt.targetdir, 'subjects', 1);
-rmdir(fullfile(opt.targetdir, 'derivatives'), 's');
-
-fprintf('************************\n');
-fprintf('COMPARING first dataset\n')
-fprintf('************************\n');
-eeg_compare(ALLEEG1(1), ALLEEG2(1));
-
-% compare BIDS datasets
+% Compare with original if requested
 if ~isempty(opt.checkderivative)
-    fprintf('Comparing BIDS folders %s vs %s\n', opt.checkderivative, opt.targetdir)
-    bids_compare(opt.checkderivative, opt.targetdir, false);
+    fprintf('Comparing BIDS folders %s vs %s\n', opt.checkderivative, derivativeDir);
+    bids_compare(opt.checkderivative, derivativeDir, false);
 end
