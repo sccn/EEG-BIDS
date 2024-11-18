@@ -248,6 +248,14 @@
 %                    as it was overwritten. The solution is to regenerate
 %                    the file, but without touching the other contents of
 %                    the directory. Default is 'off'.
+% 'generatedBy' - [struct] structure indicating how the data was generated. NOTE: Adding the fileds below is done in 
+%                bids_reexport.m, only generatedBy.desc is implemented here.
+%                For example:
+%                generatedBy.Name = 'NEMAR-pipeline';
+%                generatedBy.Description = 'A validated EEG pipeline';
+%                generatedBy.Version = '0.1';
+%                generatedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
+%                generatedBy.desc = 'filtered'; % optional description for file naming
 %
 % Validation:
 %  If the BIDS data created with this function fails to pass the BIDS
@@ -838,6 +846,12 @@ if contains(fileIn, '_bids_tmp_') && strcmpi(opt.rmtempfiles, 'on')
     fprintf('Deleting temporary file %s\n', fileIn);
     delete(fileIn);
 end
+
+% Add desc to fileStr if provided in generatedBy
+if isfield(opt, 'generatedBy') && isfield(opt.generatedBy, 'desc') && ~isempty(opt.generatedBy.desc)
+    fileStr = [fileStr '_desc-' opt.generatedBy.desc];
+end
+
 
 % output folder creation
 fileBase = fullfile(opt.targetdir, subjectStr, sess, opt.modality, fileStr);
