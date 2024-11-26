@@ -1,25 +1,26 @@
 % eeg_compare - compare EEG structures. Differences are shown on the command
 %               line and stored in EEG.etc.compare
 % Usage:
-%   eeg_compare(EEG1, EEG2);
+%   [EEG, res] = eeg_compare(EEG1, EEG2);
 %
 % Input:
 %  EEG1 - first EEGLAB structure
 %  EEG2 - second EEGLAB structure
 %
 % Output:
+%  EEG  - modified EEG1 structure with comparison results
 %  res  - 1 if differences found, 0 if identical
-%  EEG1 is modified to include EEG1.etc.compare structure with fields:
+%  EEG.etc.compare structure contains fields:
 %   - data_changed: true if EEG data differs
 %   - events_changed: true if events differ
 %   - chanlocs_changed: true if channel locations differ
 %   - other_changed: true if other fields differ
 %
-% Author: Arnaud Delorme, 2020
+% Author: Seyed Yahya Shirazi, 2024, adapted from eeg_compare in EEGLAB.s
 %
 % See also: EEGLAB, EEGPLOT, POP_REJEPOCH
 
-% Copyright (C) 2020 Arnaud Delorme
+% Copyright (C) 2024 Seyed Yahya Shirazi
 %
 % This file is part of EEGLAB, see http://www.eeglab.org
 % for the documentation and details.
@@ -46,7 +47,7 @@
 % ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 % THE POSSIBILITY OF SUCH DAMAGE.
 
-function res = eeg_compare(EEG, EEG2)
+function [EEG, res] = eeg_compare(EEG, EEG2)
 
 res = 1;
 

@@ -10,10 +10,10 @@
 % 'generatedBy' - [struct] structure indicating how the data was generated.
 %                For example:
 %                generatedBy.Name = 'NEMAR-pipeline';
-%                generatedBy.Description = 'A validated EEG pipeline';
-%                generatedBy.Version = '0.1';
+%                generatedBy.Description = 'A validated EEG pipeline for preprocessing and decomposition of EEG datasets';
+%                generatedBy.Version = '1.0';
 %                generatedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
-%                generatedBy.desc = 'filtered'; % optional description for file naming
+%                generatedBy.desc = 'nemar'; % optional description for file naming
 %
 %  'checkderivative' - [string] provide a folder as a string containing 
 %                the original BIDS repository and check that the folder
@@ -137,7 +137,7 @@ if ~isempty(opt.checkderivative)
         [~, ALLEEG2] = pop_importbids(opt.checkderivative, 'subjects', 1);
         
         % Compare first dataset to determine changes
-        eeg_compare_bids(ALLEEG1(1), ALLEEG2(1));
+        ALLEEG1(1) = eeg_compare_bids(ALLEEG1(1), ALLEEG2(1));
         
         % Only add desc if changes were detected
         if ALLEEG1(1).etc.compare.data_changed || ...
