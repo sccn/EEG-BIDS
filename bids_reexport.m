@@ -134,7 +134,7 @@ data.task    = { ALLEEG1.task };
 if ~isempty(opt.checkderivative)
     try
         % Import original BIDS dataset
-        [~, ALLEEG2] = pop_importbids(opt.checkderivative, 'subjects', 1);
+        [~, ALLEEG2] = pop_importbids(opt.checkderivative, 'subjects', 1, 'bidschanloc','on','bidsevent', 'on');
         
         % Compare first dataset to determine changes
         ALLEEG1(1) = eeg_compare_bids(ALLEEG1(1), ALLEEG2(1));
@@ -144,7 +144,7 @@ if ~isempty(opt.checkderivative)
            ALLEEG1(1).etc.compare.events_changed || ...
            ALLEEG1(1).etc.compare.chanlocs_changed
             
-            % Build desc based on what changed
+            % Build desc based on what changed using camelCase
             changes = {};
             if ALLEEG1(1).etc.compare.data_changed
                 changes{end+1} = 'data';
@@ -156,21 +156,42 @@ if ~isempty(opt.checkderivative)
                 changes{end+1} = 'electrodes';
             end
             
-            % Set desc in generatedBy
-            if isfield(opt.generatedBy, 'desc')
-                desc = opt.generatedBy.desc;
-                if ~isempty(changes)
-                    desc = [desc '_' strjoin(changes, '_')];
+            % Convert changes to camelCase and combine
+            if ~isempty(changes)
+                % Capitalize first letter of each word except first
+                for i = 1:length(changes)
+                    if i > 1
+                        changes{i} = [upper(changes{i}(1)) changes{i}(2:end)];
+                    end
                 end
-            else
-                desc = strjoin(changes, '_');
+                desc = strjoin(changes, '');
+                
+                % Set desc in generatedBy
+                if isfield(opt.generatedBy, 'desc')
+                    desc = [opt.generatedBy.desc desc];
+                end
+                opt.generatedBy.desc = desc;
             end
-            opt.generatedBy.desc = desc;
         end
     catch
         warning('Could not load or compare with original dataset.');
     end
 end
+
+% Check to see if BIDS has all the needed fileds, otherwise borrow from ALLEEG2
+required_fields = {'gInfo', 'pInfo', 'pInfoDesc', 'tInfo', 'eInfo', 'scannedElectrodes', 'eInfoDesc'};
+for i = 1:length(required_fields)
+    if ~isfield(BIDS, required_fields{i}) || isempty(BIDS.(required_fields{i}))
+        if exist('ALLEEG2', 'var') && isfield(ALLEEG2(1).BIDS, required_fields{i})
+            BIDS.(required_fields{i}) = ALLEEG2(1).BIDS.(required_fields{i});
+            warning('BIDS structure is missing required field %s, borrowing from original dataset', required_fields{i});
+        else
+            warning('BIDS structure is missing required field %s, the program may likely crash', required_fields{i});
+        end
+    end
+end
+
+BIDS.gInfo.GeneratedBy = struct2cell(BIDS.gInfo.GeneratedBy);
 
 % Set up export options
 options = { 'targetdir', derivativeDir, ...
