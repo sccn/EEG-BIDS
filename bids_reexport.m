@@ -54,7 +54,7 @@
 function bids_reexport(ALLEEG1, varargin)
 
 if ~isfield(ALLEEG1, 'task') || ~isfield(ALLEEG1, 'BIDS')
-    error('Task or BIDS field not found in array of EEG')
+    error('Task or BIDS field not found in array of EEG');
 end
 
 opt = finputcheck(varargin, { ...
@@ -121,14 +121,68 @@ end
 % Write derivative dataset description
 jsonwrite(fullfile(derivativeDir, 'dataset_description.json'), BIDS.gInfo, struct('indent','  '));
 
-% Prepare data structure for export
-data.file = cell(1, length(ALLEEG1));
-for i = 1:length(ALLEEG1)
-    data.file{i} = fullfile(ALLEEG1(i).filepath, ALLEEG1(i).filename);
+% Group files by subject
+uniqueSubjects = unique({ALLEEG1.subject});
+for i = 1:length(uniqueSubjects)
+    % Find all files for this subject
+    subjectIndices = find(strcmp({ALLEEG1.subject}, uniqueSubjects{i}));
+    
+    % Initialize arrays for this subject's files
+    data(i).file = cell(1, length(subjectIndices));
+    data(i).task = cell(1, length(subjectIndices));
+    data(i).run = zeros(1, length(subjectIndices));
+    data(i).session = zeros(1, length(subjectIndices));
+    
+    % Fill in data for each file
+    for j = 1:length(subjectIndices)
+        idx = subjectIndices(j);
+        data(i).file{j} = fullfile(ALLEEG1(idx).filepath, ALLEEG1(idx).filename);
+        data(i).task{j} = ALLEEG1(idx).task;
+        data(i).run(j) = ALLEEG1(idx).run;
+        data(i).session(j) = ALLEEG1(idx).session;
+    end
 end
-data.run     = [ ALLEEG1.run ];
-data.session = [ ALLEEG1.session ];
-data.task    = { ALLEEG1.task };
+
+% Reconstruct pInfo by aggregating data from all subjects while preserving order
+% First, find the first subject that has pInfo to establish initial field order
+allFields = {};
+for i = 1:length(ALLEEG1)
+    if isfield(ALLEEG1(i).BIDS, 'pInfo') && ~isempty(ALLEEG1(i).BIDS.pInfo)
+        allFields = ALLEEG1(i).BIDS.pInfo(1,:);
+        break;
+    end
+end
+
+% Then add any additional fields from other subjects while preserving order
+for i = 1:length(ALLEEG1)
+    if isfield(ALLEEG1(i).BIDS, 'pInfo') && ~isempty(ALLEEG1(i).BIDS.pInfo)
+        newFields = ALLEEG1(i).BIDS.pInfo(1,:);
+        for j = 1:length(newFields)
+            if ~ismember(newFields{j}, allFields)
+                allFields{end+1} = newFields{j};
+            end
+        end
+    end
+end
+
+% Create new pInfo cell array with headers
+if ~isempty(allFields)
+    BIDS.pInfo = cell(length(uniqueSubjects) + 1, length(allFields));
+    BIDS.pInfo(1,:) = allFields;
+    
+    % Fill in values for each subject
+    for i = 1:length(uniqueSubjects)
+        subjectIdx = find(strcmp({ALLEEG1.subject}, uniqueSubjects{i}), 1);
+        if isfield(ALLEEG1(subjectIdx).BIDS, 'pInfo') && ~isempty(ALLEEG1(subjectIdx).BIDS.pInfo)
+            for j = 1:length(allFields)
+                fieldIdx = find(strcmp(allFields{j}, ALLEEG1(subjectIdx).BIDS.pInfo(1,:)));
+                if ~isempty(fieldIdx)
+                    BIDS.pInfo(i+1,j) = ALLEEG1(subjectIdx).BIDS.pInfo(2,fieldIdx);
+                end
+            end
+        end
+    end
+end
 
 % Compare with original data if available
 if ~isempty(opt.checkderivative)
