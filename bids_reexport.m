@@ -1,5 +1,5 @@
 % BIDS_REEXPORT - re-export BIDS dataset (dataset which was imported in
-%                 EEGLAB)
+%                 EEGLAB) as a BIDS derivative
 % Usage:
 %   bids_reexport(ALLEEG, key, val);
 %
@@ -10,9 +10,10 @@
 % 'generatedBy' - [struct] structure indicating how the data was generated.
 %                For example:
 %                generatedBy.Name = 'NEMAR-pipeline';
-%                generatedBy.Description = 'A validated EEG pipeline';
-%                generatedBy.Version = '0.1';
+%                generatedBy.Description = 'A validated EEG pipeline for preprocessing and decomposition of EEG datasets';
+%                generatedBy.Version = '1.0';
 %                generatedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
+%                generatedBy.desc = 'nemar'; % optional description for file naming
 %
 %  'checkderivative' - [string] provide a folder as a string containing 
 %                the original BIDS repository and check that the folder
@@ -53,23 +54,29 @@
 function bids_reexport(ALLEEG1, varargin)
 
 if ~isfield(ALLEEG1, 'task') || ~isfield(ALLEEG1, 'BIDS')
-    error('Task or BIDS field not found in array of EEG')
+    error('Task or BIDS field not found in array of EEG');
 end
 
 opt = finputcheck(varargin, { ...
     'generatedBy'     'struct'  {}    struct([]); ...
-    'checkderivative' 'string'  {}    '';
-    'targetdir'    'string'  {}    fullfile(pwd, 'bidsexport');;
+    'checkderivative' 'string'  {}    ''; ...
+    'targetdir'       'string'  {}    fullfile(pwd, 'bidsexport'); ...
     }, 'bids_reexport');
 if isstr(opt), error(opt); end
+
+% Set up derivative directory
+derivativeDir = fullfile(opt.targetdir, 'derivatives', 'eeglab');
+if ~exist(derivativeDir, 'dir')
+    mkdir(derivativeDir);
+end
 
 % export the data
 % ---------------
 if isempty(opt.generatedBy)
-    opt.generatedBy(1).Name = 'NEMAR-pipeline';
-    opt.generatedBy.Description = 'A validated EEG pipeline';
-    opt.generatedBy.Version = '0.1';
-    opt.generatedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
+    opt.generatedBy(1).Name = 'EEGLAB';
+    opt.generatedBy(1).Description = 'EEGLAB BIDS derivative processing pipeline';
+    opt.generatedBy(1).Version = eeg_getversion;
+    opt.generatedBy(1).CodeURL = 'https://github.com/sccn/eeglab';
 end
 
 tasks = unique({ ALLEEG1.task });
@@ -87,16 +94,161 @@ if ~isfield(BIDS.gInfo, 'CHANGES')
     BIDS.gInfo.CHANGES = '';
 end
 
-BIDS.gInfo.generatedBy = opt.generatedBy;
-BIDS.gInfo.sourceDatasets.DOI = BIDS.gInfo.DatasetDOI;
-BIDS.gInfo = rmfield(BIDS.gInfo, 'DatasetDOI');
-BIDS.gInfo.CHANGES = [ BIDS.gInfo.CHANGES 10 10 'Processed using the NEMAR pipeline (see README file)' ];
-BIDS.gInfo.README = [ BIDS.gInfo.README 10 10 ...
-    'The original dataset was processed using the NEMAR EEG processing ' 10 ... 
-    'pipeline (see nemar.org). This is the derivative EEG dataset where' 10 ...
-    'the data has been automatically cleaned.' ];
+% Set up derivative dataset description while preserving existing values
+if ~isfield(BIDS.gInfo, 'Name')
+    BIDS.gInfo.Name = 'EEGLAB derivatives';
+end
+if ~isfield(BIDS.gInfo, 'BIDSVersion')
+    BIDS.gInfo.BIDSVersion = '1.8.0';
+end
+if ~isfield(BIDS.gInfo, 'PipelineDescription')
+    BIDS.gInfo.PipelineDescription.Name = opt.generatedBy(1).Name;
+    BIDS.gInfo.PipelineDescription.Version = opt.generatedBy(1).Version;
+    BIDS.gInfo.PipelineDescription.Description = opt.generatedBy(1).Description;
+end
+if ~isfield(BIDS.gInfo, 'GeneratedBy')
+    BIDS.gInfo.GeneratedBy = opt.generatedBy;
+end
 
-options = { 'targetdir', opt.targetdir, ...
+% Handle source dataset tracking
+if isfield(BIDS.gInfo, 'DatasetDOI')
+    if ~isfield(BIDS.gInfo, 'SourceDatasets')
+        BIDS.gInfo.SourceDatasets.DOI = BIDS.gInfo.DatasetDOI;
+    end
+    BIDS.gInfo = rmfield(BIDS.gInfo, 'DatasetDOI');
+end
+
+% Write derivative dataset description
+jsonwrite(fullfile(derivativeDir, 'dataset_description.json'), BIDS.gInfo, struct('indent','  '));
+
+% Group files by subject
+uniqueSubjects = unique({ALLEEG1.subject});
+for i = 1:length(uniqueSubjects)
+    % Find all files for this subject
+    subjectIndices = find(strcmp({ALLEEG1.subject}, uniqueSubjects{i}));
+    
+    % Initialize arrays for this subject's files
+    data(i).file = cell(1, length(subjectIndices));
+    data(i).task = cell(1, length(subjectIndices));
+    data(i).run = zeros(1, length(subjectIndices));
+    data(i).session = zeros(1, length(subjectIndices));
+    
+    % Fill in data for each file
+    for j = 1:length(subjectIndices)
+        idx = subjectIndices(j);
+        data(i).file{j} = fullfile(ALLEEG1(idx).filepath, ALLEEG1(idx).filename);
+        data(i).task{j} = ALLEEG1(idx).task;
+        data(i).run(j) = ALLEEG1(idx).run;
+        data(i).session(j) = ALLEEG1(idx).session;
+    end
+end
+
+% Reconstruct pInfo by aggregating data from all subjects while preserving order
+% First, find the first subject that has pInfo to establish initial field order
+allFields = {};
+for i = 1:length(ALLEEG1)
+    if isfield(ALLEEG1(i).BIDS, 'pInfo') && ~isempty(ALLEEG1(i).BIDS.pInfo)
+        allFields = ALLEEG1(i).BIDS.pInfo(1,:);
+        break;
+    end
+end
+
+% Then add any additional fields from other subjects while preserving order
+for i = 1:length(ALLEEG1)
+    if isfield(ALLEEG1(i).BIDS, 'pInfo') && ~isempty(ALLEEG1(i).BIDS.pInfo)
+        newFields = ALLEEG1(i).BIDS.pInfo(1,:);
+        for j = 1:length(newFields)
+            if ~ismember(newFields{j}, allFields)
+                allFields{end+1} = newFields{j};
+            end
+        end
+    end
+end
+
+% Create new pInfo cell array with headers
+if ~isempty(allFields)
+    BIDS.pInfo = cell(length(uniqueSubjects) + 1, length(allFields));
+    BIDS.pInfo(1,:) = allFields;
+    
+    % Fill in values for each subject
+    for i = 1:length(uniqueSubjects)
+        subjectIdx = find(strcmp({ALLEEG1.subject}, uniqueSubjects{i}), 1);
+        if isfield(ALLEEG1(subjectIdx).BIDS, 'pInfo') && ~isempty(ALLEEG1(subjectIdx).BIDS.pInfo)
+            for j = 1:length(allFields)
+                fieldIdx = find(strcmp(allFields{j}, ALLEEG1(subjectIdx).BIDS.pInfo(1,:)));
+                if ~isempty(fieldIdx)
+                    BIDS.pInfo(i+1,j) = ALLEEG1(subjectIdx).BIDS.pInfo(2,fieldIdx);
+                end
+            end
+        end
+    end
+end
+
+% Compare with original data if available
+if ~isempty(opt.checkderivative)
+    try
+        % Import original BIDS dataset
+        [~, ALLEEG2] = pop_importbids(opt.checkderivative, 'subjects', 1, 'bidschanloc','on','bidsevent', 'on');
+        
+        % Compare first dataset to determine changes
+        ALLEEG1(1) = eeg_compare_bids(ALLEEG1(1), ALLEEG2(1));
+        
+        % Only add desc if changes were detected
+        if ALLEEG1(1).etc.compare.data_changed || ...
+           ALLEEG1(1).etc.compare.events_changed || ...
+           ALLEEG1(1).etc.compare.chanlocs_changed
+            
+            % Build desc based on what changed using camelCase
+            changes = {};
+            if ALLEEG1(1).etc.compare.data_changed
+                changes{end+1} = 'data';
+            end
+            if ALLEEG1(1).etc.compare.events_changed
+                changes{end+1} = 'events';
+            end
+            if ALLEEG1(1).etc.compare.chanlocs_changed
+                changes{end+1} = 'electrodes';
+            end
+            
+            % Convert changes to camelCase and combine
+            if ~isempty(changes)
+                % Capitalize first letter of each word except first
+                for i = 1:length(changes)
+                    if i > 1
+                        changes{i} = [upper(changes{i}(1)) changes{i}(2:end)];
+                    end
+                end
+                desc = strjoin(changes, '');
+                
+                % Set desc in generatedBy
+                if isfield(opt.generatedBy, 'desc')
+                    desc = [opt.generatedBy.desc desc];
+                end
+                opt.generatedBy.desc = desc;
+            end
+        end
+    catch
+        warning('Could not load or compare with original dataset.');
+    end
+end
+
+% Check to see if BIDS has all the needed fileds, otherwise borrow from ALLEEG2
+required_fields = {'gInfo', 'pInfo', 'pInfoDesc', 'tInfo', 'eInfo', 'scannedElectrodes', 'eInfoDesc'};
+for i = 1:length(required_fields)
+    if ~isfield(BIDS, required_fields{i}) || isempty(BIDS.(required_fields{i}))
+        if exist('ALLEEG2', 'var') && isfield(ALLEEG2(1).BIDS, required_fields{i})
+            BIDS.(required_fields{i}) = ALLEEG2(1).BIDS.(required_fields{i});
+            warning('BIDS structure is missing required field %s, borrowing from original dataset', required_fields{i});
+        else
+            warning('BIDS structure is missing required field %s, the program may likely crash', required_fields{i});
+        end
+    end
+end
+
+BIDS.gInfo.GeneratedBy = struct2cell(BIDS.gInfo.GeneratedBy);
+
+% Set up export options
+options = { 'targetdir', derivativeDir, ...
     'taskName', tasks,...
     'gInfo', BIDS.gInfo, ...
     'pInfo', BIDS.pInfo, ...
@@ -107,31 +259,18 @@ options = { 'targetdir', opt.targetdir, ...
     'tInfo', BIDS.tInfo, ...
     'eInfo', BIDS.eInfo, ...
     'forcesession', 'on', ...
-    'forcerun', 'on' };
+    'forcerun', 'on', ...
+    'generatedBy', opt.generatedBy };
 
 if BIDS.scannedElectrodes
     options = [ options { 'elecexport' 'on' } ];
 end
 
-data.file = { fullfile(ALLEEG1(1).filepath, ALLEEG1(1).filename) ...
-              fullfile(ALLEEG1(2).filepath, ALLEEG1(2).filename) };
-data.run     = [ ALLEEG1.run ];
-data.session = [ ALLEEG1.session ];
-data.task    = { ALLEEG1.task };
+% Export the data
 bids_export(data, options{:});
 
-% import data
-% -------------
-[~, ALLEEG2] = pop_importbids(opt.targetdir, 'subjects', 1);
-rmdir(fullfile(opt.targetdir, 'derivatives'), 's');
-
-fprintf('************************\n');
-fprintf('COMPARING first dataset\n')
-fprintf('************************\n');
-eeg_compare(ALLEEG1(1), ALLEEG2(1));
-
-% compare BIDS datasets
+% Compare with original if requested
 if ~isempty(opt.checkderivative)
-    fprintf('Comparing BIDS folders %s vs %s\n', opt.checkderivative, opt.targetdir)
-    bids_compare(opt.checkderivative, opt.targetdir, false);
+    fprintf('Comparing BIDS folders %s vs %s\n', opt.checkderivative, derivativeDir);
+    bids_compare(opt.checkderivative, derivativeDir, false);
 end
