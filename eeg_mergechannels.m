@@ -57,7 +57,7 @@
 % ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 % THE POSSIBILITY OF SUCH DAMAGE.
 
-function [MERGEDEEG, EEG2PRIME] = eeg_mergechannels(EEG1, EEG2, varargin)
+function [MERGEDEEG, errorvals] = eeg_mergechannels(EEG1, EEG2, varargin)
 
 if nargin < 2
     help eeg_mergechannels
@@ -65,9 +65,10 @@ if nargin < 2
 end
 
 g = finputcheck( varargin, { ...
-    'eventfield1'   'string'    {}   '';
-    'eventfield2'   'string'    {}   '';
-    'tolerance'     'real'      {}   10;
+    'eventfield1'   'string'      {}   '';
+    'eventfield2'   'string'      {}   '';
+    'tolerance'     'real'        {}   10;
+    'verbose'       'string'      {'on' 'off'}   'on';
     'finalevents'   'string'    { 'first' 'second' 'merge' 'mergediff' }   'mergediff';
         } );
 if ischar(g)
@@ -133,8 +134,19 @@ end
 
 event1str = evenType1(matchingEvents1);
 event2str = evenType2(matchingEvents2);
-fprintf('Matching events structure 1 are %s -> {%s}\n', int2str(matchingEvents1), sprintf('''%s'' ', event1str{:}));
-fprintf('Matching events structure 2 are %s -> {%s}\n', int2str(matchingEvents2), sprintf('''%s'' ', event2str{:}));
+if strcmpi(g.verbose, 'on')
+    fprintf('Matching events structure 1 are ');
+    for iEvent = 1:length(matchingEvents1)
+        fprintf('%s(%d)\t', event1str{iEvent}, matchingEvents1(iEvent));
+    end
+    fprintf('\n');
+    fprintf('Matching events structure 2 are ');
+    for iEvent = 1:length(matchingEvents2)
+        fprintf('%s(%d)\t', event2str{iEvent}, matchingEvents2(iEvent));
+    end
+    fprintf('\n');
+end
+
 % now align the two structures
 
 % find matching fields (assuming correct orders)
@@ -153,23 +165,30 @@ end
 
 func1to2 = @(x)x*slope+intercept;
 func2to1 = @(x)(x-intercept)/slope;
-
-fprintf('Event offset for dataset 1 vs 2 (compare the two rows):\n')
-
-% show the difference
 latency2in1 = func2to1(latency2);
-for iEvent = 1:min(50, length(latency1))
-    fprintf('%8s                    ', sprintf('%1.1f', latency1(iEvent)));
+
+errorvals = round(abs(latency2in1-latency1));
+if strcmpi(g.verbose, 'on')
+    fprintf('Event offset for dataset 1 vs 2 (compare the two rows):\n')
+    % show the difference
+    for iEvent = 1:min(50, length(latency1))
+        fprintf('%8s                    ', sprintf('%1.1f', latency1(iEvent)));
+    end
+    fprintf('\n');
+    for iEvent = 1:min(50, length(latency2in1))
+        fprintf('%8s (off by %3d ms)    ', sprintf('%1.1f', latency2in1(iEvent)), round(abs(latency2in1(iEvent)-latency1(iEvent))));
+    end
 end
-fprintf('\n');
+
+% check alignment
 flag = false;
 for iEvent = 1:min(50, length(latency2in1))
-    fprintf('%8s (off by %3d ms)    ', sprintf('%1.1f', latency2in1(iEvent)), round(abs(latency2in1(iEvent)-latency1(iEvent))));
     if round(abs(latency2in1(iEvent)-latency1(iEvent))) > g.tolerance
         flag = true;
     end
 end
 if flag
+    figure; plot(latency1, latency2, '.');
     error('Alignment within %1.1f millisecond failed. Increase tolerance.', g.tolerance);
 end
 fprintf('\n');
@@ -179,12 +198,18 @@ fprintf('\n');
 samples = func1to2(1:EEG1.pnts);
 MERGEDEEG = EEG1;
 MERGEDEEG.data(end+EEG2.nbchan,:) = 0;
-fprintf('Interpolating channels:')
+if strcmpi(g.verbose, 'on')
+    fprintf('Interpolating channels:')
+end
 for iChan = 1:EEG2.nbchan
     MERGEDEEG.data(MERGEDEEG.nbchan+iChan,:) = interp1(1:EEG2.pnts, EEG2.data(iChan,:), samples, 'lin', 0);
-    fprintf('.');
+    if strcmpi(g.verbose, 'on')
+        fprintf('.');
+    end
 end
-fprintf('\n')
+if strcmpi(g.verbose, 'on')
+    fprintf('\n')
+end
 MERGEDEEG.nbchan = size(MERGEDEEG.data,1);
 
 % merge channels

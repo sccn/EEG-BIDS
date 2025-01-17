@@ -49,7 +49,14 @@ if nargin < 3
 end
 
 dir1 = dir(oridir);
+if isempty(dir1)
+    fprintf(2, 'BIDS compare, directory empty %s\n', oridir)
+    return
+end
 dir2 = dir(targetdir);
+if isempty(dir1)
+    fprintf(2, 'BIDS compare, directory empty %s\n', targetdir)
+end
 
 allDir2Folder = { dir2.folder };
 allDir2Name   = { dir2.name };
@@ -90,7 +97,7 @@ if ~isempty(listNotFound)
         error('BIDS folder do not match')
     end
 else
-    disp('   Files matching %s vs %s\n')
+    fprintf('   Files found to match\n')
 end
 
 function outstr = relativeFolder( folder, parentFolder )

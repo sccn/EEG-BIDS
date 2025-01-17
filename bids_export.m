@@ -248,6 +248,14 @@
 %                    as it was overwritten. The solution is to regenerate
 %                    the file, but without touching the other contents of
 %                    the directory. Default is 'off'.
+% 'generatedBy' - [struct] structure indicating how the data was generated. NOTE: Adding the fileds below is done in 
+%                bids_reexport.m, only generatedBy.desc is implemented here.
+%                For example:
+%                generatedBy.Name = 'NEMAR-pipeline';
+%                generatedBy.Description = 'A validated EEG pipeline';
+%                generatedBy.Version = '0.1';
+%                generatedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
+%                generatedBy.desc = 'filtered'; % optional description for file naming
 %
 % Validation:
 %  If the BIDS data created with this function fails to pass the BIDS
@@ -396,7 +404,7 @@ gInfoFields = { 'ReferencesAndLinks' 'required' 'cell' { 'n/a' };
     'HowToAcknowledge'   'optional' 'char' '';
     'sourceDatasets'     'optional' 'struct' struct([]);
     'Funding'            'optional' 'cell' { 'n/a' };
-    'GeneratedBy'        'required' 'cell' {struct('Name', 'bids-matlab-tools', 'Version', bids_matlab_tools_ver)};
+    'GeneratedBy'        'required' 'struct' struct('Name', 'bids-matlab-tools', 'Version', bids_matlab_tools_ver);
     'DatasetDOI'         'optional' 'char' { 'n/a' }};
 
 if ~isfield(opt.gInfo, 'Name'), opt.gInfo(1).Name = opt.Name; end
@@ -404,8 +412,16 @@ if ~isfield(opt.gInfo, 'License'), opt.gInfo.License = opt.License; end
 if ~isfield(opt.gInfo, 'Authors'), opt.gInfo.Authors = opt.Authors; end
 if ~isfield(opt.gInfo, 'ReferencesAndLinks'), opt.gInfo.ReferencesAndLinks = opt.ReferencesAndLinks; end
 
+% write dataset_description.json removing double lists
 opt.gInfo = bids_checkfields(opt.gInfo, gInfoFields, 'gInfo');
-jsonwrite(fullfile(opt.targetdir, 'dataset_description.json'), opt.gInfo, struct('indent','  '));
+datasetDescriptionFile = fullfile(opt.targetdir, 'dataset_description.json');
+jsonStr = jsonwrite(opt.gInfo, struct('indent','  '));
+indDoubleList = strfind(jsonStr, '[['); jsonStr(indDoubleList) = [];
+indDoubleList = strfind(jsonStr, '[ ['); jsonStr(indDoubleList) = [];
+indDoubleList = strfind(jsonStr, ']]'); jsonStr(indDoubleList) = [];
+fid = fopen(datasetDescriptionFile, 'w');
+fprintf(fid, jsonStr);
+fclose(fid);
 
 % make cell out of file names if necessary
 % ----------------------------------------
@@ -838,6 +854,12 @@ if contains(fileIn, '_bids_tmp_') && strcmpi(opt.rmtempfiles, 'on')
     fprintf('Deleting temporary file %s\n', fileIn);
     delete(fileIn);
 end
+
+% Add desc to fileStr if provided in generatedBy
+if isfield(opt, 'generatedBy') && isfield(opt.generatedBy, 'desc') && ~isempty(opt.generatedBy.desc)
+    fileStr = [fileStr '_desc-' opt.generatedBy.desc];
+end
+
 
 % output folder creation
 fileBase = fullfile(opt.targetdir, subjectStr, sess, opt.modality, fileStr);
