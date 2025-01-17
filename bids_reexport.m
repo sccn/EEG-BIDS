@@ -238,14 +238,15 @@ for i = 1:length(required_fields)
     if ~isfield(BIDS, required_fields{i}) || isempty(BIDS.(required_fields{i}))
         if exist('ALLEEG2', 'var') && isfield(ALLEEG2(1).BIDS, required_fields{i})
             BIDS.(required_fields{i}) = ALLEEG2(1).BIDS.(required_fields{i});
-            warning('BIDS structure is missing required field %s, borrowing from original dataset', required_fields{i});
+            warning('bids_reexport, the BIDS structure is missing required field %s, borrowing from original dataset', required_fields{i});
         else
-            warning('BIDS structure is missing required field %s, the program may likely crash', required_fields{i});
+            warning('bids_reexport, the BIDS structure is missing required field %s, the program may likely crash', required_fields{i});
         end
     end
 end
 
 BIDS.gInfo.GeneratedBy = struct2cell(BIDS.gInfo.GeneratedBy);
+if isempty(BIDS.pInfoDesc), BIDS.pInfoDesc = struct([]); end
 
 % Set up export options
 options = { 'targetdir', derivativeDir, ...
@@ -260,7 +261,7 @@ options = { 'targetdir', derivativeDir, ...
     'eInfo', BIDS.eInfo, ...
     'generatedBy', opt.generatedBy };
 
-if BIDS.scannedElectrodes
+if isfield(BIDS, 'scannedElectrodes') && BIDS.scannedElectrodes
     options = [ options { 'elecexport' 'on' } ];
 end
 
