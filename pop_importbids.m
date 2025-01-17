@@ -91,10 +91,11 @@ if nargin < 1
     if isempty(type_fields) type_fields = { 'n/a' }; end
     if isempty(tasklist) tasklist = { 'n/a' }; end
     
-    cb_event = 'set(findobj(gcbf, ''userdata'', ''bidstype''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
-    cb_task  = 'set(findobj(gcbf, ''userdata'', ''task''    ), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
-    cb_sess  = 'set(findobj(gcbf, ''userdata'', ''sessions''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
-    cb_run   = 'set(findobj(gcbf, ''userdata'', ''runs''    ), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
+    cb_event    = 'set(findobj(gcbf, ''userdata'', ''bidstype''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
+    cb_task     = 'set(findobj(gcbf, ''userdata'', ''task''    ), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
+    cb_sess     = 'set(findobj(gcbf, ''userdata'', ''sessions''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
+    cb_run      = 'set(findobj(gcbf, ''userdata'', ''runs''    ), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
+    cb_subjects = 'set(findobj(gcbf, ''userdata'', ''subjects''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
     promptstr    = { ...
         { 'style'  'text'       'string' 'Enter study name (default is BIDS folder name)' } ...
         { 'style'  'edit'       'string' '' 'tag' 'studyName' } ...
@@ -108,13 +109,15 @@ if nargin < 1
         { 'style'  'listbox'    'string' sessions 'tag' 'bidsessionstr' 'max' 2 'value' [] 'userdata' 'sessions'  'enable' 'off' } {} ...
         { 'style'  'checkbox'   'string' 'Import only the following runs' 'tag' 'bidsruns' 'value' 0 'callback' cb_run }  ...
         { 'style'  'listbox'    'string' runs 'tag' 'bidsrunsstr' 'max' 2 'value' [] 'userdata' 'runs'  'enable' 'off' } {} ...
+        { 'style'  'checkbox'   'string' 'Import only the following participant indices' 'tag' 'bidssubjects' 'value' 0 'callback' cb_subjects }  ...
+        { 'style'  'edit'       'string' '' 'tag' 'bidssubjectsstr' 'userdata' 'subjects'  'enable' 'off' } {} ...
         {} ...
         { 'style'  'text'       'string' 'Study output folder' } ...
         { 'style'  'edit'       'string' fullfile(bidsFolder, 'derivatives', 'eeglab') 'tag' 'folder' 'HorizontalAlignment' 'left' } ...
         { 'style'  'pushbutton' 'string' '...' 'callback' cb_select } ...
         };
-    geometry = {[2 1.5], 1, 1,[1 0.35],[0.6 0.35 0.5],[0.6 0.35 0.5],[0.6 0.35 0.5],1,[1 2 0.5]};
-    geomvert = [1 0.5, 1 1 1 1.5 1.5 0.5 1];
+    geometry = {[2 1.5], 1, 1,[1 0.35],[0.6 0.35 0.5],[0.6 0.35 0.5],[0.6 0.35 0.5],[0.6 0.35 0.5],1,[1 2 0.5]};
+    geomvert = [1 0.5, 1 1 1 1.5 1.5 1 0.5 1];
     if isempty(runs)
         promptstr(13:15) = [];
         geometry(7) = [];
@@ -140,6 +143,9 @@ if nargin < 1
     end
     if isfield(res, 'bidsruns')
         if res.bidsruns && ~isempty(res.bidsruns),  options = { options{:} 'runs' str2double(runs(res.bidsrunsstr)) }; end
+    end
+    if isfield(res, 'bidssubjects')
+        if res.bidsruns && ~isempty(res.bidsruns),  options = { options{:} 'subjects' str2double(res.bidssubjectsstr) }; end
     end
 else
     options = varargin;
@@ -731,33 +737,34 @@ if strcmpi(opt.metadata, 'off')
         [STUDY, ALLEEG]  = std_editset([], [], 'commands', commands, 'filename', studyName, 'task', task);
     end
     
+	% track failed datasets
+	STUDY.etc.bidsimportinfo = [];
+	STUDY.etc.bidsimportinfo.totaldatasetcount  = numel(eegFileRawAll);
+	STUDY.etc.bidsimportinfo.faileddatasets     = faileddatasets;
+
+	% import HED tags if exists in top level events.json
+	% -----------------------------
+	% scan for top level events.json
+	top_level_eventsjson = dir(fullfile(bidsFolder, '*_events.json'));
+	if ~isempty(top_level_eventsjson) && numel(top_level_eventsjson) == 1
+	    top_level_eventsjson = fullfile(top_level_eventsjson.folder, top_level_eventsjson.name);
+	    if plugin_status('HEDTools')
+		try 
+		    fMap = fieldMap.createfMapFromJson(top_level_eventsjson);
+		    if fMap.hasAnnotation()
+			STUDY.etc.tags = fMap.getStruct();
+		    end
+		catch ME
+		    warning('Found top-level events.json file and tried importing HED tags but failed');
+		end
+	    end
+	end
+    [STUDY, ALLEEG] = std_editset(STUDY, ALLEEG, 'resave', 'on');
+
     if ~isempty(options)
         commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'', %s);', bidsFolder, vararg2str(options));
     else
         commands = sprintf('[STUDY, ALLEEG] = pop_importbids(''%s'');', bidsFolder);
-    end
-end
-
-% track failed datasets
-STUDY.etc.bidsimportinfo = [];
-STUDY.etc.bidsimportinfo.totaldatasetcount  = numel(eegFileRawAll);
-STUDY.etc.bidsimportinfo.faileddatasets     = faileddatasets;
-
-% import HED tags if exists in top level events.json
-% -----------------------------
-% scan for top level events.json
-top_level_eventsjson = dir(fullfile(bidsFolder, '*_events.json'));
-if ~isempty(top_level_eventsjson) && numel(top_level_eventsjson) == 1
-    top_level_eventsjson = fullfile(top_level_eventsjson.folder, top_level_eventsjson.name);
-    if plugin_status('HEDTools')
-        try 
-            fMap = fieldMap.createfMapFromJson(top_level_eventsjson);
-            if fMap.hasAnnotation()
-                STUDY.etc.tags = fMap.getStruct();
-            end
-        catch ME
-            warning('Found top-level events.json file and tried importing HED tags but failed');
-        end
     end
 end
 
