@@ -404,7 +404,7 @@ gInfoFields = { 'ReferencesAndLinks' 'required' 'cell' { 'n/a' };
     'HowToAcknowledge'   'optional' 'char' '';
     'sourceDatasets'     'optional' 'struct' struct([]);
     'Funding'            'optional' 'cell' { 'n/a' };
-    'GeneratedBy'        'required' 'cell' {struct('Name', 'bids-matlab-tools', 'Version', bids_matlab_tools_ver)};
+    'GeneratedBy'        'required' 'struct' struct('Name', 'bids-matlab-tools', 'Version', bids_matlab_tools_ver);
     'DatasetDOI'         'optional' 'char' { 'n/a' }};
 
 if ~isfield(opt.gInfo, 'Name'), opt.gInfo(1).Name = opt.Name; end
@@ -412,8 +412,16 @@ if ~isfield(opt.gInfo, 'License'), opt.gInfo.License = opt.License; end
 if ~isfield(opt.gInfo, 'Authors'), opt.gInfo.Authors = opt.Authors; end
 if ~isfield(opt.gInfo, 'ReferencesAndLinks'), opt.gInfo.ReferencesAndLinks = opt.ReferencesAndLinks; end
 
+% write dataset_description.json removing double lists
 opt.gInfo = bids_checkfields(opt.gInfo, gInfoFields, 'gInfo');
-jsonwrite(fullfile(opt.targetdir, 'dataset_description.json'), opt.gInfo, struct('indent','  '));
+datasetDescriptionFile = fullfile(opt.targetdir, 'dataset_description.json');
+jsonStr = jsonwrite(opt.gInfo, struct('indent','  '));
+indDoubleList = strfind(jsonStr, '[['); jsonStr(indDoubleList) = [];
+indDoubleList = strfind(jsonStr, '[ ['); jsonStr(indDoubleList) = [];
+indDoubleList = strfind(jsonStr, ']]'); jsonStr(indDoubleList) = [];
+fid = fopen(datasetDescriptionFile, 'w');
+fprintf(fid, jsonStr);
+fclose(fid);
 
 % make cell out of file names if necessary
 % ----------------------------------------

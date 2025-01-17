@@ -245,7 +245,11 @@ for i = 1:length(required_fields)
     end
 end
 
-BIDS.gInfo.GeneratedBy = struct2cell(BIDS.gInfo.GeneratedBy);
+if isempty(opt.generatedBy)
+    BIDS.gInfo.GeneratedBy = BIDS.gInfo.GeneratedBy;
+else
+    BIDS.gInfo.GeneratedBy = opt.generatedBy;
+end
 if isempty(BIDS.pInfoDesc), BIDS.pInfoDesc = struct([]); end
 
 % Set up export options
@@ -258,8 +262,7 @@ options = { 'targetdir', derivativeDir, ...
     'CHANGES', BIDS.gInfo.CHANGES, ...
     'renametype', {}, ...
     'tInfo', BIDS.tInfo, ...
-    'eInfo', BIDS.eInfo, ...
-    'generatedBy', opt.generatedBy };
+    'eInfo', BIDS.eInfo };
 
 if isfield(BIDS, 'scannedElectrodes') && BIDS.scannedElectrodes
     options = [ options { 'elecexport' 'on' } ];
