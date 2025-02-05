@@ -811,6 +811,9 @@ keepInd = zeros(1,length(fileList));
 for iFile = 1:length(fileList)
     if contains(fileList(iFile).name, taskList)
         keepInd(iFile) = 1;
+    elseif contains(fileList(iFile).name, taskList,'IgnoreCase',true)
+        warning('matching task ignore case')
+        keepInd(iFile) = 1;
     end
 end
 fileList = fileList(logical(keepInd));
