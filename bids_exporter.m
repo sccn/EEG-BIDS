@@ -45,7 +45,7 @@ function bids_exporter(varargin)
         [~, ~, err, ~] = inputgui('geometry', { 1 1 }, 'geomvert', [1 3], 'uilist', ...
             { { 'style' 'text' 'string' 'Welcome to the EEG-BIDS exporter tool!' 'fontweight' 'bold' }  { 'style' 'text' 'string' str } }, 'okbut', 'continue');
 
-        if isempty(err), return; end
+        if ischar(err), return; end % not ideal but no better solution now
         [STUDY, ALLEEG] = pop_studywizard();
         if isempty(ALLEEG), return; end
 
