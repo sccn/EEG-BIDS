@@ -207,6 +207,8 @@ if ~isempty(EEG.event)
                                     trialType = num2str(trialType);
                                 end
                                 str{end+1} = trialType;
+                            else
+                                str{end+1} = 'n/a';
                             end
 
                         case 'response_time'
