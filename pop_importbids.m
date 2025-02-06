@@ -12,9 +12,9 @@
 %
 % Optional inputs:
 %  'studyName'   - [string] name of the STUDY
-%  'subjects'    - [integer array] indices of subjects to import
+%  'subjects'    - [cell array] indices or names of subjects to import
 %  'sessions'    - [cell array] session numbers or names to import
-%  'runs'        - [integer array] run numbers to import
+%  'runs'        - [cell array] run numbers or names to import
 %  'bidsevent'   - ['on'|'off'] import events from BIDS .tsv file and
 %                  ignore events in raw binary EEG files.
 %  'bidschanloc' - ['on'|'off'] import channel location from BIDS .tsv file
@@ -157,9 +157,9 @@ opt = finputcheck(options, { ...
     'bidschanloc'    'string'    { 'on' 'off' }    'on'; ...
     'bidscoord'      'string'    { 'on' 'off' }    'on'; ...
     'bidstask'       {'string' 'cell'}    {'',{}}  ''; ...
-    'subjects'       'integer'   {}                []; ...
+    'subjects'       'cell'   {}                []; ... % ideally can take integers too
     'sessions'       'cell'      {}                {}; ...
-    'runs'           'integer'   {}                []; ...
+    'runs'           'cell'   {}                []; ...  % ideally can take integers too
     'metadata'       'string'    { 'on' 'off' }    'off'; ...
     'ctffunc'        'string'    { 'fileio' 'ctfimport' }    'fileio'; ...
     'eventtype'      'string'    {  }              'value'; ...
@@ -240,7 +240,24 @@ faileddatasets = [];
 if isempty(opt.subjects)
     opt.subjects = 2:size(bids.participants,1); % indices into the participants.tsv file, ignoring first header row
 else
-    opt.subjects = opt.subjects+1;
+    if iscell(opt.subjects) % match ID to particpiants and return index
+        for sub = length(opt.subjects):-1:1
+            if contains(opt.subjects{sub},'sub-')
+                ID = extractAfter(opt.subjects{sub},'sub-');
+            else
+                ID = opt.subjects{sub};
+            end
+            test = find(cellfun(@(x) strcmp(ID,extractAfter(x,'sub-')), bids.participants(2:end,1))); % starts at 2
+            if isempty(test)
+                warning('sub-%s not found',ID)
+            else
+                sub_index(sub) = test;
+            end
+        end
+        opt.subjects = sub_index+1;
+    else % takes integers in 
+        opt.subjects = opt.subjects+1;
+    end
 end
 
 for iSubject = opt.subjects
@@ -821,17 +838,21 @@ fileList = fileList(logical(keepInd));
 % Filter file runs
 % ----------------
 function fileList = filterFilesRun(fileList, runs)
-keepInd = zeros(1,length(fileList));
-for iFile = 1:length(fileList)
-    runInd = strfind(fileList(iFile).name, '_run-');
-    if ~isempty(runInd)
-        strTmp = fileList(iFile).name(runInd+5:end);
-        underScore = find(strTmp == '_');
-        if any(runs == str2double(strTmp(1:underScore(1)-1)))
-            keepInd(iFile) = 1;
-        end
-    end
+if ~iscell(runs)
+    runs = {runs}; % integer now in a cell
 end
+keepInd = arrayfun(@(x) contains(extractAfter(x.name,'run-'),runs), fileList);
+% keepInd = zeros(1,length(fileList));
+% for iFile = 1:length(fileList)
+%     runInd = strfind(fileList(iFile).name, '_run-');
+%     if ~isempty(runInd)
+%         strTmp = fileList(iFile).name(runInd+5:end);
+%         underScore = find(strTmp == '_');
+%         if any(runs == str2double(strTmp(1:underScore(1)-1)))
+%             keepInd(iFile) = 1;
+%         end
+%     end
+% end
 fileList = fileList(logical(keepInd));
 
 
