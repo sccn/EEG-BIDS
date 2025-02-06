@@ -856,6 +856,9 @@ if contains(fileIn, '_bids_tmp_') && strcmpi(opt.rmtempfiles, 'on')
 end
 
 % Add desc to fileStr if provided in generatedBy
+if isempty(opt.generatedBy) && isfield(opt.gInfo, 'GeneratedBy') % look at the casing
+    opt.generatedBy = opt.gInfo.GeneratedBy;
+end
 if isfield(opt, 'generatedBy') && isfield(opt.generatedBy, 'desc') && ~isempty(opt.generatedBy.desc)
     fileStr = [fileStr '_desc-' opt.generatedBy.desc];
 end

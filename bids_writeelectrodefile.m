@@ -21,11 +21,24 @@ else
     flagExport = 'auto';
 end
 
-% remove task because a bug in v1.10.0 validator returns an error
+% remove task because a bug in v1.10.0 validator returns an error (MAYBE REMOVE THAT SECTION LATER)
 ind = strfind(fileOut, 'task-');
 if ~isempty(ind)
     ind_ = find(fileOut(ind:end) == '_');
-    fileOut(ind:ind+ind_-1) = [];
+    if isempty(ind_)
+        ind_ = length(fileOut(ind:end))+1;
+    end
+    fileOut(ind-1:ind+ind_-2) = [];
+end
+
+% remove desc as well (MAYBE REMOVE THAT SECTION LATER)
+ind = strfind(fileOut, 'desc-');
+if ~isempty(ind)
+    ind_ = find(fileOut(ind:end) == '_');
+    if isempty(ind_)
+        ind_ = length(fileOut(ind:end))+1;
+    end
+    fileOut(ind-1:ind+ind_-2) = [];
 end
 
 if isfield(EEG.chaninfo, 'filename') && isequal(flagExport, 'auto')
