@@ -57,5 +57,6 @@ generatedBy.Description = 'A validated EEG pipeline';
 generatedBy.Version = '0.1';
 generatedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
 generatedBy.desc = 'eegprep';
-bids_reexport(EEG2, 'generatedBy', generatedBy, 'targetdir', targetFolder2, 'checkderivative', targetFolder);
+% bids_reexport(EEG2, 'generatedBy', generatedBy, 'targetdir', targetFolder, 'checkagainstparent', targetFolder);
+bids_reexport(EEG2, 'generatedBy', generatedBy, 'targetdir', targetFolder2, 'checkagainstparent', targetFolder);
 
