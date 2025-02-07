@@ -66,7 +66,7 @@ git clone --recurse-submodules https://github.com/sccn/EEG-BIDS
 
 Simply place the code in the EEGLAB plugin folder, and EEGLAB will automatically detect it. See documentation at [https://github.com/sccn/EEG-BIDS/wiki](https://github.com/sccn/EEG-BIDS/wiki).
 
-# zip command to release plugin
+# Zip command to release plugin
 
 ```
 zip -r EEG-BIDS8.0.zip EEG-BIDS/* -x /EEG-BIDS/testing/additionaltests/* /EEG-BIDS/testing/ds004117/* /EEG-BIDS/testing/hbn_eye_tracking_data/* /EEG-BIDS/testing/data/*
@@ -127,3 +127,5 @@ v7.7 - fix importing MEG and MEF files. Better handling of runs. Now tracks tool
 v8.0 - renamed files, separate file for task info, adding BIDS statistic output, handling EGI & BVA file better, channel types and units, adding eye-tracking and behavioral support
 
 v9.0 - update json import to conform to BIDS key-level inheritance principle. Support iEEG and MEG export. Support exporting multiple tasks. Fix issues with exporting channel locations. BIDS export wizard.
+
+v10.0 - adding support for re-exporting datasets. Adding the the "desc" key. Fix some event export issues. 
