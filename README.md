@@ -59,7 +59,15 @@ EEG-BIDS allows importing BIDS datasets into EEGLAB. This is the type of informa
 Make sure you clone with submodules
 
 ```
-git clone --recurse-submodules https://github.com/sccn/EEG-BIDS
+git clone https://github.com/sccn/EEG-BIDS
+```
+
+# Testing 
+
+Use the EEG-BIDS_testcases repository for testing
+
+```
+git clone https://github.com/sccn/EEG-BIDS_testcases.git
 ```
 
 # Use with EEGLAB
