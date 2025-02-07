@@ -6,6 +6,8 @@ dataName = [ 'BIDS_' type 'test' ];
 data.file = { 'test.set' };
 EEG1 = pop_loadset(data.file{1});
 EEG1 = eeg_checkset(EEG1, 'eventconsistency');
+EEG1 = pop_chanedit(EEG1, 'lookup','Standard-10-5-Cap385.sfp');
+pop_saveset(EEG1, 'test.set' );
 
 pInfo = { 'participant_id' ; '01' };
  
@@ -28,8 +30,8 @@ eInfo = { 'sample'   'latency';
       
 % call to the export function
 % ---------------------------
-targetFolder =  fullfile(pwd, dataName);
-targetFolder2 =  fullfile(pwd, [dataName '-2']);
+targetFolder =  fullfile(pwd,  [dataName '_export']);
+targetFolder2 =  fullfile(pwd, [dataName '_re-export']);
 options = { 'targetdir', targetFolder, ...
     'gInfo', generalInfo, ...
     'pInfo', pInfo, ...
@@ -38,6 +40,7 @@ options = { 'targetdir', targetFolder, ...
     'renametype', {}, ...
     'tInfo', tInfo, ...
     'eInfo', eInfo, ...
+    'elecexport', 'on', ...
     'copydata', 1 };
     % 'taskName', type,...
 
@@ -53,5 +56,7 @@ generatedBy.Name = 'NEMAR-pipeline';
 generatedBy.Description = 'A validated EEG pipeline';
 generatedBy.Version = '0.1';
 generatedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
-bids_reexport(EEG2, 'generatedBy', generatedBy, 'targetdir', targetFolder2, 'checkderivative', targetFolder);
+generatedBy.desc = 'eegprep';
+% bids_reexport(EEG2, 'generatedBy', generatedBy, 'targetdir', targetFolder, 'checkagainstparent', targetFolder);
+bids_reexport(EEG2, 'generatedBy', generatedBy, 'targetdir', targetFolder2, 'checkagainstparent', targetFolder);
 

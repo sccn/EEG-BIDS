@@ -349,7 +349,7 @@ for iSubject = opt.subjects
             physioFile    = searchparent(fullfile(subjectFolder{iFold}, '..', 'physio'), '*_physio.tsv');
             
             % remove BEH files which have runs (treated separately)
-            if ~isempty(behFile) && (contains(behFile(1).name, 'run') || contains(behFile(1).name, 'task'))
+           if ~isempty(behFile) && (contains(behFile(1).name, 'run') || contains(behFile(1).name, 'task'))
                 behFile = {};
             end
 

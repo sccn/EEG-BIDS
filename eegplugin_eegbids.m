@@ -20,8 +20,9 @@ function vers = eegplugin_eegbids(fig, trystrs, catchstrs)
     % ------------------
     p = which('pop_importbids.m');
     p = p(1:findstr(p,'pop_importbids.m')-1);
-    if ~exist('pop_importbids')
+    if ~exist('jsonwrite')
         addpath( p );
+        addpath( fullfile(p, 'JSONio'));
     end
     
     % find import data menu

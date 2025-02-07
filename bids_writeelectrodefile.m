@@ -21,6 +21,26 @@ else
     flagExport = 'auto';
 end
 
+% remove task because a bug in v1.10.0 validator returns an error (MAYBE REMOVE THAT SECTION LATER)
+ind = strfind(fileOut, 'task-');
+if ~isempty(ind)
+    ind_ = find(fileOut(ind:end) == '_');
+    if isempty(ind_)
+        ind_ = length(fileOut(ind:end))+1;
+    end
+    fileOut(ind-1:ind+ind_-2) = [];
+end
+
+% remove desc as well (MAYBE REMOVE THAT SECTION LATER)
+ind = strfind(fileOut, 'desc-');
+if ~isempty(ind)
+    ind_ = find(fileOut(ind:end) == '_');
+    if isempty(ind_)
+        ind_ = length(fileOut(ind:end))+1;
+    end
+    fileOut(ind-1:ind+ind_-2) = [];
+end
+
 if isfield(EEG.chaninfo, 'filename') && isequal(flagExport, 'auto')
     templates = {'GSN-HydroCel-32.sfp', 'GSN65v2_0.sfp', 'GSN129.sfp', 'GSN-HydroCel-257.sfp', 'standard-10-5-cap385.elp', 'standard_1005.elc', 'standard_1005.ced'};
     if any(contains(EEG.chaninfo.filename, templates))

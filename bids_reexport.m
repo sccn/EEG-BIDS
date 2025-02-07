@@ -7,20 +7,26 @@
 %  ALLEEG       - vector of loaded EEG datasets
 %
 % Optional inputs:
-% 'generatedBy' - [struct] structure indicating how the data was generated.
+% 'GeneratedBy' - [struct] structure indicating how the data was generated.
 %                For example:
-%                generatedBy.Name = 'NEMAR-pipeline';
-%                generatedBy.Description = 'A validated EEG pipeline for preprocessing and decomposition of EEG datasets';
-%                generatedBy.Version = '1.0';
-%                generatedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
-%                generatedBy.desc = 'nemar'; % optional description for file naming
-%
-%  'checkderivative' - [string] provide a folder as a string containing 
+%                GeneratedBy.Name = 'NEMAR-pipeline';
+%                GeneratedBy.Description = 'A validated EEG pipeline for preprocessing and decomposition of EEG datasets';
+%                GeneratedBy.Version = '1.0';
+%                GeneratedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
+%                GeneratedBy.desc = 'nemar'; % optional description for file naming
+% 
+% 'checkagainstparent' - [string] provide a folder as a string containing 
 %                the original BIDS repository and check that the folder
 %                names are identical. If not, issue an error.
 %
-%  'targetdir' - [string] target directory. Default is 'bidsexport' in the
-%                current folder.
+% 'targetdir' - [string] target directory. Default is 'bidsexport' in the
+%               current folder. This can be the same as the original BIDS
+%               folder.
+%
+% 'targetdirderiv' - [string] sub-folder for derivative. For example
+%               'derivative/eeglab'. Default is empty unless the target
+%               folder contains a BIDS dataset that is not a derivative
+%               dataset.
 %
 % Author: Arnaud Delorme, 2023
 
@@ -59,24 +65,44 @@ end
 
 opt = finputcheck(varargin, { ...
     'generatedBy'     'struct'  {}    struct([]); ...
+    'GeneratedBy'     'struct'  {}    struct([]); ...
+    'SourceDatasets'  'struct'  {}    struct([]); ...
+    'checkagainstparent' 'string'  {}    ''; ...
     'checkderivative' 'string'  {}    ''; ...
     'targetdir'       'string'  {}    fullfile(pwd, 'bidsexport'); ...
+    'targetdirderiv'  'string'  {}    ''; ...
     }, 'bids_reexport');
 if isstr(opt), error(opt); end
 
-% Set up derivative directory
-derivativeDir = fullfile(opt.targetdir, 'derivatives', 'eeglab');
+if ~isempty(opt.checkderivative)
+    opt.checkagainstparent = opt.checkderivative;
+end
+if ~isempty(opt.generatedBy)
+    opt.GeneratedBy = opt.generatedBy;
+end
+
+% Set up derivative directory if needed
+% This is done when the target directory contains the original dataset
+derivativeDir = fullfile(opt.targetdir, opt.targetdirderiv);
+if exist(fullfile(opt.targetdir, 'dataset_description.json'))
+    jsonText = fileread(fullfile(opt.targetdir, 'dataset_description.json'));
+    jsonData = jsondecode(jsonText);
+    if ~isfield(jsonData, 'DatasetType') || ~isequal(jsonData.DatasetType, 'derivative')
+        derivativeDir = fullfile(opt.targetdir, 'derivatives', 'eegbids');
+    end
+end
+
 if ~exist(derivativeDir, 'dir')
     mkdir(derivativeDir);
 end
 
 % export the data
 % ---------------
-if isempty(opt.generatedBy)
-    opt.generatedBy(1).Name = 'EEGLAB';
-    opt.generatedBy(1).Description = 'EEGLAB BIDS derivative processing pipeline';
-    opt.generatedBy(1).Version = eeg_getversion;
-    opt.generatedBy(1).CodeURL = 'https://github.com/sccn/eeglab';
+if isempty(opt.GeneratedBy)
+    opt.GeneratedBy(1).Name = 'EEGLAB';
+    opt.GeneratedBy(1).Description = 'EEGLAB BIDS derivative processing pipeline';
+    opt.GeneratedBy(1).Version = eeg_getversion;
+    opt.GeneratedBy(1).CodeURL = 'https://github.com/sccn/eeglab';
 end
 
 tasks = unique({ ALLEEG1.task });
@@ -87,6 +113,9 @@ else
 end
 
 BIDS = ALLEEG1(1).BIDS;
+
+BIDS.gInfo.DatasetType = 'derivative';
+
 if ~isfield(BIDS.gInfo, 'README')
     BIDS.gInfo.README = '';
 end
@@ -102,15 +131,18 @@ if ~isfield(BIDS.gInfo, 'BIDSVersion')
     BIDS.gInfo.BIDSVersion = '1.8.0';
 end
 if ~isfield(BIDS.gInfo, 'PipelineDescription')
-    BIDS.gInfo.PipelineDescription.Name = opt.generatedBy(1).Name;
-    BIDS.gInfo.PipelineDescription.Version = opt.generatedBy(1).Version;
-    BIDS.gInfo.PipelineDescription.Description = opt.generatedBy(1).Description;
+    BIDS.gInfo.PipelineDescription.Name = opt.GeneratedBy(1).Name;
+    BIDS.gInfo.PipelineDescription.Version = opt.GeneratedBy(1).Version;
+    BIDS.gInfo.PipelineDescription.Description = opt.GeneratedBy(1).Description;
 end
 if ~isfield(BIDS.gInfo, 'GeneratedBy')
-    BIDS.gInfo.GeneratedBy = opt.generatedBy;
+    BIDS.gInfo.GeneratedBy = opt.GeneratedBy;
 end
 
 % Handle source dataset tracking
+if ~isempty(opt.SourceDatasets)
+    BIDS.gInfo.SourceDatasets = opt.SourceDatasets;
+end
 if isfield(BIDS.gInfo, 'DatasetDOI')
     if ~isfield(BIDS.gInfo, 'SourceDatasets')
         BIDS.gInfo.SourceDatasets.DOI = BIDS.gInfo.DatasetDOI;
@@ -185,10 +217,10 @@ if ~isempty(allFields)
 end
 
 % Compare with original data if available
-if ~isempty(opt.checkderivative)
+if ~isempty(opt.checkagainstparent)
     try
         % Import original BIDS dataset
-        [~, ALLEEG2] = pop_importbids(opt.checkderivative, 'subjects', 1, 'bidschanloc','on','bidsevent', 'on');
+        [~, ALLEEG2] = pop_importbids(opt.checkagainstparent, 'subjects', 1, 'bidschanloc','on','bidsevent', 'on');
         
         % Compare first dataset to determine changes
         ALLEEG1(1) = eeg_compare_bids(ALLEEG1(1), ALLEEG2(1));
@@ -220,11 +252,11 @@ if ~isempty(opt.checkderivative)
                 end
                 desc = strjoin(changes, '');
                 
-                % Set desc in generatedBy
-                if isfield(opt.generatedBy, 'desc')
-                    desc = [opt.generatedBy.desc desc];
+                % Set desc in GeneratedBy
+                if isfield(opt.GeneratedBy, 'desc')
+                    desc = [opt.GeneratedBy.desc desc];
                 end
-                opt.generatedBy.desc = desc;
+                opt.GeneratedBy.desc = desc;
             end
         end
     catch
@@ -245,10 +277,10 @@ for i = 1:length(required_fields)
     end
 end
 
-if isempty(opt.generatedBy)
+if isempty(opt.GeneratedBy)
     BIDS.gInfo.GeneratedBy = BIDS.gInfo.GeneratedBy;
 else
-    BIDS.gInfo.GeneratedBy = opt.generatedBy;
+    BIDS.gInfo.GeneratedBy = opt.GeneratedBy;
 end
 if isempty(BIDS.pInfoDesc), BIDS.pInfoDesc = struct([]); end
 
@@ -272,7 +304,7 @@ end
 bids_export(data, options{:});
 
 % Compare with original if requested
-if ~isempty(opt.checkderivative)
-    fprintf('Comparing BIDS folders %s vs %s\n', opt.checkderivative, derivativeDir);
-    bids_compare(opt.checkderivative, derivativeDir, false);
+if ~isempty(opt.checkagainstparent)
+    fprintf('Comparing BIDS folders %s vs %s\n', opt.checkagainstparent, derivativeDir);
+    bids_compare(opt.checkagainstparent, derivativeDir, false);
 end

@@ -109,7 +109,7 @@ if ~isempty(EEG.event)
                 opt.eInfo(end+1,:) = { 'onset' 'latency' };
             end
         end
-        if ~any(strcmp(bids_fields,'duration')) && isfield(EEG.event, 'duration'), opt.eInfo(end+1,:) = { 'duration' 'duration' }; end
+        if ~any(strcmp(bids_fields,'duration')), opt.eInfo(end+1,:) = { 'duration' 'duration' }; end
         if ~any(strcmp(bids_fields,'sample')) && isfield(EEG.event, 'latency'), opt.eInfo(end+1,:) = { 'sample' 'latency' }; end
         if ~any(strcmp(bids_fields,'value'))
             if isfield(EEG.event, 'value')
@@ -207,6 +207,8 @@ if ~isempty(EEG.event)
                                     trialType = num2str(trialType);
                                 end
                                 str{end+1} = trialType;
+                            else
+                                str{end+1} = 'n/a';
                             end
 
                         case 'response_time'
