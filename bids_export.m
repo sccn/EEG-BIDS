@@ -99,8 +99,8 @@
 %                info.ReferencesAndLinks = { 'Pubmed 122032020' };
 %                info.Name = 'This is a custom task';
 %                info.License = 'Creative commons';
-%                info.generatedBy.Name = {'bids-matlab-tools'};
-%                info.sourceDatasets.DOI = 'xxx';
+%                info.GeneratedBy.Name = {'bids-matlab-tools'};
+%                info.SourceDatasets.DOI = 'xxx';
 %
 %  'tInfo'     - [struct] task information fields. See BIDS specifications.
 %                For example.
@@ -248,14 +248,14 @@
 %                    as it was overwritten. The solution is to regenerate
 %                    the file, but without touching the other contents of
 %                    the directory. Default is 'off'.
-% 'generatedBy' - [struct] structure indicating how the data was generated. NOTE: Adding the fileds below is done in 
-%                bids_reexport.m, only generatedBy.desc is implemented here.
+% 'GeneratedBy' - [struct] structure indicating how the data was generated. NOTE: Adding the fileds below is done in 
+%                bids_reexport.m, only GeneratedBy.desc is implemented here.
 %                For example:
-%                generatedBy.Name = 'NEMAR-pipeline';
-%                generatedBy.Description = 'A validated EEG pipeline';
-%                generatedBy.Version = '0.1';
-%                generatedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
-%                generatedBy.desc = 'filtered'; % optional description for file naming
+%                GeneratedBy.Name = 'NEMAR-pipeline';
+%                GeneratedBy.Description = 'A validated EEG pipeline';
+%                GeneratedBy.Version = '0.1';
+%                GeneratedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
+%                GeneratedBy.desc = 'filtered'; % optional description for file naming
 %
 % Validation:
 %  If the BIDS data created with this function fails to pass the BIDS
@@ -327,7 +327,9 @@ opt = finputcheck(varargin, {
     'cInfoDesc'    'struct'  {}    struct([]);
     'behInfo'      'struct'  {}    struct([]);
     'generatedBy'  'struct'  {}    struct([]);
+    'GeneratedBy'  'struct'  {}    struct([]);
     'sourceDatasets' 'struct'  {}    struct([]);
+    'SourceDatasets' 'struct'  {}    struct([]);
     'trialtype'    'cell'    {}    {};
     'renametype'   'cell'   {}    {};
     'checkresponse' 'string'   {}    '';
@@ -361,6 +363,12 @@ if ~isempty(opt.taskName)
 end
 if size(opt.stimuli,1) == 1 || size(opt.stimuli,2) == 1
     opt.stimuli = reshape(opt.stimuli, [2 length(opt.stimuli)/2])';
+end
+if ~isempty(opt.generatedBy)
+    opt.GeneratedBy = opt.generatedBy;
+end
+if ~isempty(opt.sourceDatasets)
+    opt.SourceDatasets = opt.sourceDatasets;
 end
 
 % deleting folder
@@ -399,10 +407,11 @@ gInfoFields = { 'ReferencesAndLinks' 'required' 'cell' { 'n/a' };
     'License'            'required' 'char' 'CC0';
     'BIDSVersion'        'required' 'char' '1.8.0' ;
     'HEDVersion'         'required' 'char' '8.1.0' ;
+    'DatasetType'        'optional' 'char' { 'derivative' 'raw' };
     'Authors'            'optional' 'cell' { 'n/a' };
     'Acknowledgements'   'optional' 'char' '';
     'HowToAcknowledge'   'optional' 'char' '';
-    'sourceDatasets'     'optional' 'struct' struct([]);
+    'SourceDatasets'     'optional' 'struct' struct([]);
     'Funding'            'optional' 'cell' { 'n/a' };
     'GeneratedBy'        'required' 'struct' struct('Name', 'bids-matlab-tools', 'Version', bids_matlab_tools_ver);
     'DatasetDOI'         'optional' 'char' { 'n/a' }};
@@ -411,14 +420,27 @@ if ~isfield(opt.gInfo, 'Name'), opt.gInfo(1).Name = opt.Name; end
 if ~isfield(opt.gInfo, 'License'), opt.gInfo.License = opt.License; end
 if ~isfield(opt.gInfo, 'Authors'), opt.gInfo.Authors = opt.Authors; end
 if ~isfield(opt.gInfo, 'ReferencesAndLinks'), opt.gInfo.ReferencesAndLinks = opt.ReferencesAndLinks; end
+if ~isfield(opt.gInfo, 'GeneratedBy') && ~isempty(opt.GeneratedBy), opt.gInfo.GeneratedBy = opt.GeneratedBy; end
+if ~isfield(opt.gInfo, 'SourceDatasets') && ~isempty(opt.SourceDatasets), opt.gInfo.SourceDatasets = opt.SourceDatasets; end
 
 % write dataset_description.json removing double lists
 opt.gInfo = bids_checkfields(opt.gInfo, gInfoFields, 'gInfo');
 datasetDescriptionFile = fullfile(opt.targetdir, 'dataset_description.json');
-jsonStr = jsonwrite(opt.gInfo, struct('indent','  '));
-indDoubleList = strfind(jsonStr, '[['); jsonStr(indDoubleList) = [];
-indDoubleList = strfind(jsonStr, '[ ['); jsonStr(indDoubleList) = [];
-indDoubleList = strfind(jsonStr, ']]'); jsonStr(indDoubleList) = [];
+gInfo = opt.gInfo;
+if isfield(gInfo, 'GeneratedBy')
+    gInfo.GeneratedBy = { gInfo.GeneratedBy };
+end
+if isfield(gInfo, 'SourceDatasets')
+    gInfo.SourceDatasets = { gInfo.SourceDatasets };
+end
+try
+    jsonStr = jsonencode(gInfo,'PrettyPrint', true);
+catch
+    jsonStr = jsonwrite(opt.gInfo, struct('indent','  '));
+    indDoubleList = strfind(jsonStr, '[['); jsonStr(indDoubleList) = [];
+    indDoubleList = strfind(jsonStr, '[ ['); jsonStr(indDoubleList) = [];
+    indDoubleList = strfind(jsonStr, ']]'); jsonStr(indDoubleList) = [];
+end
 fid = fopen(datasetDescriptionFile, 'w');
 fprintf(fid, jsonStr);
 fclose(fid);
@@ -856,11 +878,11 @@ if contains(fileIn, '_bids_tmp_') && strcmpi(opt.rmtempfiles, 'on')
 end
 
 % Add desc to fileStr if provided in generatedBy
-if isempty(opt.generatedBy) && isfield(opt.gInfo, 'GeneratedBy') % look at the casing
-    opt.generatedBy = opt.gInfo.GeneratedBy;
+if isempty(opt.GeneratedBy) && isfield(opt.gInfo, 'GeneratedBy') % look at the casing
+    opt.GeneratedBy = opt.gInfo.GeneratedBy;
 end
-if isfield(opt, 'generatedBy') && isfield(opt.generatedBy, 'desc') && ~isempty(opt.generatedBy.desc)
-    fileStr = [fileStr '_desc-' opt.generatedBy.desc];
+if isfield(opt, 'GeneratedBy') && isfield(opt.GeneratedBy, 'desc') && ~isempty(opt.GeneratedBy.desc)
+    fileStr = [fileStr '_desc-' opt.GeneratedBy.desc];
 end
 
 

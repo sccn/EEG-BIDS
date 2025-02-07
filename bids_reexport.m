@@ -7,13 +7,13 @@
 %  ALLEEG       - vector of loaded EEG datasets
 %
 % Optional inputs:
-% 'generatedBy' - [struct] structure indicating how the data was generated.
+% 'GeneratedBy' - [struct] structure indicating how the data was generated.
 %                For example:
-%                generatedBy.Name = 'NEMAR-pipeline';
-%                generatedBy.Description = 'A validated EEG pipeline for preprocessing and decomposition of EEG datasets';
-%                generatedBy.Version = '1.0';
-%                generatedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
-%                generatedBy.desc = 'nemar'; % optional description for file naming
+%                GeneratedBy.Name = 'NEMAR-pipeline';
+%                GeneratedBy.Description = 'A validated EEG pipeline for preprocessing and decomposition of EEG datasets';
+%                GeneratedBy.Version = '1.0';
+%                GeneratedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
+%                GeneratedBy.desc = 'nemar'; % optional description for file naming
 % 
 % 'checkagainstparent' - [string] provide a folder as a string containing 
 %                the original BIDS repository and check that the folder
@@ -65,6 +65,8 @@ end
 
 opt = finputcheck(varargin, { ...
     'generatedBy'     'struct'  {}    struct([]); ...
+    'GeneratedBy'     'struct'  {}    struct([]); ...
+    'SourceDatasets'  'struct'  {}    struct([]); ...
     'checkagainstparent' 'string'  {}    ''; ...
     'checkderivative' 'string'  {}    ''; ...
     'targetdir'       'string'  {}    fullfile(pwd, 'bidsexport'); ...
@@ -74,6 +76,9 @@ if isstr(opt), error(opt); end
 
 if ~isempty(opt.checkderivative)
     opt.checkagainstparent = opt.checkderivative;
+end
+if ~isempty(opt.generatedBy)
+    opt.GeneratedBy = opt.generatedBy;
 end
 
 % Set up derivative directory if needed
@@ -93,11 +98,11 @@ end
 
 % export the data
 % ---------------
-if isempty(opt.generatedBy)
-    opt.generatedBy(1).Name = 'EEGLAB';
-    opt.generatedBy(1).Description = 'EEGLAB BIDS derivative processing pipeline';
-    opt.generatedBy(1).Version = eeg_getversion;
-    opt.generatedBy(1).CodeURL = 'https://github.com/sccn/eeglab';
+if isempty(opt.GeneratedBy)
+    opt.GeneratedBy(1).Name = 'EEGLAB';
+    opt.GeneratedBy(1).Description = 'EEGLAB BIDS derivative processing pipeline';
+    opt.GeneratedBy(1).Version = eeg_getversion;
+    opt.GeneratedBy(1).CodeURL = 'https://github.com/sccn/eeglab';
 end
 
 tasks = unique({ ALLEEG1.task });
@@ -126,15 +131,18 @@ if ~isfield(BIDS.gInfo, 'BIDSVersion')
     BIDS.gInfo.BIDSVersion = '1.8.0';
 end
 if ~isfield(BIDS.gInfo, 'PipelineDescription')
-    BIDS.gInfo.PipelineDescription.Name = opt.generatedBy(1).Name;
-    BIDS.gInfo.PipelineDescription.Version = opt.generatedBy(1).Version;
-    BIDS.gInfo.PipelineDescription.Description = opt.generatedBy(1).Description;
+    BIDS.gInfo.PipelineDescription.Name = opt.GeneratedBy(1).Name;
+    BIDS.gInfo.PipelineDescription.Version = opt.GeneratedBy(1).Version;
+    BIDS.gInfo.PipelineDescription.Description = opt.GeneratedBy(1).Description;
 end
 if ~isfield(BIDS.gInfo, 'GeneratedBy')
-    BIDS.gInfo.GeneratedBy = opt.generatedBy;
+    BIDS.gInfo.GeneratedBy = opt.GeneratedBy;
 end
 
 % Handle source dataset tracking
+if ~isempty(opt.SourceDatasets)
+    BIDS.gInfo.SourceDatasets = opt.SourceDatasets;
+end
 if isfield(BIDS.gInfo, 'DatasetDOI')
     if ~isfield(BIDS.gInfo, 'SourceDatasets')
         BIDS.gInfo.SourceDatasets.DOI = BIDS.gInfo.DatasetDOI;
@@ -244,11 +252,11 @@ if ~isempty(opt.checkagainstparent)
                 end
                 desc = strjoin(changes, '');
                 
-                % Set desc in generatedBy
-                if isfield(opt.generatedBy, 'desc')
-                    desc = [opt.generatedBy.desc desc];
+                % Set desc in GeneratedBy
+                if isfield(opt.GeneratedBy, 'desc')
+                    desc = [opt.GeneratedBy.desc desc];
                 end
-                opt.generatedBy.desc = desc;
+                opt.GeneratedBy.desc = desc;
             end
         end
     catch
@@ -269,10 +277,10 @@ for i = 1:length(required_fields)
     end
 end
 
-if isempty(opt.generatedBy)
+if isempty(opt.GeneratedBy)
     BIDS.gInfo.GeneratedBy = BIDS.gInfo.GeneratedBy;
 else
-    BIDS.gInfo.GeneratedBy = opt.generatedBy;
+    BIDS.gInfo.GeneratedBy = opt.GeneratedBy;
 end
 if isempty(BIDS.pInfoDesc), BIDS.pInfoDesc = struct([]); end
 
