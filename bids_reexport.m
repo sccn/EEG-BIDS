@@ -14,7 +14,18 @@
 %                GeneratedBy.Version = '1.0';
 %                GeneratedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
 %                GeneratedBy.desc = 'nemar'; % optional description for file naming
+%
+% 'SourceDatasets' - [struct] structure indicating the source dataset
+%                For example:
+%                GeneratedBy.URL = 'https://openneuro.org/datasets/ds00xxxx';
+%                GeneratedBy.DOI = 'doi:10.18112/openneuro.ds00xxxx';
 % 
+% 'derivative' - ['on'|'off'] The re-exported dataset may be a derivative
+%                dataset ('on') which is the default. Alternatively, you
+%                could be working on re-issuing a new snapshot for an
+%                existing raw dataset ('off'). This affect the
+%                'DatasetType' and 'SourceDataset' field.
+%
 % 'checkagainstparent' - [string] provide a folder as a string containing 
 %                the original BIDS repository and check that the folder
 %                names are identical. If not, issue an error.
@@ -24,9 +35,9 @@
 %               folder.
 %
 % 'targetdirderiv' - [string] sub-folder for derivative. For example
-%               'derivative/eeglab'. Default is empty unless the target
+%               'derivative/eegbids'. Default is empty unless the target
 %               folder contains a BIDS dataset that is not a derivative
-%               dataset.
+%               dataset. In that case it is set to 'derivative/eegbids'.
 %
 % Author: Arnaud Delorme, 2023
 
@@ -67,6 +78,7 @@ opt = finputcheck(varargin, { ...
     'generatedBy'     'struct'  {}    struct([]); ...
     'GeneratedBy'     'struct'  {}    struct([]); ...
     'SourceDatasets'  'struct'  {}    struct([]); ...
+    'derivative'      'string'  { 'on' 'off' }    'on'; ...
     'checkagainstparent' 'string'  {}    ''; ...
     'checkderivative' 'string'  {}    ''; ...
     'targetdir'       'string'  {}    fullfile(pwd, 'bidsexport'); ...
@@ -113,9 +125,9 @@ else
 end
 
 BIDS = ALLEEG1(1).BIDS;
-
-BIDS.gInfo.DatasetType = 'derivative';
-
+if strcmpi(opt.derivative, 'on')
+    BIDS.gInfo.DatasetType = 'derivative';
+end
 if ~isfield(BIDS.gInfo, 'README')
     BIDS.gInfo.README = '';
 end
@@ -125,7 +137,9 @@ end
 
 % Set up derivative dataset description while preserving existing values
 if ~isfield(BIDS.gInfo, 'Name')
-    BIDS.gInfo.Name = 'EEGLAB derivatives';
+    if strcmpi(opt.derivative, 'on')
+        BIDS.gInfo.Name = 'EEGLAB derivative';
+    end
 end
 if ~isfield(BIDS.gInfo, 'BIDSVersion')
     BIDS.gInfo.BIDSVersion = '1.8.0';
@@ -140,14 +154,16 @@ if ~isfield(BIDS.gInfo, 'GeneratedBy')
 end
 
 % Handle source dataset tracking
-if ~isempty(opt.SourceDatasets)
-    BIDS.gInfo.SourceDatasets = opt.SourceDatasets;
-end
-if isfield(BIDS.gInfo, 'DatasetDOI')
-    if ~isfield(BIDS.gInfo, 'SourceDatasets')
-        BIDS.gInfo.SourceDatasets.DOI = BIDS.gInfo.DatasetDOI;
+if strcmpi(opt.derivative, 'on')
+    if ~isempty(opt.SourceDatasets)
+        BIDS.gInfo.SourceDatasets = opt.SourceDatasets;
     end
-    BIDS.gInfo = rmfield(BIDS.gInfo, 'DatasetDOI');
+    if isfield(BIDS.gInfo, 'DatasetDOI')
+        if ~isfield(BIDS.gInfo, 'SourceDatasets')
+            BIDS.gInfo.SourceDatasets.DOI = BIDS.gInfo.DatasetDOI;
+        end
+        BIDS.gInfo = rmfield(BIDS.gInfo, 'DatasetDOI');
+    end
 end
 
 % Write derivative dataset description
