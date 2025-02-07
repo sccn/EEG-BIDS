@@ -136,4 +136,6 @@ v8.0 - renamed files, separate file for task info, adding BIDS statistic output,
 
 v9.0 - update json import to conform to BIDS key-level inheritance principle. Support iEEG and MEG export. Support exporting multiple tasks. Fix issues with exporting channel locations. BIDS export wizard.
 
+v9.1 - better handling of behavioral data. Fix issue with task name and BIDS dataset with no README file.
+
 v10.0 - adding support for re-exporting datasets. Adding the the "desc" key. Fix some event export issues. 
