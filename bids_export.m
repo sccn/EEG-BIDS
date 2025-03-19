@@ -248,14 +248,13 @@
 %                    as it was overwritten. The solution is to regenerate
 %                    the file, but without touching the other contents of
 %                    the directory. Default is 'off'.
-% 'GeneratedBy' - [struct] structure indicating how the data was generated. NOTE: Adding the fileds below is done in 
-%                bids_reexport.m, only GeneratedBy.desc is implemented here.
+% 'GeneratedBy' - [struct] structure indicating how the data was generated. same as gInfo.GeneratedBy.
 %                For example:
 %                GeneratedBy.Name = 'NEMAR-pipeline';
 %                GeneratedBy.Description = 'A validated EEG pipeline';
 %                GeneratedBy.Version = '0.1';
 %                GeneratedBy.CodeURL = 'https://github.com/sccn/NEMAR-pipeline/blob/main/eeg_nemar_preprocess.m';
-%                GeneratedBy.desc = 'filtered'; % optional description for file naming
+% descriptionTag = 'filtered'; % optional description for the desc- entity
 %
 % Validation:
 %  If the BIDS data created with this function fails to pass the BIDS
@@ -355,7 +354,8 @@ opt = finputcheck(varargin, {
     'ctffunc'      'string'    { 'fileio' 'ctfimport' }    'fileio'; ...
     'importfunc'   ''  {}    '';
     'deleteExportDir' 'string' {'on' 'off'} 'on' ;
-    'writePInfoOnly' 'string' {'on' 'off'} 'off'}, 'bids_export');
+    'writePInfoOnly' 'string' {'on' 'off'} 'off' ;
+    'descriptionTag' 'string' {} ''}, 'bids_export');
 if isstr(opt), error(opt); end
 if ~isempty(opt.taskName)
     fprintf(2, 'Task name input is deprecated and not used, use tInfo.TaskName instead\n');
@@ -877,12 +877,9 @@ if contains(fileIn, '_bids_tmp_') && strcmpi(opt.rmtempfiles, 'on')
     delete(fileIn);
 end
 
-% Add desc to fileStr if provided in generatedBy
-if isempty(opt.GeneratedBy) && isfield(opt.gInfo, 'GeneratedBy') % look at the casing
-    opt.GeneratedBy = opt.gInfo.GeneratedBy;
-end
-if isfield(opt, 'GeneratedBy') && isfield(opt.GeneratedBy, 'desc') && ~isempty(opt.GeneratedBy.desc)
-    fileStr = [fileStr '_desc-' opt.GeneratedBy.desc];
+% Add description tag if any to the files
+if isfield(opt, 'descriptionTag') &&  ~isempty(opt.descriptionTag)
+    fileStr = [fileStr '_desc-' opt.descriptionTag];
 end
 
 
