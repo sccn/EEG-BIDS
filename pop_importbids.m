@@ -145,7 +145,7 @@ if nargin < 1
         if res.bidsruns && ~isempty(res.bidsruns),  options = { options{:} 'runs' str2double(runs(res.bidsrunsstr)) }; end
     end
     if isfield(res, 'bidssubjects')
-        if res.bidsruns && ~isempty(res.bidsruns),  options = { options{:} 'subjects' str2double(res.bidssubjectsstr) }; end
+        if res.bidssubjects && ~isempty(res.bidssubjects),  options = { options{:} 'subjects' str2double(res.bidssubjectsstr) }; end
     end
 else
     options = varargin;
