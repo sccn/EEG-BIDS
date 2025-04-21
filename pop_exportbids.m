@@ -87,6 +87,16 @@ if nargin < 3 && ~ischar(STUDY)
         EEG = pop_participantinfo(EEG, STUDY, 'default');
         EEG = pop_taskinfo(EEG, 'default');
     end
+    if isempty(STUDY.task)
+        uiList = { { 'style' 'text' 'string' 'Task name (no space, dash, underscore, or special chars)' } ...
+                   { 'style' 'edit' 'string' ''} };
+        res = inputgui('title', 'Missing required information', 'uilist', uiList, 'geometry', {[ 1 0.4 ]});
+        if isempty(res), return; end
+        if isempty(res{1})
+            error('A task name is required')
+        end
+        STUDY.task = res{1};
+    end
     if ~isfield(EEG(1).BIDS.tInfo, 'PowerLineFrequency') || isnan(EEG(1).BIDS.tInfo.PowerLineFrequency)
         uiList = { { 'style' 'text' 'string' 'You must specify power line frequency' } ...
                    { 'style' 'popupmenu' 'string' {'50' '60' }} };
@@ -134,8 +144,12 @@ if isfield(EEG(1).BIDS, 'gInfo') && isfield(EEG(1).BIDS.gInfo,'TaskName')
     options = [options 'taskName' {EEG(1).BIDS.gInfo.TaskName}];
     EEG(1).BIDS.gInfo = rmfield(EEG(1).BIDS.gInfo,'TaskName');
 end
-if isfield(STUDY, 'task')
-    options = [options { 'taskName' STUDY.task }];
+if ~isempty(STUDY.task)
+    taskTmp = STUDY.task;
+    taskTmp(taskTmp == '-') = [];
+    taskTmp(taskTmp == '_') = [];
+    taskTmp(taskTmp == ' ') = [];
+    options = [options { 'taskName' taskTmp }];
 end
 
 bidsFieldsFromALLEEG = fieldnames(EEG(1).BIDS); % All EEG should share same BIDS info  -> using EEG(1)
@@ -235,6 +249,4 @@ if nargin < 3
     % Issue: README file and other inserted as plain text
     % The history should have the relevant fields
     % comOut = sprintf('pop_exportbids(STUDY, %s);', vararg2str(options));
-end
-
 end

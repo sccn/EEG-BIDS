@@ -140,4 +140,6 @@ v9.1 - better handling of behavioral data. Fix issue with task name and BIDS dat
 
 v10.0 - adding support for re-exporting datasets. Adding the the "desc" key. Fix some event export issues.
 
-v10.1 - fix export wizard. 
+v10.1 - fix export wizard.
+
+v10.2 - fix missing task when exporting study. 
