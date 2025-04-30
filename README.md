@@ -12,9 +12,9 @@ Refer to the [wiki documentation](https://github.com/sccn/EEG-BIDS/wiki) or the 
 
 [BIDS-MATLAB](https://bids-matlab.readthedocs.io/en/latest/) is a project to import BIDS data. BIDS-MATLAB maps the BIDS directory architectures to MATLAB structures but **does not import or convert data like EEG-BIDS**. In theory, EEG-BIDS could use BIDS-MATLAB to get the BIDS directory architectures into MATLAB and then convert it to an EEGLAB STUDY. However, in 2021, BIDS-MATLAB could not yet import all the relevant EEG, MEG, and iEEG files. 
 
-[EEG2BIDS](https://github.com/aces/EEG2BIDS) is a Python-based executable that formatted a collection of EDF files in BIDS format. EEG2BIDS requires users to create JSON files for meta-data. It is a tool designed to archive data as part of a lab protocol where JSON files have been prepared in advance and are suited for technicians organizing data. EEG-BIDS export capabilities are more suited for researchers managing their data and are agnostic regarding the original data format.
+[EEG2BIDS](https://github.com/aces/EEG2BIDS) is a Python-based executable that formats a collection of EDF files in BIDS format. EEG2BIDS requires users to create JSON files for metadata. It is a tool designed to archive data as part of a lab protocol where JSON files have been prepared in advance and are suited for technicians organizing data. EEG-BIDS export capabilities are more suited for researchers managing their data and are agnostic regarding the original data format.
 
-[ezBIDS](https://brainlife.io/ezbids/) is a data export tool for MRI and fMRI data. It does not allow to export EEG data to our knowledge.
+[ezBIDS](https://brainlife.io/ezbids/) is a data export tool for MRI and fMRI data. It does not allow exporting EEG data to our knowledge.
 
 [data2bids.m](https://www.fieldtriptoolbox.org/example/bids/) is a Fieldtrip function to export BIDS data. This includes EEG and maybe fMRI. This function can only be used from the command line.
 
