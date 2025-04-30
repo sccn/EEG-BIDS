@@ -22,7 +22,7 @@ Refer to the [wiki documentation](https://github.com/sccn/EEG-BIDS/wiki) or the 
 
 # Standalone version
 
-A standalone version of the plugin is available when [downloading EEGLAB](https://sccn.ucsd.edu/eeglab/download.php). The standalone plugin version is distributed with EEGLAB because it uses EEGLAB resources. After download EEGLAB, use the executable named EEGBIDS (Mac) or EEGBIDS.bat (Windows). This version of EEG-BIDS does not require a paid MATLAB license.
+A standalone version of the plugin is available when [downloading EEGLAB](https://sccn.ucsd.edu/eeglab/download.php). The standalone version of EEG-BIDS is currently bundled with the compiled version of EEGLAB for user convenience; if user demand increases significantly, a separate distribution package will be made available. After downloading EEGLAB, use the EEGBIDS (Mac) or EEGBIDS.bat (Windows) executable. This version of EEG-BIDS does not require a paid MATLAB license.
 
 # EEG-BIDS export capabilities
 
