@@ -69,6 +69,7 @@ else
         bids.eventInfo = {'onset' 'latency'; 'duration' 'duration'}; % order in events.tsv: onset duration
         if ~isempty(indSample)
             events(end).sample = eventData{iEvent,indSample} + 1;
+            events(end).latency = eventData{iEvent,indSample} + 1;
             bids.eventInfo(end+1,:) = {'sample' 'sample'};
         end
         for iField = 1:length(eventData(1,:))
