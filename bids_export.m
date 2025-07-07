@@ -99,7 +99,7 @@
 %                info.ReferencesAndLinks = { 'Pubmed 122032020' };
 %                info.Name = 'This is a custom task';
 %                info.License = 'Creative commons';
-%                info.GeneratedBy.Name = {'bids-matlab-tools'};
+%                info.GeneratedBy.Name = {'EEG-BIDS'};
 %                info.SourceDatasets.DOI = 'xxx';
 %
 %  'tInfo'     - [struct] task information fields. See BIDS specifications.
@@ -413,7 +413,7 @@ gInfoFields = { 'ReferencesAndLinks' 'required' 'cell' { 'n/a' };
     'HowToAcknowledge'   'optional' 'char' '';
     'SourceDatasets'     'optional' 'struct' struct([]);
     'Funding'            'optional' 'cell' { 'n/a' };
-    'GeneratedBy'        'required' 'struct' struct('Name', 'bids-matlab-tools', 'Version', bids_matlab_tools_ver);
+    'GeneratedBy'        'required' 'struct' struct('Name', 'EEG-BIDS', 'Version', bids_matlab_tools_ver);
     'DatasetDOI'         'optional' 'char' { 'n/a' }};
 
 if ~isfield(opt.gInfo, 'Name'), opt.gInfo(1).Name = opt.Name; end
