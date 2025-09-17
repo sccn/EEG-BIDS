@@ -68,9 +68,13 @@ else
         events(end).duration   = eventData{iEvent,2}*EEG.srate;   % convert to samples
         bids.eventInfo = {'onset' 'latency'; 'duration' 'duration'}; % order in events.tsv: onset duration
         if ~isempty(indSample)
-            events(end).sample = eventData{iEvent,indSample} + 1;
-            events(end).latency = eventData{iEvent,indSample} + 1;
-            bids.eventInfo(end+1,:) = {'sample' 'sample'};
+            if ~isnan(eventData{iEvent,indSample})
+                events(end).sample = eventData{iEvent,indSample} + 1;
+                events(end).latency = eventData{iEvent,indSample} + 1;
+                if isempty(bids.eventInfo) || ~strcmpi(bids.eventInfo{end,1}, 'sample')
+                    bids.eventInfo(end+1,:) = {'sample' 'sample'};
+                end
+            end
         end
         for iField = 1:length(eventData(1,:))
             if ~any(strcmpi(eventData{1,iField}, {'onset', 'duration', 'sample', g.eventtype}))
