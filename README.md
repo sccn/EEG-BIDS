@@ -142,4 +142,6 @@ v10.0 - adding support for re-exporting datasets. Adding the the "desc" key. Fix
 
 v10.1 - fix export wizard.
 
-v10.2 - fix missing task when exporting study, fix bids subject (bug 860), better handling of descriptive tags. 
+v10.2 - fix missing task when exporting study, fix bids subject (bug 860), better handling of descriptive tags.
+
+v10.3 - fix importing samples when both samples and latency are present. 
