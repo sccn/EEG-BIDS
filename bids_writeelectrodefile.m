@@ -52,7 +52,7 @@ end
 if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && any(cellfun(@(x)~isempty(x), { EEG.chanlocs.X }))
     fid = fopen( [ fileOut '_electrodes.tsv' ], 'w');
     fprintf(fid, 'name\tx\ty\tz\n');
-    
+
     for iChan = 1:EEG.nbchan
         if isempty(EEG.chanlocs(iChan).X) || isnan(EEG.chanlocs(iChan).X) || contains(fileOut, 'ieeg')
             fprintf(fid, '%s\tn/a\tn/a\tn/a\n', EEG.chanlocs(iChan).labels );
@@ -61,22 +61,40 @@ if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(
         end
     end
     fclose(fid);
-    
+
     % Write coordinate file information (coordsystem.json)
-    if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EEGCoordinateUnits')
-        coordsystemStruct.EEGCoordinateUnits = EEG.chaninfo.BIDS.EEGCoordinateUnits;
+    if contains(fileOut, 'emg')
+        if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateUnits')
+            coordsystemStruct.EMGCoordinateUnits = EEG.chaninfo.BIDS.EMGCoordinateUnits;
+        else
+            coordsystemStruct.EMGCoordinateUnits = 'mm';
+        end
+        if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateSystem')
+            coordsystemStruct.EMGCoordinateSystem = EEG.chaninfo.BIDS.EMGCoordinateSystem;
+        else
+            coordsystemStruct.EMGCoordinateSystem = 'Other';
+        end
+        if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateSystemDescription')
+            coordsystemStruct.EMGCoordinateSystemDescription = EEG.chaninfo.BIDS.EMGCoordinateSystemDescription;
+        else
+            coordsystemStruct.EMGCoordinateSystemDescription = 'Electrode locations in mm';
+        end
     else
-        coordsystemStruct.EEGCoordinateUnits = 'mm';
-    end
-    if isfield(EEG.chaninfo, 'BIDS') &&isfield(EEG.chaninfo.BIDS, 'EEGCoordinateSystem')
-        coordsystemStruct.EEGCoordinateSystem = EEG.chaninfo.BIDS.EEGCoordinateSystem;
-    else
-        coordsystemStruct.EEGCoordinateSystem = 'CTF';
-    end
-    if isfield(EEG.chaninfo, 'BIDS') &&isfield(EEG.chaninfo.BIDS, 'EEGCoordinateSystemDescription')
-        coordsystemStruct.EEGCoordinateSystemDescription = EEG.chaninfo.BIDS.EEGCoordinateSystemDescription;
-    else
-        coordsystemStruct.EEGCoordinateSystemDescription = 'EEGLAB';
+        if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EEGCoordinateUnits')
+            coordsystemStruct.EEGCoordinateUnits = EEG.chaninfo.BIDS.EEGCoordinateUnits;
+        else
+            coordsystemStruct.EEGCoordinateUnits = 'mm';
+        end
+        if isfield(EEG.chaninfo, 'BIDS') &&isfield(EEG.chaninfo.BIDS, 'EEGCoordinateSystem')
+            coordsystemStruct.EEGCoordinateSystem = EEG.chaninfo.BIDS.EEGCoordinateSystem;
+        else
+            coordsystemStruct.EEGCoordinateSystem = 'CTF';
+        end
+        if isfield(EEG.chaninfo, 'BIDS') &&isfield(EEG.chaninfo.BIDS, 'EEGCoordinateSystemDescription')
+            coordsystemStruct.EEGCoordinateSystemDescription = EEG.chaninfo.BIDS.EEGCoordinateSystemDescription;
+        else
+            coordsystemStruct.EEGCoordinateSystemDescription = 'EEGLAB';
+        end
     end
     jsonwrite( [ fileOut '_coordsystem.json' ], coordsystemStruct);
 end
