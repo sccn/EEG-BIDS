@@ -25,18 +25,25 @@ if isempty(EEG.chanlocs)
     if contains(fileOut, 'ieeg')
         fprintf(fid, 'name\ttype\tunits\tlow_cutoff\thigh_cutoff\n');
         for iChan = 1:EEG.nbchan
-            fprintf(fid, 'E%d\tiEEG\tmicroV\tn/a\tn/a\n', iChan); 
+            fprintf(fid, 'E%d\tiEEG\tmicroV\tn/a\tn/a\n', iChan);
+        end
+    elseif contains(fileOut, 'emg')
+        fprintf(fid, 'name\ttype\tunits\ttarget_muscle\n');
+        for iChan = 1:EEG.nbchan
+            fprintf(fid, 'E%d\tEMG\tV\tn/a\n', iChan);
         end
     else
         fprintf(fid, 'name\ttype\tunits\n');
         for iChan = 1:EEG.nbchan
-            fprintf(fid, 'E%d\tEEG\tmicroV\n', iChan); 
+            fprintf(fid, 'E%d\tEEG\tmicroV\n', iChan);
         end
     end
     channelsCount = struct([]);
 else
     if contains(fileOut, 'ieeg')
         fprintf(fid, 'name\ttype\tunits\tlow_cutoff\thigh_cutoff\n');
+    elseif contains(fileOut, 'emg')
+        fprintf(fid, 'name\ttype\tunits\ttarget_muscle\n');
     else
         fprintf(fid, 'name\ttype\tunits\n');
     end
@@ -64,6 +71,13 @@ else
         %Write
         if contains(fileOut, 'ieeg')
             fprintf(fid, '%s\t%s\t%s\tn/a\tn/a\n', EEG.chanlocs(iChan).labels, type, unit);
+        elseif contains(fileOut, 'emg')
+            if isfield(EEG.chanlocs(iChan), 'target_muscle') && ~isempty(EEG.chanlocs(iChan).target_muscle)
+                target_muscle = EEG.chanlocs(iChan).target_muscle;
+            else
+                target_muscle = 'n/a';
+            end
+            fprintf(fid, '%s\t%s\t%s\t%s\n', EEG.chanlocs(iChan).labels, type, unit, target_muscle);
         else
             fprintf(fid, '%s\t%s\t%s\n', EEG.chanlocs(iChan).labels, type, unit);
         end

@@ -347,7 +347,7 @@ opt = finputcheck(varargin, {
     'rmtempfiles'  'string'  {'on' 'off'}    'on';
     'exportformat' 'string'  {'same' 'eeglab' 'edf' 'bdf'}    'eeglab';
     'individualEventsJson' 'string'  {'on' 'off'}    'off';
-    'modality'     'string'  {'ieeg' 'meg' 'eeg' 'auto'}       'auto';
+    'modality'     'string'  {'ieeg' 'meg' 'eeg' 'emg' 'auto'}       'auto';
     'README'       'string'  {}    '';
     'CHANGES'      'string'  {}    '' ;
     'copydata'     'integer' {}    [0 1]; % legacy, does nothing now
@@ -369,6 +369,13 @@ if ~isempty(opt.generatedBy)
 end
 if ~isempty(opt.sourceDatasets)
     opt.SourceDatasets = opt.sourceDatasets;
+end
+
+if strcmpi(opt.modality, 'emg')
+    if strcmpi(opt.exportformat, 'eeglab')
+        opt.exportformat = 'bdf';
+        fprintf('EMG data detected: changing export format to bdf\n');
+    end
 end
 
 % deleting folder
@@ -986,6 +993,9 @@ elseif strcmpi(opt.modality, 'ieeg')
 elseif strcmpi(opt.modality, 'meg')
     bids_writemegtinfofile(EEG, tInfo, notes, fileOutRed);
     EEG.etc.datatype = 'meg';
+elseif strcmpi(opt.modality, 'emg')
+    bids_writeemgtinfofile(EEG, tInfo, notes, fileOutRed);
+    EEG.etc.datatype = 'emg';
 end
 
 % write channel information

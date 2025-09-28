@@ -17,7 +17,7 @@
 %   checks if data has irregular timestamps and calculates the average
 %   frequency for potential resampling.
 %
-% Authors: Arnaud Delorme, 2025
+% Authors: Seyed Yahya Shirazi, 2025
 
 function [isRegular, avgFreq] = bids_check_regular_sampling(EEG, tolerance)
 
