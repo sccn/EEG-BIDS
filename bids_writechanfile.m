@@ -21,13 +21,17 @@
 function bids_writechanfile(EEG, fileOut)
 
 fid = fopen( [ fileOut '_channels.tsv' ], 'w');
+
+isEMG = isfield(EEG, 'etc') && isfield(EEG.etc, 'datatype') && strcmpi(EEG.etc.datatype, 'emg');
+isiEEG = isfield(EEG, 'etc') && isfield(EEG.etc, 'datatype') && strcmpi(EEG.etc.datatype, 'ieeg');
+
 if isempty(EEG.chanlocs)
-    if contains(fileOut, 'ieeg')
+    if isiEEG
         fprintf(fid, 'name\ttype\tunits\tlow_cutoff\thigh_cutoff\n');
         for iChan = 1:EEG.nbchan
             fprintf(fid, 'E%d\tiEEG\tmicroV\tn/a\tn/a\n', iChan);
         end
-    elseif contains(fileOut, 'emg')
+    elseif isEMG
         fprintf(fid, 'name\ttype\tunits\ttarget_muscle\n');
         for iChan = 1:EEG.nbchan
             fprintf(fid, 'E%d\tEMG\tV\tn/a\n', iChan);
@@ -40,9 +44,9 @@ if isempty(EEG.chanlocs)
     end
     channelsCount = struct([]);
 else
-    if contains(fileOut, 'ieeg')
+    if isiEEG
         fprintf(fid, 'name\ttype\tunits\tlow_cutoff\thigh_cutoff\n');
-    elseif contains(fileOut, 'emg')
+    elseif isEMG
         fprintf(fid, 'name\ttype\tunits\ttarget_muscle\n');
     else
         fprintf(fid, 'name\ttype\tunits\n');
@@ -69,9 +73,9 @@ else
         end
 
         %Write
-        if contains(fileOut, 'ieeg')
+        if isiEEG
             fprintf(fid, '%s\t%s\t%s\tn/a\tn/a\n', EEG.chanlocs(iChan).labels, type, unit);
-        elseif contains(fileOut, 'emg')
+        elseif isEMG
             if isfield(EEG.chanlocs(iChan), 'target_muscle') && ~isempty(EEG.chanlocs(iChan).target_muscle)
                 target_muscle = EEG.chanlocs(iChan).target_muscle;
             else

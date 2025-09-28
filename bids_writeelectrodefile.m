@@ -63,7 +63,9 @@ if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(
     fclose(fid);
 
     % Write coordinate file information (coordsystem.json)
-    if contains(fileOut, 'emg')
+    isEMG = isfield(EEG, 'etc') && isfield(EEG.etc, 'datatype') && strcmpi(EEG.etc.datatype, 'emg');
+
+    if isEMG
         if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateUnits')
             coordsystemStruct.EMGCoordinateUnits = EEG.chaninfo.BIDS.EMGCoordinateUnits;
         else

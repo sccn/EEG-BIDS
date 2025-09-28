@@ -981,21 +981,30 @@ if ischar(opt.chanlookup) && ~isempty(opt.chanlookup)
     EEG=pop_chanedit(EEG, 'lookup', opt.chanlookup);
 end
 
+% Set datatype before writing channel/electrode files
+if strcmpi(opt.modality, 'eeg')
+    EEG.etc.datatype = 'eeg';
+elseif strcmpi(opt.modality, 'ieeg')
+    EEG.etc.datatype = 'ieeg';
+elseif strcmpi(opt.modality, 'meg')
+    EEG.etc.datatype = 'meg';
+elseif strcmpi(opt.modality, 'emg')
+    EEG.etc.datatype = 'emg';
+end
+
 % Write electrode file information (electrodes.tsv and coordsystem.json)
 bids_writechanfile(EEG, fileOutRed);
 bids_writeelectrodefile(EEG, fileOutRed, 'export', opt.elecexport);
+
+% Write modality-specific info files
 if strcmpi(opt.modality, 'eeg')
     bids_writetinfofile(EEG, tInfo, notes, fileOutRed);
-    EEG.etc.datatype = 'eeg';
 elseif strcmpi(opt.modality, 'ieeg')
     bids_writeieegtinfofile(EEG, tInfo, notes, fileOutRed);
-    EEG.etc.datatype = 'ieeg';
 elseif strcmpi(opt.modality, 'meg')
     bids_writemegtinfofile(EEG, tInfo, notes, fileOutRed);
-    EEG.etc.datatype = 'meg';
 elseif strcmpi(opt.modality, 'emg')
     bids_writeemgtinfofile(EEG, tInfo, notes, fileOutRed);
-    EEG.etc.datatype = 'emg';
 end
 
 % write channel information
