@@ -10,8 +10,6 @@
 %  fileOut   - [string] filepath of the desired output location with file basename
 %                e.g. ~/BIDS_EXPORT/sub-01/ses-01/emg/sub-01_ses-01_task-holdWeight
 %
-% Copyright (C) 2025, Seyed Yahya Shirazi, SCCN, INC, UCSD
-%
 % Authors: Seyed Yahya Shirazi, 2025
 
 function tInfo = bids_writeemgtinfofile(EEG, tInfo, notes, fileOutRed)
