@@ -892,7 +892,7 @@ end
 fileOut = [fileBase '_' opt.modality ext];
 
 % select data subset
-EEG = eeg_selectsegment(EEG, 'eventtype', eventtype, 'eventindex', eventindex, 'timeoffset', timeoffset );        
+EEG = eeg_selectsegment(EEG, 'eventtype', eventtype, 'eventindex', eventindex, 'timeoffset', timeoffset );
 
 if ~isequal(opt.exportformat, 'same') || isequal(ext, '.set')
     % export data if necessary
@@ -900,6 +900,14 @@ if ~isequal(opt.exportformat, 'same') || isequal(ext, '.set')
     if isequal(opt.exportformat, 'eeglab')
         pop_saveset(EEG, 'filename', [ fileOutNoExt '.set' ], 'filepath', filePathTmp);
     else
+        if strcmpi(opt.exportformat, 'edf') || strcmpi(opt.exportformat, 'bdf')
+            [isRegular, avgFreq] = bids_check_regular_sampling(EEG);
+            if ~isRegular
+                targetFreq = round(avgFreq);
+                fprintf('Resampling data from irregular to regular %.0f Hz for EDF/BDF export\n', targetFreq);
+                EEG = pop_resample(EEG, targetFreq);
+            end
+        end
         pop_writeeeg(EEG, fullfile(filePathTmp, [ fileOutNoExt '.' opt.exportformat]), 'TYPE',upper(opt.exportformat));
     end
 else
