@@ -502,6 +502,8 @@ for iSubject = opt.subjects
                             else
                                 modality = 'meg';
                             end
+                        elseif contains(eegFileRaw, '_emg.')
+                            modality = 'emg';
                         else
                             modality = 'eeg';
                         end
