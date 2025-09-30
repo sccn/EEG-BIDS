@@ -74,7 +74,7 @@ opt = finputcheck(varargin, {
     'ctffunc'      'string'    { 'fileio' 'ctfimport' }    'fileio'; ...
     'importfunc'   ''  {}    '';
     'importfunc'   ''  {}    '';
-    'modality'     'string'  {'ieeg' 'meg' 'eeg' 'auto'}       'auto';
+    'modality'     'string'  {'ieeg' 'meg' 'eeg' 'emg' 'auto'}       'auto';
     'noevents'     'string'  {'on' 'off'}    'off' }, 'eeg_import');
 if isstr(opt), error(opt); end
 
