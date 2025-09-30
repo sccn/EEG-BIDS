@@ -57,11 +57,22 @@ for iCoord = 1:length(coordfile)
     coordData = bids_importjson(coordfile{iCoord}, '_coordsystem.json');
 
     % Parse space entity from filename
+    % Handles both subject-level and root-level (inheritance) patterns:
+    %   - Subject: sub-01_space-hand_coordsystem.json
+    %   - Root: space-leftForearm_coordsystem.json
     [~, filename, ~] = fileparts(coordfile{iCoord});
     spaceLabel = '';
+
+    % Try with prefix underscore first (subject-level)
     spaceMatch = regexp(filename, '_space-([a-zA-Z0-9]+)_', 'tokens');
     if ~isempty(spaceMatch)
         spaceLabel = spaceMatch{1}{1};
+    else
+        % Try without prefix underscore (root-level, BIDS inheritance)
+        spaceMatch = regexp(filename, '^space-([a-zA-Z0-9]+)_', 'tokens');
+        if ~isempty(spaceMatch)
+            spaceLabel = spaceMatch{1}{1};
+        end
     end
 
     % Add space label to coordData
