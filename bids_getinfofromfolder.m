@@ -27,11 +27,12 @@
 % along with this program; if not, to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-function [tasklist,sessions,runs] = bids_getinfofromfolder(bidsFolder)
+function [tasklist,sessions,runs,recordings] = bids_getinfofromfolder(bidsFolder)
 
 tasklist = {};
 sessions = {};
 runs     = {};
+recordings = {};
 files = dir(bidsFolder);
 [files(:).folder] = deal(bidsFolder);
 %fprintf('Scanning %s\n', bidsFolder);
@@ -41,10 +42,11 @@ for iFile = 1:length(files)
             sessions = union(sessions, { files(iFile).name });
         end
 
-        [tasklistTmp,sessionTmp,runsTmp] = bids_getinfofromfolder(fullfile(files(iFile).folder, fullfile(files(iFile).name)));
+        [tasklistTmp,sessionTmp,runsTmp,recordingsTmp] = bids_getinfofromfolder(fullfile(files(iFile).folder, fullfile(files(iFile).name)));
         tasklist = union(tasklist, tasklistTmp);
         sessions = union(sessions, sessionTmp);
         runs     = union(runs    , runsTmp);
+        recordings = union(recordings, recordingsTmp);
      else
         if (~isempty(strfind(files(iFile).name, 'eeg')) || ~isempty(strfind(files(iFile).name, 'meg'))) && ~isempty(strfind(files(iFile).name, '_task'))
             pos = strfind(files(iFile).name, '_task');
@@ -53,12 +55,29 @@ for iFile = 1:length(files)
             newTask = tmpStr(1:underS(1)-1);
             tasklist = union( tasklist, { newTask });
         end
-        if (~isempty(strfind(files(iFile).name, 'eeg')) || ~isempty(strfind(files(iFile).name, 'meg')))  && ~isempty(strfind(files(iFile).name, '_run'))
+        if (~isempty(strfind(files(iFile).name, 'eeg')) || ~isempty(strfind(files(iFile).name, 'meg')) || ~isempty(strfind(files(iFile).name, 'emg')))  && ~isempty(strfind(files(iFile).name, '_run'))
             pos = strfind(files(iFile).name, '_run');
             tmpStr = files(iFile).name(pos+5:end);
             underS = find(tmpStr == '_');
             newRun = tmpStr(1:underS(1)-1);
             runs = union( runs, { newRun } );
+        end
+        if (~isempty(strfind(files(iFile).name, 'eeg')) || ~isempty(strfind(files(iFile).name, 'meg')) || ~isempty(strfind(files(iFile).name, 'emg')) || ~isempty(strfind(files(iFile).name, 'ieeg'))) && ~isempty(strfind(files(iFile).name, '_recording-'))
+            pos = strfind(files(iFile).name, '_recording-');
+            tmpStr = files(iFile).name(pos+11:end);
+            underS = find(tmpStr == '_');
+            if ~isempty(underS)
+                newRecording = tmpStr(1:underS(1)-1);
+            else
+                % recording is last entity before extension
+                dotS = find(tmpStr == '.');
+                if ~isempty(dotS)
+                    newRecording = tmpStr(1:dotS(1)-1);
+                else
+                    newRecording = tmpStr;
+                end
+            end
+            recordings = union( recordings, { newRecording } );
         end
     end
 end
