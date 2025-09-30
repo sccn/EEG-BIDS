@@ -241,7 +241,7 @@ if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(
             else
                 filename = sprintf('%s_coordsystem.json', fileOut);
             end
-            jsonwrite(filename, coordStruct);
+            jsonwrite(filename, coordStruct, struct('indent','  '));
         end
     else
         % Single coordinate system (backward compatibility)
@@ -280,7 +280,7 @@ if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(
                 coordsystemStruct.EEGCoordinateSystemDescription = 'EEGLAB';
             end
         end
-        jsonwrite( [ fileOut '_coordsystem.json' ], coordsystemStruct);
+        jsonwrite( [ fileOut '_coordsystem.json' ], coordsystemStruct, struct('indent','  '));
     end
 end
 
