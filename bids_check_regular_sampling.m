@@ -27,7 +27,7 @@ if nargin < 1
 end
 
 if nargin < 2
-    tolerance = 0.0001;
+    tolerance = 0.15;  % 15% tolerance - resampling for <15% deviation may cause issues
 end
 
 if isempty(EEG.data)
@@ -53,7 +53,14 @@ if isfield(EEG, 'times') && length(EEG.times) > 1
     maxDeviation = max(abs(intervals - avgInterval)) / avgInterval;
 
     isRegular = maxDeviation < tolerance;
-    avgFreq = 1000 / avgInterval;
+    % Check if times are in seconds (continuous) or milliseconds (epoched)
+    if EEG.trials == 1 && avgInterval < 1
+        % Continuous data: times in seconds
+        avgFreq = 1 / avgInterval;
+    else
+        % Epoched data: times in milliseconds
+        avgFreq = 1000 / avgInterval;
+    end
 else
     isRegular = true;
     avgFreq = EEG.srate;

@@ -914,14 +914,10 @@ if ~isequal(opt.exportformat, 'same') || isequal(ext, '.set')
     if isequal(opt.exportformat, 'eeglab')
         pop_saveset(EEG, 'filename', [ fileOutNoExt '.set' ], 'filepath', filePathTmp);
     else
-        if strcmpi(opt.exportformat, 'edf') || strcmpi(opt.exportformat, 'bdf')
-            [isRegular, avgFreq] = bids_check_regular_sampling(EEG);
-            if ~isRegular
-                targetFreq = round(avgFreq);
-                fprintf('Resampling data from irregular to regular %.0f Hz for EDF/BDF export\n', targetFreq);
-                EEG = pop_resample(EEG, targetFreq);
-            end
-        end
+        % Note: EDF/BDF formats assume regular sampling and store only the sampling rate.
+        % Irregular timestamps in EEG.times are not preserved in EDF/BDF output.
+        % Event timing has already been mapped to sample indices during import.
+
         % For EMG (and other modalities), save without events in EDF
         % Events are saved separately in events.tsv
         if strcmpi(opt.modality, 'emg') && (strcmpi(opt.exportformat, 'edf') || strcmpi(opt.exportformat, 'bdf'))
