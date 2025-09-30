@@ -5,17 +5,19 @@
 %
 % Inputs:
 %  'EEG'        - [struct] the EEG structure to which event information will be imported
-%  coordfile    - [string] path to the coordsystem.json file. 
-%                 e.g. ~/BIDS_EXPORT/sub-01/ses-01/eeg/sub-01_ses-01_task-GoNogo_coordsystem.json
+%  coordfile    - [string or cell array] path(s) to coordsystem.json file(s)
+%                 Single: ~/BIDS/sub-01/emg/sub-01_coordsystem.json
+%                 Multiple: {~/BIDS/sub-01/emg/sub-01_space-hand_coordsystem.json, ...}
 %
 % Optional inputs:
 %  'bids'          - [struct] structure that saves imported BIDS information. Default is []
 %
 % Outputs:
-%   EEG     - [struct] the EEG structure with event info imported
-%   bids    - [struct] structure that saves BIDS information with event information
+%   EEG     - [struct] the EEG structure with coordinate info imported
+%   bids    - [struct] structure that saves BIDS information with coordinate information
 %
 % Authors: Arnaud Delorme, 2022
+%          Yahya Alwabari, 2025 (multiple coordinate systems support)
 
 function [EEG, bids] = bids_importcoordsystemfile(EEG, coordfile, varargin)
 
@@ -28,68 +30,118 @@ g = finputcheck(varargin,  {'bids' 'struct' [] struct([]) }, 'eeg_importcoordsys
 if isstr(g), error(g); end
 
 bids = g.bids;
-                        
-% coordinate information
-bids(1).coordsystem = bids_importjson(coordfile, '_coordsystem.json'); %bids_loadfile( coordfile, '');
+
+% Handle empty coordfile
+if isempty(coordfile)
+    return;
+end
+
+% Convert single file to cell array for uniform processing
+if ischar(coordfile)
+    coordfile = {coordfile};
+end
+
+% Initialize coordsystems storage
 if ~isfield(EEG.chaninfo, 'nodatchans')
     EEG.chaninfo.nodatchans = [];
 end
-EEG.chaninfo.BIDS = bids(1).coordsystem;
 
-% import anatomical landmark
-% --------------------------
-if isfield(bids.coordsystem, 'AnatomicalLandmarkCoordinates') && ~isempty(bids.coordsystem.AnatomicalLandmarkCoordinates)
-    factor = checkunit(EEG.chaninfo, 'AnatomicalLandmarkCoordinateUnits');
-    fieldNames = fieldnames(bids.coordsystem.AnatomicalLandmarkCoordinates);
-    for iField = 1:length(fieldNames)
-        EEG.chaninfo.nodatchans(end+1).labels = fieldNames{iField};
-        EEG.chaninfo.nodatchans(end).type   = 'FID';
-        EEG.chaninfo.nodatchans(end).X = bids.coordsystem.AnatomicalLandmarkCoordinates.(fieldNames{iField})(1)*factor;
-        EEG.chaninfo.nodatchans(end).Y = bids.coordsystem.AnatomicalLandmarkCoordinates.(fieldNames{iField})(2)*factor;
-        EEG.chaninfo.nodatchans(end).Z = bids.coordsystem.AnatomicalLandmarkCoordinates.(fieldNames{iField})(3)*factor;
+% Process all coordsystem files
+coordsystems = {};
+for iCoord = 1:length(coordfile)
+    if isempty(coordfile{iCoord})
+        continue;
     end
-    EEG.chaninfo.nodatchans = convertlocs(EEG.chaninfo.nodatchans);
-end
 
-% import head position
-% --------------------
-if isfield(bids.coordsystem, 'DigitizedHeadPoints') && ~isempty(bids.coordsystem.DigitizedHeadPoints)
-    factor = checkunit(EEG.chaninfo, 'DigitizedHeadPointsCoordinateUnits');
-    try
-        headpos = readlocs(bids.coordsystem.DigitizedHeadPoints, 'filetype', 'sfp');
-        for iPoint = 1:length(headpos)
-            EEG.chaninfo.nodatchans(end+1).labels = headpos{iField};
-            EEG.chaninfo.nodatchans(end).type   = 'HeadPoint';
-            EEG.chaninfo.nodatchans(end).X = headpos(iPoint).X*factor;
-            EEG.chaninfo.nodatchans(end).Y = headpos(iPoint).Y*factor;
-            EEG.chaninfo.nodatchans(end).Z = headpos(iPoint).Z*factor;
+    % Load coordsystem JSON
+    coordData = bids_importjson(coordfile{iCoord}, '_coordsystem.json');
+
+    % Parse space entity from filename
+    [~, filename, ~] = fileparts(coordfile{iCoord});
+    spaceLabel = '';
+    spaceMatch = regexp(filename, '_space-([a-zA-Z0-9]+)_', 'tokens');
+    if ~isempty(spaceMatch)
+        spaceLabel = spaceMatch{1}{1};
+    end
+
+    % Add space label to coordData
+    coordData.space = spaceLabel;
+
+    % Store in coordsystems cell array
+    coordsystems{end+1} = coordData;
+
+    % Import anatomical landmarks (only for first coordsystem to avoid duplicates)
+    if iCoord == 1 && isfield(coordData, 'AnatomicalLandmarkCoordinates') && ~isempty(coordData.AnatomicalLandmarkCoordinates)
+        factor = checkunit(EEG.chaninfo, coordData, 'AnatomicalLandmarkCoordinateUnits');
+        fieldNames = fieldnames(coordData.AnatomicalLandmarkCoordinates);
+        for iField = 1:length(fieldNames)
+            EEG.chaninfo.nodatchans(end+1).labels = fieldNames{iField};
+            EEG.chaninfo.nodatchans(end).type   = 'FID';
+            EEG.chaninfo.nodatchans(end).X = coordData.AnatomicalLandmarkCoordinates.(fieldNames{iField})(1)*factor;
+            EEG.chaninfo.nodatchans(end).Y = coordData.AnatomicalLandmarkCoordinates.(fieldNames{iField})(2)*factor;
+            EEG.chaninfo.nodatchans(end).Z = coordData.AnatomicalLandmarkCoordinates.(fieldNames{iField})(3)*factor;
         end
         EEG.chaninfo.nodatchans = convertlocs(EEG.chaninfo.nodatchans);
-    catch 
-        if ischar(bids.coordsystem.DigitizedHeadPoints)
-           fprintf('Could not read head points file %s\n', bids.coordsystem.DigitizedHeadPoints);
+    end
+
+    % Import head position (only for first coordsystem)
+    if iCoord == 1 && isfield(coordData, 'DigitizedHeadPoints') && ~isempty(coordData.DigitizedHeadPoints)
+        factor = checkunit(EEG.chaninfo, coordData, 'DigitizedHeadPointsCoordinateUnits');
+        try
+            headpos = readlocs(coordData.DigitizedHeadPoints, 'filetype', 'sfp');
+            for iPoint = 1:length(headpos)
+                EEG.chaninfo.nodatchans(end+1).labels = headpos(iPoint).labels;
+                EEG.chaninfo.nodatchans(end).type   = 'HeadPoint';
+                EEG.chaninfo.nodatchans(end).X = headpos(iPoint).X*factor;
+                EEG.chaninfo.nodatchans(end).Y = headpos(iPoint).Y*factor;
+                EEG.chaninfo.nodatchans(end).Z = headpos(iPoint).Z*factor;
+            end
+            EEG.chaninfo.nodatchans = convertlocs(EEG.chaninfo.nodatchans);
+        catch
+            if ischar(coordData.DigitizedHeadPoints)
+               fprintf('Could not read head points file %s\n', coordData.DigitizedHeadPoints);
+            end
         end
+    end
+end
+
+% Store coordsystems in EEG structure
+if length(coordsystems) == 1 && isempty(coordsystems{1}.space)
+    % Single coordsystem without space - backward compatibility
+    % Store directly in EEG.chaninfo.BIDS
+    coordsystems{1} = rmfield(coordsystems{1}, 'space');
+    EEG.chaninfo.BIDS = coordsystems{1};
+    bids(1).coordsystem = coordsystems{1};
+elseif length(coordsystems) >= 1
+    % Multiple coordsystems or single with space entity
+    % Store as cell array
+    EEG.chaninfo.BIDS.coordsystems = coordsystems;
+    bids(1).coordsystems = coordsystems;
+
+    % Also store first one directly for backward compat
+    if ~isempty(coordsystems)
+        bids(1).coordsystem = coordsystems{1};
     end
 end
 
 % coordinate transform factor
 % ---------------------------
-function factor = checkunit(chaninfo, field)
+function factor = checkunit(chaninfo, coordData, field)
     factor = 1;
-    if isfield(chaninfo, 'BIDS') && isfield(chaninfo.BIDS, field) && isfield(chaninfo, 'unit')
-        if isequal(chaninfo.BIDS.(field), 'mm') && isequal(chaninfo.unit, 'cm')
+    if isfield(coordData, field) && isfield(chaninfo, 'unit')
+        if isequal(coordData.(field), 'mm') && isequal(chaninfo.unit, 'cm')
             factor = 1/10;
-        elseif isequal(chaninfo.BIDS.(field), 'mm') && isequal(chaninfo.unit, 'm')
+        elseif isequal(coordData.(field), 'mm') && isequal(chaninfo.unit, 'm')
             factor = 1/1000;
-        elseif isequal(chaninfo.BIDS.(field), 'cm') && isequal(chaninfo.unit, 'mm')
+        elseif isequal(coordData.(field), 'cm') && isequal(chaninfo.unit, 'mm')
             factor = 10;
-        elseif isequal(chaninfo.BIDS.(field), 'cm') && isequal(chaninfo.unit, 'm')
+        elseif isequal(coordData.(field), 'cm') && isequal(chaninfo.unit, 'm')
             factor = 1/10;
-        elseif isequal(chaninfo.BIDS.(field), 'm') && isequal(chaninfo.unit, 'cm')
+        elseif isequal(coordData.(field), 'm') && isequal(chaninfo.unit, 'cm')
             factor = 100;
-        elseif isequal(chaninfo.BIDS.(field), 'm') && isequal(chaninfo.unit, 'mm')
+        elseif isequal(coordData.(field), 'm') && isequal(chaninfo.unit, 'mm')
             factor = 1000;
-        elseif isequal(chaninfo.BIDS.(field), chaninfo.unit)
+        elseif isequal(coordData.(field), chaninfo.unit)
             factor = 1;
         else
             error('Unit not supported')

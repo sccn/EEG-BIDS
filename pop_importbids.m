@@ -299,7 +299,7 @@ for iSubject = opt.subjects
     subjectFolderOut = {};
     if ~isempty(opt.sessions)
         subFolders = intersect(subFolders, opt.sessions);
-    end        
+    end
 
     for iFold = 1:length(subFolders)
         subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'eeg');
@@ -712,11 +712,13 @@ for iSubject = opt.subjects
 			                end
                         end
                         
-                        % coordsystem file
-                        % ----------------
+                        % coordsystem file(s)
+                        % -------------------
                         if strcmpi(opt.bidscoord, 'on')
-                            coordFile = bids_get_file(eegFileRaw(1:end-8), '_coordsystem.json', coordFile);                   
-                            [EEG, bids] = bids_importcoordsystemfile(EEG, coordFile, 'bids', bids); 
+                            % Get all coordsystem files for this subject/session
+                            % Could be single (_coordsystem.json) or multiple (_space-*_coordsystem.json)
+                            coordFiles = bids_get_all_coordsystem_files(eegFileRaw(1:end-8), coordFile);
+                            [EEG, bids] = bids_importcoordsystemfile(EEG, coordFiles, 'bids', bids);
                         end
     
                         % copy information inside dataset
@@ -974,6 +976,16 @@ else
         if exist(tmpFile, 'file')
             filestr = tmpFile;
         end
+    end
+end
+
+% get all coordsystem files (single or multiple with space entity)
+function coordFiles = bids_get_all_coordsystem_files(baseName, coordFileStruct)
+coordFiles = {};
+if ~isempty(coordFileStruct) && isfield(coordFileStruct, 'folder') && isfield(coordFileStruct, 'name')
+    % Return all coordsystem files found (could be single or multiple with space)
+    for i = 1:length(coordFileStruct)
+        coordFiles{end+1} = fullfile(coordFileStruct(i).folder, coordFileStruct(i).name);
     end
 end
 
