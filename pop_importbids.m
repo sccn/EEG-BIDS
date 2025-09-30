@@ -298,6 +298,10 @@ for iSubject = opt.subjects
             if ~exist(subjectFolder{iFold},'dir')
                 subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'ieeg');
                 subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders{iFold}, 'ieeg');
+                if ~exist(subjectFolder{iFold},'dir')
+                    subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'emg');
+                    subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders{iFold}, 'emg');
+                end
             end
         end
     end
@@ -338,7 +342,20 @@ for iSubject = opt.subjects
             if isempty(eegFile)
                 eegFile     = searchparent(subjectFolder{iFold}, '*_ieeg.*');
             end
+            if isempty(eegFile)
+                eegFile     = searchparent(subjectFolder{iFold}, '*_emg.*');
+            end
+            % Search for modality-specific JSON file (eeg, ieeg, meg, or emg)
             infoFile      = searchparent(subjectFolder{iFold}, '*_eeg.json');
+            if isempty(infoFile)
+                infoFile  = searchparent(subjectFolder{iFold}, '*_ieeg.json');
+            end
+            if isempty(infoFile)
+                infoFile  = searchparent(subjectFolder{iFold}, '*_meg.json');
+            end
+            if isempty(infoFile)
+                infoFile  = searchparent(subjectFolder{iFold}, '*_emg.json');
+            end
             channelFile   = searchparent(subjectFolder{iFold}, '*_channels.tsv');
             elecFile      = searchparent(subjectFolder{iFold}, '*_electrodes.tsv');
             eventFile     = searchparent(subjectFolder{iFold}, '*_events.tsv');
@@ -495,7 +512,11 @@ for iSubject = opt.subjects
                         if ~strcmpi(tmpFileName(underScores(end)+1:end), 'eeg')
                             if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg.fif')
                                 if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg')
-                                    error('Data file name does not contain eeg, ieeg, or meg'); % theoretically impossible
+                                    if ~strcmpi(tmpFileName(underScores(end)+1:end), 'emg')
+                                        error('Data file name does not contain eeg, ieeg, meg, or emg');
+                                    else
+                                        modality = 'emg';
+                                    end
                                 else
                                     modality = 'meg';
                                 end
