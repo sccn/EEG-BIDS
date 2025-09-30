@@ -879,6 +879,13 @@ tInfo = opt.tInfo;
 [pathIn,fileInNoExt,ext] = fileparts(fileIn);
 fprintf('Processing file %s\n', fileIn);
 [EEG,opt.modality] = eeg_import(fileIn, 'modality', opt.modality, 'noevents', opt.noevents, 'importfunc', opt.importfunc);
+
+% Set default export format to EDF for EMG data (after modality is determined)
+if strcmpi(opt.modality, 'emg') && strcmpi(opt.exportformat, 'eeglab')
+    opt.exportformat = 'edf';
+    fprintf('Note: EMG data will be exported to EDF format (default for EMG)\n');
+end
+
 if contains(fileIn, '_bids_tmp_') && strcmpi(opt.rmtempfiles, 'on')
     fprintf('Deleting temporary file %s\n', fileIn);
     delete(fileIn);
@@ -915,7 +922,18 @@ if ~isequal(opt.exportformat, 'same') || isequal(ext, '.set')
                 EEG = pop_resample(EEG, targetFreq);
             end
         end
-        pop_writeeeg(EEG, fullfile(filePathTmp, [ fileOutNoExt '.' opt.exportformat]), 'TYPE',upper(opt.exportformat));
+        % For EMG (and other modalities), save without events in EDF
+        % Events are saved separately in events.tsv
+        if strcmpi(opt.modality, 'emg') && (strcmpi(opt.exportformat, 'edf') || strcmpi(opt.exportformat, 'bdf'))
+            % Temporarily remove events before writing EDF
+            tmpEvents = EEG.event;
+            EEG.event = [];
+            pop_writeeeg(EEG, fullfile(filePathTmp, [ fileOutNoExt '.' opt.exportformat]), 'TYPE',upper(opt.exportformat));
+            % Restore events for events.tsv export
+            EEG.event = tmpEvents;
+        else
+            pop_writeeeg(EEG, fullfile(filePathTmp, [ fileOutNoExt '.' opt.exportformat]), 'TYPE',upper(opt.exportformat));
+        end
     end
 else
     % copy the file
