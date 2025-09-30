@@ -50,14 +50,39 @@ if isfield(EEG.chaninfo, 'filename') && isequal(flagExport, 'auto')
 end
 
 if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && any(cellfun(@(x)~isempty(x), { EEG.chanlocs.X }))
+    % Check if EMG for extended columns
+    isEMG = isfield(EEG, 'etc') && isfield(EEG.etc, 'datatype') && strcmpi(EEG.etc.datatype, 'emg');
+
     fid = fopen( [ fileOut '_electrodes.tsv' ], 'w');
-    fprintf(fid, 'name\tx\ty\tz\n');
+    if isEMG
+        % EMG: name, x, y, z, coordinate_system (5th), type, material, impedance, group
+        fprintf(fid, 'name\tx\ty\tz\tcoordinate_system\ttype\tmaterial\timpedance\tgroup\n');
+    else
+        fprintf(fid, 'name\tx\ty\tz\n');
+    end
 
     for iChan = 1:EEG.nbchan
         if isempty(EEG.chanlocs(iChan).X) || isnan(EEG.chanlocs(iChan).X) || contains(fileOut, 'ieeg')
-            fprintf(fid, '%s\tn/a\tn/a\tn/a\n', EEG.chanlocs(iChan).labels );
+            if isEMG
+                fprintf(fid, '%s\tn/a\tn/a\tn/a\tn/a\tn/a\tn/a\tn/a\tn/a\n', EEG.chanlocs(iChan).labels );
+            else
+                fprintf(fid, '%s\tn/a\tn/a\tn/a\n', EEG.chanlocs(iChan).labels );
+            end
         else
-            fprintf(fid, '%s\t%2.6f\t%2.6f\t%2.6f\n', EEG.chanlocs(iChan).labels, EEG.chanlocs(iChan).X, EEG.chanlocs(iChan).Y, EEG.chanlocs(iChan).Z );
+            if isEMG
+                % Extract EMG-specific electrode fields
+                coord_system = getfield_or_na_elec(EEG.chanlocs(iChan), 'coordinate_system');
+                elec_type = getfield_or_na_elec(EEG.chanlocs(iChan), 'electrode_type');
+                material = getfield_or_na_elec(EEG.chanlocs(iChan), 'electrode_material');
+                impedance = getfield_or_na_elec(EEG.chanlocs(iChan), 'impedance');
+                group = getfield_or_na_elec(EEG.chanlocs(iChan), 'group');
+
+                fprintf(fid, '%s\t%2.6f\t%2.6f\t%2.6f\t%s\t%s\t%s\t%s\t%s\n', ...
+                    EEG.chanlocs(iChan).labels, EEG.chanlocs(iChan).X, EEG.chanlocs(iChan).Y, EEG.chanlocs(iChan).Z, ...
+                    coord_system, elec_type, material, impedance, group);
+            else
+                fprintf(fid, '%s\t%2.6f\t%2.6f\t%2.6f\n', EEG.chanlocs(iChan).labels, EEG.chanlocs(iChan).X, EEG.chanlocs(iChan).Y, EEG.chanlocs(iChan).Z );
+            end
         end
     end
     fclose(fid);
@@ -99,4 +124,16 @@ if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(
         end
     end
     jsonwrite( [ fileOut '_coordsystem.json' ], coordsystemStruct);
+end
+
+% Helper function to get field value or 'n/a' for electrode fields
+function value = getfield_or_na_elec(struct, fieldname)
+if isfield(struct, fieldname) && ~isempty(struct.(fieldname))
+    value = struct.(fieldname);
+    % Convert numeric to string
+    if isnumeric(value)
+        value = num2str(value);
+    end
+else
+    value = 'n/a';
 end
