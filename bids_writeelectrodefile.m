@@ -53,8 +53,21 @@ if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(
     % Check if EMG for extended columns
     isEMG = isfield(EEG, 'etc') && isfield(EEG.etc, 'datatype') && strcmpi(EEG.etc.datatype, 'emg');
 
-    % Determine which RECOMMENDED columns have actual data
-    columnsToWrite = {'name', 'x', 'y', 'z'}; % REQUIRED
+    % Determine which columns have actual data
+    columnsToWrite = {'name', 'x', 'y'}; % REQUIRED (z is optional)
+
+    % Check if z has actual data (not just zeros or n/a)
+    hasZ = false;
+    for iChan = 1:EEG.nbchan
+        if isfield(EEG.chanlocs(iChan), 'Z') && ~isempty(EEG.chanlocs(iChan).Z) && ...
+           ~isnan(EEG.chanlocs(iChan).Z) && EEG.chanlocs(iChan).Z ~= 0
+            hasZ = true;
+            break;
+        end
+    end
+    if hasZ
+        columnsToWrite{end+1} = 'z';
+    end
     if isEMG
         % Check EMG RECOMMENDED columns
         recommendedFields = {
@@ -108,20 +121,33 @@ if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(
         % Name (always)
         values{end+1} = EEG.chanlocs(iChan).labels;
 
-        % X, Y, Z
+        % X, Y
         if isempty(EEG.chanlocs(iChan).X) || isnan(EEG.chanlocs(iChan).X) || contains(fileOut, 'ieeg')
-            values{end+1} = 'n/a';
             values{end+1} = 'n/a';
             values{end+1} = 'n/a';
         else
             values{end+1} = sprintf('%2.6f', EEG.chanlocs(iChan).X);
             values{end+1} = sprintf('%2.6f', EEG.chanlocs(iChan).Y);
-            values{end+1} = sprintf('%2.6f', EEG.chanlocs(iChan).Z);
+        end
+
+        % Z (only if column exists)
+        if ismember('z', columnsToWrite)
+            if isempty(EEG.chanlocs(iChan).X) || isnan(EEG.chanlocs(iChan).X) || contains(fileOut, 'ieeg')
+                values{end+1} = 'n/a';
+            else
+                values{end+1} = sprintf('%2.6f', EEG.chanlocs(iChan).Z);
+            end
+        end
+
+        % Find starting column for additional fields
+        startCol = 3; % name, x, y
+        if ismember('z', columnsToWrite)
+            startCol = 4;
         end
 
         % Additional EMG columns (only those with data)
         if isEMG
-            for iCol = 5:length(columnsToWrite)
+            for iCol = (startCol+1):length(columnsToWrite)
                 colName = columnsToWrite{iCol};
 
                 % Map column name to field name
