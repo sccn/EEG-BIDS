@@ -91,8 +91,15 @@ elseif strcmpi(ext, '.vhdr')
     [fpathin, fname, ext] = fileparts(fileIn);
     EEG = pop_loadbv(fpathin, [fname ext]);
 elseif strcmpi(ext, '.set')
-    if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
     EEG = pop_loadset(fileIn);
+    if strcmpi(opt.modality, 'auto')
+        % Check EEG.etc.datatype to determine actual modality
+        if isfield(EEG, 'etc') && isfield(EEG.etc, 'datatype') && ~isempty(EEG.etc.datatype)
+            opt.modality = lower(EEG.etc.datatype);
+        else
+            opt.modality = 'eeg';
+        end
+    end
 elseif strcmpi(ext, '.cnt')
     if strcmpi(opt.modality, 'auto'), opt.modality = 'eeg'; end
     EEG = pop_loadcnt(fileIn, 'dataformat', 'auto');

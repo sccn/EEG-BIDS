@@ -729,6 +729,8 @@ for iSubject = opt.subjects
                         if ~isempty(recordingLabel)
                             EEG.recording = recordingLabel;
                         end
+                        % Set datatype for export
+                        EEG.etc.datatype = modality;
 
                         % build `EEG.BIDS` from `bids`
                         BIDS.gInfo = bids.dataset_description;
