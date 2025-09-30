@@ -45,16 +45,61 @@ if isempty(EEG.chanlocs)
     end
     channelsCount = struct([]);
 else
-    if isiEEG
-        fprintf(fid, 'name\ttype\tunits\tlow_cutoff\thigh_cutoff\n');
-    elseif isEMG
-        % EMG with all RECOMMENDED columns
-        fprintf(fid, 'name\ttype\tunits\tsignal_electrode\treference\tgroup\ttarget_muscle\tplacement_scheme\tplacement_description\tinterelectrode_distance\tlow_cutoff\thigh_cutoff\tsampling_frequency\n');
-    else
-        fprintf(fid, 'name\ttype\tunits\n');
+    % Determine which columns to write based on available data
+    columnsToWrite = {'name', 'type', 'units'}; % REQUIRED
+
+    if isEMG
+        % Check EMG RECOMMENDED columns for actual data
+        recommendedFields = {'signal_electrode', 'reference', 'group', 'target_muscle', ...
+                             'placement_scheme', 'placement_description', 'interelectrode_distance', ...
+                             'low_cutoff', 'high_cutoff', 'sampling_frequency'};
+
+        availableFields = {};
+        missingFields = {};
+
+        for iField = 1:length(recommendedFields)
+            fieldName = recommendedFields{iField};
+            hasData = false;
+
+            % Check if any channel has this field with actual data
+            for iChan = 1:EEG.nbchan
+                if isfield(EEG.chanlocs(iChan), fieldName) && ...
+                   ~isempty(EEG.chanlocs(iChan).(fieldName)) && ...
+                   ~strcmpi(EEG.chanlocs(iChan).(fieldName), 'n/a')
+                    hasData = true;
+                    break;
+                end
+            end
+
+            if hasData
+                columnsToWrite{end+1} = fieldName;
+                availableFields{end+1} = fieldName;
+            else
+                missingFields{end+1} = fieldName;
+            end
+        end
+
+        % Display warning about missing RECOMMENDED columns
+        if ~isempty(missingFields)
+            fprintf('Note: The following RECOMMENDED EMG channel columns are not included (no data available): %s\n', ...
+                    strjoin(missingFields, ', '));
+        end
+    elseif isiEEG
+        % iEEG includes low_cutoff and high_cutoff
+        columnsToWrite = [columnsToWrite, {'low_cutoff', 'high_cutoff'}];
     end
+
+    % Write header
+    fprintf(fid, '%s\n', strjoin(columnsToWrite, '\t'));
+
+    % Write data
     acceptedChannelTypes = { 'AUDIO' 'EEG' 'EOG' 'ECG' 'EMG' 'EYEGAZE' 'GSR' 'HEOG' 'MISC' 'PUPIL' 'REF' 'RESP' 'SYSCLOCK' 'TEMP' 'TRIG' 'VEOG' };
     for iChan = 1:EEG.nbchan
+        values = {};
+
+        % Name (always)
+        values{end+1} = EEG.chanlocs(iChan).labels;
+
         % Type
         if ~isfield(EEG.chanlocs, 'type') || isempty(EEG.chanlocs(iChan).type)
             type = 'n/a';
@@ -63,6 +108,8 @@ else
         else
             type = 'MISC';
         end
+        values{end+1} = type;
+
         % Unit
         if isfield(EEG.chanlocs(iChan), 'unit')
             unit = EEG.chanlocs(iChan).unit;
@@ -73,30 +120,25 @@ else
                 unit = 'n/a';
             end
         end
+        values{end+1} = unit;
 
-        %Write
-        if isiEEG
-            fprintf(fid, '%s\t%s\t%s\tn/a\tn/a\n', EEG.chanlocs(iChan).labels, type, unit);
-        elseif isEMG
-            % Extract EMG-specific fields (RECOMMENDED columns)
-            signal_electrode = getfield_or_na(EEG.chanlocs(iChan), 'signal_electrode');
-            reference = getfield_or_na(EEG.chanlocs(iChan), 'reference');
-            group = getfield_or_na(EEG.chanlocs(iChan), 'group');
-            target_muscle = getfield_or_na(EEG.chanlocs(iChan), 'target_muscle');
-            placement_scheme = getfield_or_na(EEG.chanlocs(iChan), 'placement_scheme');
-            placement_description = getfield_or_na(EEG.chanlocs(iChan), 'placement_description');
-            interelectrode_distance = getfield_or_na(EEG.chanlocs(iChan), 'interelectrode_distance');
-            low_cutoff = getfield_or_na(EEG.chanlocs(iChan), 'low_cutoff');
-            high_cutoff = getfield_or_na(EEG.chanlocs(iChan), 'high_cutoff');
-            sampling_frequency = getfield_or_na(EEG.chanlocs(iChan), 'sampling_frequency');
+        % Additional columns (only those determined to have data)
+        for iCol = 4:length(columnsToWrite)
+            fieldName = columnsToWrite{iCol};
 
-            fprintf(fid, '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n', ...
-                EEG.chanlocs(iChan).labels, type, unit, signal_electrode, reference, ...
-                group, target_muscle, placement_scheme, placement_description, ...
-                interelectrode_distance, low_cutoff, high_cutoff, sampling_frequency);
-        else
-            fprintf(fid, '%s\t%s\t%s\n', EEG.chanlocs(iChan).labels, type, unit);
+            if isfield(EEG.chanlocs(iChan), fieldName) && ~isempty(EEG.chanlocs(iChan).(fieldName))
+                val = EEG.chanlocs(iChan).(fieldName);
+                if isnumeric(val)
+                    values{end+1} = num2str(val);
+                else
+                    values{end+1} = val;
+                end
+            else
+                values{end+1} = 'n/a';
+            end
         end
+
+        fprintf(fid, '%s\n', strjoin(values, '\t'));
     end
 end
 fclose(fid);

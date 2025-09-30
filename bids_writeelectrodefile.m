@@ -53,37 +53,107 @@ if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(
     % Check if EMG for extended columns
     isEMG = isfield(EEG, 'etc') && isfield(EEG.etc, 'datatype') && strcmpi(EEG.etc.datatype, 'emg');
 
-    fid = fopen( [ fileOut '_electrodes.tsv' ], 'w');
+    % Determine which RECOMMENDED columns have actual data
+    columnsToWrite = {'name', 'x', 'y', 'z'}; % REQUIRED
     if isEMG
-        % EMG: name, x, y, z, coordinate_system (5th), type, material, impedance, group
-        fprintf(fid, 'name\tx\ty\tz\tcoordinate_system\ttype\tmaterial\timpedance\tgroup\n');
-    else
-        fprintf(fid, 'name\tx\ty\tz\n');
-    end
+        % Check EMG RECOMMENDED columns
+        recommendedFields = {
+            'coordinate_system', 'coordinate_system';
+            'electrode_type', 'type';
+            'electrode_material', 'material';
+            'impedance', 'impedance';
+            'group', 'group'
+        };
 
-    for iChan = 1:EEG.nbchan
-        if isempty(EEG.chanlocs(iChan).X) || isnan(EEG.chanlocs(iChan).X) || contains(fileOut, 'ieeg')
-            if isEMG
-                fprintf(fid, '%s\tn/a\tn/a\tn/a\tn/a\tn/a\tn/a\tn/a\tn/a\n', EEG.chanlocs(iChan).labels );
-            else
-                fprintf(fid, '%s\tn/a\tn/a\tn/a\n', EEG.chanlocs(iChan).labels );
+        availableFields = {};
+        missingFields = {};
+
+        for iField = 1:size(recommendedFields, 1)
+            fieldName = recommendedFields{iField, 1};
+            colName = recommendedFields{iField, 2};
+            hasData = false;
+
+            % Check if any electrode has this field with actual data
+            for iChan = 1:EEG.nbchan
+                if isfield(EEG.chanlocs(iChan), fieldName) && ...
+                   ~isempty(EEG.chanlocs(iChan).(fieldName)) && ...
+                   ~strcmpi(EEG.chanlocs(iChan).(fieldName), 'n/a')
+                    hasData = true;
+                    break;
+                end
             end
-        else
-            if isEMG
-                % Extract EMG-specific electrode fields
-                coord_system = getfield_or_na_elec(EEG.chanlocs(iChan), 'coordinate_system');
-                elec_type = getfield_or_na_elec(EEG.chanlocs(iChan), 'electrode_type');
-                material = getfield_or_na_elec(EEG.chanlocs(iChan), 'electrode_material');
-                impedance = getfield_or_na_elec(EEG.chanlocs(iChan), 'impedance');
-                group = getfield_or_na_elec(EEG.chanlocs(iChan), 'group');
 
-                fprintf(fid, '%s\t%2.6f\t%2.6f\t%2.6f\t%s\t%s\t%s\t%s\t%s\n', ...
-                    EEG.chanlocs(iChan).labels, EEG.chanlocs(iChan).X, EEG.chanlocs(iChan).Y, EEG.chanlocs(iChan).Z, ...
-                    coord_system, elec_type, material, impedance, group);
+            if hasData
+                columnsToWrite{end+1} = colName;
+                availableFields{end+1} = colName;
             else
-                fprintf(fid, '%s\t%2.6f\t%2.6f\t%2.6f\n', EEG.chanlocs(iChan).labels, EEG.chanlocs(iChan).X, EEG.chanlocs(iChan).Y, EEG.chanlocs(iChan).Z );
+                missingFields{end+1} = colName;
             end
         end
+
+        % Display warning about missing RECOMMENDED columns
+        if ~isempty(missingFields)
+            fprintf('Note: The following RECOMMENDED EMG electrode columns are not included (no data available): %s\n', ...
+                    strjoin(missingFields, ', '));
+        end
+    end
+
+    % Write TSV file with determined columns
+    fid = fopen( [ fileOut '_electrodes.tsv' ], 'w');
+    fprintf(fid, '%s\n', strjoin(columnsToWrite, '\t'));
+
+    for iChan = 1:EEG.nbchan
+        values = {};
+
+        % Name (always)
+        values{end+1} = EEG.chanlocs(iChan).labels;
+
+        % X, Y, Z
+        if isempty(EEG.chanlocs(iChan).X) || isnan(EEG.chanlocs(iChan).X) || contains(fileOut, 'ieeg')
+            values{end+1} = 'n/a';
+            values{end+1} = 'n/a';
+            values{end+1} = 'n/a';
+        else
+            values{end+1} = sprintf('%2.6f', EEG.chanlocs(iChan).X);
+            values{end+1} = sprintf('%2.6f', EEG.chanlocs(iChan).Y);
+            values{end+1} = sprintf('%2.6f', EEG.chanlocs(iChan).Z);
+        end
+
+        % Additional EMG columns (only those with data)
+        if isEMG
+            for iCol = 5:length(columnsToWrite)
+                colName = columnsToWrite{iCol};
+
+                % Map column name to field name
+                switch colName
+                    case 'coordinate_system'
+                        fieldName = 'coordinate_system';
+                    case 'type'
+                        fieldName = 'electrode_type';
+                    case 'material'
+                        fieldName = 'electrode_material';
+                    case 'impedance'
+                        fieldName = 'impedance';
+                    case 'group'
+                        fieldName = 'group';
+                end
+
+                % Get value or 'n/a'
+                if isfield(EEG.chanlocs(iChan), fieldName) && ...
+                   ~isempty(EEG.chanlocs(iChan).(fieldName))
+                    val = EEG.chanlocs(iChan).(fieldName);
+                    if isnumeric(val)
+                        values{end+1} = num2str(val);
+                    else
+                        values{end+1} = val;
+                    end
+                else
+                    values{end+1} = 'n/a';
+                end
+            end
+        end
+
+        fprintf(fid, '%s\n', strjoin(values, '\t'));
     end
     fclose(fid);
 
