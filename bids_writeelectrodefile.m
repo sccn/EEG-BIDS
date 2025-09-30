@@ -10,16 +10,24 @@
 %
 % Optional inputs:
 %  'Export'    - ['on'|'off'|'auto']
+%  'rootdir'   - [string] root BIDS directory for space-entity coordsystem files
 %
 % Authors: Dung Truong, Arnaud Delorme, 2022
 
 function bids_writeelectrodefile(EEG, fileOut, varargin)
 
-if nargin > 2
-    flagExport = varargin{2};
-else
-    flagExport = 'auto';
+opt = finputcheck(varargin, { ...
+    'export'    'string'   {'on' 'off' 'auto'}   'auto'; ...
+    'rootdir'   'string'   {}                     '' ...
+    }, 'bids_writeelectrodefile');
+if ischar(opt), error(opt); end
+
+% Legacy support: if called with old signature
+if nargin > 2 && ~ischar(varargin{1})
+    opt.export = varargin{2};
 end
+
+flagExport = opt.export;
 
 % remove task because a bug in v1.10.0 validator returns an error (MAYBE REMOVE THAT SECTION LATER)
 ind = strfind(fileOut, 'task-');
@@ -119,7 +127,12 @@ if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(
         values = {};
 
         % Name (always)
-        values{end+1} = EEG.chanlocs(iChan).labels;
+        % For EMG: use signal_electrode if available, otherwise use channel label
+        if isEMG && isfield(EEG.chanlocs(iChan), 'signal_electrode') && ~isempty(EEG.chanlocs(iChan).signal_electrode)
+            values{end+1} = EEG.chanlocs(iChan).signal_electrode;
+        else
+            values{end+1} = EEG.chanlocs(iChan).labels;
+        end
 
         % X, Y
         if isempty(EEG.chanlocs(iChan).X) || isnan(EEG.chanlocs(iChan).X) || contains(fileOut, 'ieeg')
@@ -219,7 +232,12 @@ if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(
 
             % Write with space entity in filename
             if ~isempty(cs.space)
-                filename = sprintf('%s_space-%s_coordsystem.json', fileOut, cs.space);
+                % Space-entity coordsystem files go at root if rootdir is provided
+                if ~isempty(opt.rootdir)
+                    filename = fullfile(opt.rootdir, sprintf('space-%s_coordsystem.json', cs.space));
+                else
+                    filename = sprintf('%s_space-%s_coordsystem.json', fileOut, cs.space);
+                end
             else
                 filename = sprintf('%s_coordsystem.json', fileOut);
             end

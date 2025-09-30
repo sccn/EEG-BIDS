@@ -1012,7 +1012,7 @@ end
 
 % Write electrode file information (electrodes.tsv and coordsystem.json)
 bids_writechanfile(EEG, fileOutRed);
-bids_writeelectrodefile(EEG, fileOutRed, 'export', opt.elecexport);
+bids_writeelectrodefile(EEG, fileOutRed, 'export', opt.elecexport, 'rootdir', opt.targetdir);
 
 % Write modality-specific info files
 if strcmpi(opt.modality, 'eeg')
