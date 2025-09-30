@@ -88,42 +88,86 @@ if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(
     fclose(fid);
 
     % Write coordinate file information (coordsystem.json)
+    % Supports both single and multiple coordinate systems
     isEMG = isfield(EEG, 'etc') && isfield(EEG.etc, 'datatype') && strcmpi(EEG.etc.datatype, 'emg');
 
-    if isEMG
-        if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateUnits')
-            coordsystemStruct.EMGCoordinateUnits = EEG.chaninfo.BIDS.EMGCoordinateUnits;
-        else
-            coordsystemStruct.EMGCoordinateUnits = 'mm';
+    % Check for multiple coordinate systems
+    if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'coordsystems')
+        % Multiple coordinate systems (with space entities)
+        coordsystems = EEG.chaninfo.BIDS.coordsystems;
+
+        % Validate parent references for nested coordinate systems
+        spaceLabels = cellfun(@(x) x.space, coordsystems, 'UniformOutput', false);
+        for iCoord = 1:length(coordsystems)
+            cs = coordsystems{iCoord};
+            if isfield(cs, 'ParentCoordinateSystem') && ~isempty(cs.ParentCoordinateSystem)
+                if ~ismember(cs.ParentCoordinateSystem, spaceLabels)
+                    error('Invalid parent coordinate system "%s" for space "%s". Parent must exist.', ...
+                          cs.ParentCoordinateSystem, cs.space);
+                end
+            end
         end
-        if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateSystem')
-            coordsystemStruct.EMGCoordinateSystem = EEG.chaninfo.BIDS.EMGCoordinateSystem;
-        else
-            coordsystemStruct.EMGCoordinateSystem = 'Other';
-        end
-        if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateSystemDescription')
-            coordsystemStruct.EMGCoordinateSystemDescription = EEG.chaninfo.BIDS.EMGCoordinateSystemDescription;
-        else
-            coordsystemStruct.EMGCoordinateSystemDescription = 'Electrode locations in mm';
+
+        % Write each coordinate system as separate file
+        for iCoord = 1:length(coordsystems)
+            cs = coordsystems{iCoord};
+            coordStruct = struct();
+
+            % Copy all fields except 'space'
+            fields = fieldnames(cs);
+            for iField = 1:length(fields)
+                if ~strcmpi(fields{iField}, 'space')
+                    coordStruct.(fields{iField}) = cs.(fields{iField});
+                end
+            end
+
+            % Write with space entity in filename
+            if ~isempty(cs.space)
+                filename = sprintf('%s_space-%s_coordsystem.json', fileOut, cs.space);
+            else
+                filename = sprintf('%s_coordsystem.json', fileOut);
+            end
+            jsonwrite(filename, coordStruct);
         end
     else
-        if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EEGCoordinateUnits')
-            coordsystemStruct.EEGCoordinateUnits = EEG.chaninfo.BIDS.EEGCoordinateUnits;
+        % Single coordinate system (backward compatibility)
+        coordsystemStruct = struct();
+
+        if isEMG
+            if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateUnits')
+                coordsystemStruct.EMGCoordinateUnits = EEG.chaninfo.BIDS.EMGCoordinateUnits;
+            else
+                coordsystemStruct.EMGCoordinateUnits = 'mm';
+            end
+            if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateSystem')
+                coordsystemStruct.EMGCoordinateSystem = EEG.chaninfo.BIDS.EMGCoordinateSystem;
+            else
+                coordsystemStruct.EMGCoordinateSystem = 'Other';
+            end
+            if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateSystemDescription')
+                coordsystemStruct.EMGCoordinateSystemDescription = EEG.chaninfo.BIDS.EMGCoordinateSystemDescription;
+            else
+                coordsystemStruct.EMGCoordinateSystemDescription = 'Electrode locations in mm';
+            end
         else
-            coordsystemStruct.EEGCoordinateUnits = 'mm';
+            if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EEGCoordinateUnits')
+                coordsystemStruct.EEGCoordinateUnits = EEG.chaninfo.BIDS.EEGCoordinateUnits;
+            else
+                coordsystemStruct.EEGCoordinateUnits = 'mm';
+            end
+            if isfield(EEG.chaninfo, 'BIDS') &&isfield(EEG.chaninfo.BIDS, 'EEGCoordinateSystem')
+                coordsystemStruct.EEGCoordinateSystem = EEG.chaninfo.BIDS.EEGCoordinateSystem;
+            else
+                coordsystemStruct.EEGCoordinateSystem = 'CTF';
+            end
+            if isfield(EEG.chaninfo, 'BIDS') &&isfield(EEG.chaninfo.BIDS, 'EEGCoordinateSystemDescription')
+                coordsystemStruct.EEGCoordinateSystemDescription = EEG.chaninfo.BIDS.EEGCoordinateSystemDescription;
+            else
+                coordsystemStruct.EEGCoordinateSystemDescription = 'EEGLAB';
+            end
         end
-        if isfield(EEG.chaninfo, 'BIDS') &&isfield(EEG.chaninfo.BIDS, 'EEGCoordinateSystem')
-            coordsystemStruct.EEGCoordinateSystem = EEG.chaninfo.BIDS.EEGCoordinateSystem;
-        else
-            coordsystemStruct.EEGCoordinateSystem = 'CTF';
-        end
-        if isfield(EEG.chaninfo, 'BIDS') &&isfield(EEG.chaninfo.BIDS, 'EEGCoordinateSystemDescription')
-            coordsystemStruct.EEGCoordinateSystemDescription = EEG.chaninfo.BIDS.EEGCoordinateSystemDescription;
-        else
-            coordsystemStruct.EEGCoordinateSystemDescription = 'EEGLAB';
-        end
+        jsonwrite( [ fileOut '_coordsystem.json' ], coordsystemStruct);
     end
-    jsonwrite( [ fileOut '_coordsystem.json' ], coordsystemStruct);
 end
 
 % Helper function to get field value or 'n/a' for electrode fields
