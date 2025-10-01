@@ -139,8 +139,21 @@ if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(
             values{end+1} = 'n/a';
             values{end+1} = 'n/a';
         else
-            values{end+1} = sprintf('%2.6f', EEG.chanlocs(iChan).X);
-            values{end+1} = sprintf('%2.6f', EEG.chanlocs(iChan).Y);
+            % Determine decimal precision based on coordinate units
+            if isEMG && isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateUnits')
+                units = EEG.chaninfo.BIDS.EMGCoordinateUnits;
+                if strcmpi(units, 'percent')
+                    fmt = '%.0f';  % No decimals for percent
+                elseif strcmpi(units, 'ratio')
+                    fmt = '%.2f';  % Max 2 decimals for ratio
+                else
+                    fmt = '%2.6f';  % Default: 6 decimals for mm, etc.
+                end
+            else
+                fmt = '%2.6f';  % Default
+            end
+            values{end+1} = sprintf(fmt, EEG.chanlocs(iChan).X);
+            values{end+1} = sprintf(fmt, EEG.chanlocs(iChan).Y);
         end
 
         % Z (only if column exists)
@@ -148,7 +161,20 @@ if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(
             if isempty(EEG.chanlocs(iChan).X) || isnan(EEG.chanlocs(iChan).X) || contains(fileOut, 'ieeg')
                 values{end+1} = 'n/a';
             else
-                values{end+1} = sprintf('%2.6f', EEG.chanlocs(iChan).Z);
+                % Use same format as X/Y
+                if isEMG && isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateUnits')
+                    units = EEG.chaninfo.BIDS.EMGCoordinateUnits;
+                    if strcmpi(units, 'percent')
+                        fmt = '%.0f';
+                    elseif strcmpi(units, 'ratio')
+                        fmt = '%.2f';
+                    else
+                        fmt = '%2.6f';
+                    end
+                else
+                    fmt = '%2.6f';
+                end
+                values{end+1} = sprintf(fmt, EEG.chanlocs(iChan).Z);
             end
         end
 
@@ -280,7 +306,14 @@ if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(
                 coordsystemStruct.EEGCoordinateSystemDescription = 'EEGLAB';
             end
         end
-        jsonwrite( [ fileOut '_coordsystem.json' ], coordsystemStruct, struct('indent','  '));
+        % Write coordsystem file
+        % For EMG with single coordinate system, write at root if rootdir provided
+        if isEMG && ~isempty(opt.rootdir)
+            filename = fullfile(opt.rootdir, 'coordsystem.json');
+        else
+            filename = [fileOut '_coordsystem.json'];
+        end
+        jsonwrite(filename, coordsystemStruct, struct('indent','  '));
     end
 end
 
