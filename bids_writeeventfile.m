@@ -172,7 +172,11 @@ if ~isempty(EEG.event)
                     switch opt.eInfo{iField,1}
 
                         case 'onset'
-                            onset = (EEG.event(iEvent).(tmpField)-1)/EEG.srate;
+                            if strcmpi(tmpField, 'latency')
+                                onset = (EEG.event(iEvent).(tmpField)-1)/EEG.srate;
+                            elseif strcmpi(tmpField, 'onset')
+                                onset = EEG.event(iEvent).(tmpField);
+                            end
                             str{end+1} = num2str(onset, 10);
 
                         case 'duration'
