@@ -27,7 +27,7 @@ if nargin < 1
 end
 
 if nargin < 2
-    tolerance = 0.15;  % 15% tolerance - resampling for <15% deviation may cause issues
+    tolerance = 0.01;  % 1% tolerance for regular sampling detection
 end
 
 if isempty(EEG.data)
