@@ -55,6 +55,10 @@ function [EEG, channelData, elecData] = bids_importchanlocs(EEG, channelFile, el
             chanlocs(iChan-1).X = elecData{iChan,2};
             chanlocs(iChan-1).Y = elecData{iChan,3};
             chanlocs(iChan-1).Z = elecData{iChan,4};
+            % Import coordinate_system (5th column) if present (EMG)
+            if size(elecData,2) >= 5 && ~isempty(elecData{iChan,5}) && ~strcmpi(elecData{iChan,5}, 'n/a')
+                chanlocs(iChan-1).coordinate_system = elecData{iChan,5};
+            end
         end
     end
 

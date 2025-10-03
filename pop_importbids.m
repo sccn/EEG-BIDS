@@ -78,7 +78,7 @@ if nargin < 1
     
     disp('Scanning folders...');
     % scan if multiple tasks are present
-    [tasklist,sessions,runs] = bids_getinfofromfolder(bidsFolder);
+    [tasklist,sessions,runs,recordings] = bids_getinfofromfolder(bidsFolder);
     % scan for event fields
     type_fields = bids_geteventfieldsfromfolder(bidsFolder);
     indVal = strmatch('value', type_fields);
@@ -91,11 +91,12 @@ if nargin < 1
     if isempty(type_fields) type_fields = { 'n/a' }; end
     if isempty(tasklist) tasklist = { 'n/a' }; end
     
-    cb_event    = 'set(findobj(gcbf, ''userdata'', ''bidstype''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
-    cb_task     = 'set(findobj(gcbf, ''userdata'', ''task''    ), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
-    cb_sess     = 'set(findobj(gcbf, ''userdata'', ''sessions''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
-    cb_run      = 'set(findobj(gcbf, ''userdata'', ''runs''    ), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
-    cb_subjects = 'set(findobj(gcbf, ''userdata'', ''subjects''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
+    cb_event     = 'set(findobj(gcbf, ''userdata'', ''bidstype''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
+    cb_task      = 'set(findobj(gcbf, ''userdata'', ''task''    ), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
+    cb_sess      = 'set(findobj(gcbf, ''userdata'', ''sessions''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
+    cb_run       = 'set(findobj(gcbf, ''userdata'', ''runs''    ), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
+    cb_recording = 'set(findobj(gcbf, ''userdata'', ''recordings''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
+    cb_subjects  = 'set(findobj(gcbf, ''userdata'', ''subjects''), ''enable'', fastif(get(gcbo, ''value''), ''on'', ''off''));';
     promptstr    = { ...
         { 'style'  'text'       'string' 'Enter study name (default is BIDS folder name)' } ...
         { 'style'  'edit'       'string' '' 'tag' 'studyName' } ...
@@ -109,6 +110,8 @@ if nargin < 1
         { 'style'  'listbox'    'string' sessions 'tag' 'bidsessionstr' 'max' 2 'value' [] 'userdata' 'sessions'  'enable' 'off' } {} ...
         { 'style'  'checkbox'   'string' 'Import only the following runs' 'tag' 'bidsruns' 'value' 0 'callback' cb_run }  ...
         { 'style'  'listbox'    'string' runs 'tag' 'bidsrunsstr' 'max' 2 'value' [] 'userdata' 'runs'  'enable' 'off' } {} ...
+        { 'style'  'checkbox'   'string' 'Import only the following recordings (multi-device)' 'tag' 'bidsrecordings' 'value' 0 'callback' cb_recording }  ...
+        { 'style'  'listbox'    'string' recordings 'tag' 'bidsrecordingsstr' 'max' 2 'value' [] 'userdata' 'recordings'  'enable' 'off' } {} ...
         { 'style'  'checkbox'   'string' 'Import only the following participant indices' 'tag' 'bidssubjects' 'value' 0 'callback' cb_subjects }  ...
         { 'style'  'edit'       'string' '' 'tag' 'bidssubjectsstr' 'userdata' 'subjects'  'enable' 'off' } {} ...
         {} ...
@@ -116,15 +119,20 @@ if nargin < 1
         { 'style'  'edit'       'string' fullfile(bidsFolder, 'derivatives', 'eeglab') 'tag' 'folder' 'HorizontalAlignment' 'left' } ...
         { 'style'  'pushbutton' 'string' '...' 'callback' cb_select } ...
         };
-    geometry = {[2 1.5], 1, 1,[1 0.35],[0.6 0.35 0.5],[0.6 0.35 0.5],[0.6 0.35 0.5],[0.6 0.35 0.5],1,[1 2 0.5]};
-    geomvert = [1 0.5, 1 1 1 1.5 1.5 1 0.5 1];
-    if isempty(runs)
+    geometry = {[2 1.5], 1, 1,[1 0.35],[0.6 0.35 0.5],[0.6 0.35 0.5],[0.6 0.35 0.5],[0.6 0.35 0.5],[0.6 0.35 0.5],1,[1 2 0.5]};
+    geomvert = [1 0.5, 1 1 1 1.5 1.5 1.5 1 0.5 1];
+    if isempty(recordings)
         promptstr(13:15) = [];
+        geometry(8) = [];
+        geomvert(8) = [];
+    end
+    if isempty(runs)
+        promptstr(10:12) = [];
         geometry(7) = [];
         geomvert(7) = [];
     end
     if isempty(sessions)
-        promptstr(10:12) = [];
+        promptstr(7:9) = [];
         geometry(6) = [];
         geomvert(6) = [];
     end
@@ -142,10 +150,13 @@ if nargin < 1
         if res.bidssessions && ~isempty(res.bidsessionstr),  options = { options{:} 'sessions' sessions(res.bidsessionstr) }; end
     end
     if isfield(res, 'bidsruns')
-        if res.bidsruns && ~isempty(res.bidsruns),  options = { options{:} 'runs' str2double(runs(res.bidsrunsstr)) }; end
+        if res.bidsruns && ~isempty(res.bidsrunsstr),  options = { options{:} 'runs' str2double(runs(res.bidsrunsstr)) }; end
+    end
+    if isfield(res, 'bidsrecordings')
+        if res.bidsrecordings && ~isempty(res.bidsrecordingsstr),  options = { options{:} 'recordings' recordings(res.bidsrecordingsstr) }; end
     end
     if isfield(res, 'bidssubjects')
-        if res.bidssubjects && ~isempty(res.bidssubjects),  options = { options{:} 'subjects' str2double(res.bidssubjectsstr) }; end
+        if res.bidssubjects && ~isempty(res.bidssubjectsstr),  options = { options{:} 'subjects' str2double(res.bidssubjectsstr) }; end
     end
 else
     options = varargin;
@@ -160,6 +171,7 @@ opt = finputcheck(options, { ...
     'subjects'       {'cell' 'integer'}   {{},[]}  []; ...
     'sessions'       'cell'      {}                {}; ...
     'runs'           {'cell' 'integer'}   {{},[]}  []; ...
+    'recordings'     'cell'      {}                {}; ...
     'metadata'       'string'    { 'on' 'off' }    'off'; ...
     'ctffunc'        'string'    { 'fileio' 'ctfimport' }    'fileio'; ...
     'eventtype'      'string'    {  }              'value'; ...
@@ -287,7 +299,7 @@ for iSubject = opt.subjects
     subjectFolderOut = {};
     if ~isempty(opt.sessions)
         subFolders = intersect(subFolders, opt.sessions);
-    end        
+    end
 
     for iFold = 1:length(subFolders)
         subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'eeg');
@@ -298,6 +310,10 @@ for iSubject = opt.subjects
             if ~exist(subjectFolder{iFold},'dir')
                 subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'ieeg');
                 subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders{iFold}, 'ieeg');
+                if ~exist(subjectFolder{iFold},'dir')
+                    subjectFolder{   iFold} = fullfile(parentSubjectFolder, subFolders{iFold}, 'emg');
+                    subjectFolderOut{iFold} = fullfile(outputSubjectFolder, subFolders{iFold}, 'emg');
+                end
             end
         end
     end
@@ -338,7 +354,20 @@ for iSubject = opt.subjects
             if isempty(eegFile)
                 eegFile     = searchparent(subjectFolder{iFold}, '*_ieeg.*');
             end
+            if isempty(eegFile)
+                eegFile     = searchparent(subjectFolder{iFold}, '*_emg.*');
+            end
+            % Search for modality-specific JSON file (eeg, ieeg, meg, or emg)
             infoFile      = searchparent(subjectFolder{iFold}, '*_eeg.json');
+            if isempty(infoFile)
+                infoFile  = searchparent(subjectFolder{iFold}, '*_ieeg.json');
+            end
+            if isempty(infoFile)
+                infoFile  = searchparent(subjectFolder{iFold}, '*_meg.json');
+            end
+            if isempty(infoFile)
+                infoFile  = searchparent(subjectFolder{iFold}, '*_emg.json');
+            end
             channelFile   = searchparent(subjectFolder{iFold}, '*_channels.tsv');
             elecFile      = searchparent(subjectFolder{iFold}, '*_electrodes.tsv');
             eventFile     = searchparent(subjectFolder{iFold}, '*_events.tsv');
@@ -365,7 +394,7 @@ for iSubject = opt.subjects
                 behFile       = filterFiles(behFile      , opt.bidstask);
             end
             
-            % check the task
+            % check the runs
             if ~isempty(opt.runs)
                 eegFile       = filterFilesRun(eegFile      , opt.runs);
                 infoFile      = filterFilesRun(infoFile     , opt.runs);
@@ -374,6 +403,18 @@ for iSubject = opt.subjects
                 eventFile     = filterFilesRun(eventFile    , opt.runs);
                 eventDescFile = filterFilesRun(eventDescFile, opt.runs);
                 % no runs for BEH or coordsystem
+            end
+
+            % check the recordings (multi-device)
+            if ~isempty(opt.recordings)
+                eegFile       = filterFilesRecording(eegFile      , opt.recordings);
+                infoFile      = filterFilesRecording(infoFile     , opt.recordings);
+                channelFile   = filterFilesRecording(channelFile  , opt.recordings);
+                elecFile      = filterFilesRecording(elecFile     , opt.recordings);
+                eventFile     = filterFilesRecording(eventFile    , opt.recordings);
+                eventDescFile = filterFilesRecording(eventDescFile, opt.recordings);
+                coordFile     = filterFilesRecording(coordFile    , opt.recordings);
+                % events and coords may or may not have recording entity
             end
             
             % raw data
@@ -415,7 +456,33 @@ for iSubject = opt.subjects
                 end
                 eegFileRawAll  = allFiles(ind);
             end
-            
+
+            % Check for multiple recordings (multi-device acquisitions)
+            if length(eegFileRawAll) > 1
+                recordingDetected = cellfun(@(x)contains(x, '_recording-'), eegFileRawAll);
+                if any(recordingDetected)
+                    recordingLabels = {};
+                    for iR = 1:length(eegFileRawAll)
+                        if recordingDetected(iR)
+                            indRec = strfind(eegFileRawAll{iR}, '_recording-');
+                            tmpStr = eegFileRawAll{iR}(indRec(1)+11:end);
+                            indUnder = find(tmpStr == '_');
+                            if ~isempty(indUnder)
+                                recordingLabels{end+1} = tmpStr(1:indUnder(1)-1);
+                            else
+                                [~,~,ext] = fileparts(tmpStr);
+                                recordingLabels{end+1} = tmpStr(1:end-length(ext));
+                            end
+                        end
+                    end
+                    if ~isempty(recordingLabels)
+                        fprintf('Detected %d recordings with recording entity: %s\n', ...
+                                length(recordingLabels), strjoin(recordingLabels, ', '));
+                        fprintf('  → Importing each recording as a separate dataset\n');
+                    end
+                end
+            end
+
             % identify non-EEG data files
             %--------------------------------------------------------------
             if ~isempty(behFile) % should be a single file
@@ -463,9 +530,28 @@ for iSubject = opt.subjects
                         if isnan(iRun)
                             iRun = str2double(tmpEegFileRaw(1:indUnder(1)-2)); % rare case run 5H in ds003190/sub-01/ses-01/eeg/sub-01_ses-01_task-ctos_run-5H_eeg.eeg
                             if isnan(iRun)
-                                error('Problem converting run information'); 
+                                error('Problem converting run information');
                             end
                         end
+                    end
+
+                    % what is the recording entity (for multi-device EMG)
+                    recordingLabel = '';
+                    indRec = strfind(eegFileRaw, '_recording-');
+                    if ~isempty(indRec)
+                        tmpEegFileRaw = eegFileRaw(indRec(1)+11:end);
+                        indUnder = find(tmpEegFileRaw == '_');
+                        if ~isempty(indUnder)
+                            recordingLabel = tmpEegFileRaw(1:indUnder(1)-1);
+                        else
+                            % recording is last entity before extension
+                            [~,~,ext] = fileparts(tmpEegFileRaw);
+                            recordingLabel = tmpEegFileRaw(1:end-length(ext));
+                        end
+                    end
+
+                    % check for BEH file (run-specific)
+                    if ~isempty(ind)
                         % check for BEH file
                         filePathTmp = fileparts(eegFileRaw);
                         behFileTmp = fullfile(filePathTmp,'..', 'beh', [eegFileRaw(1:ind(1)-1) '_beh.tsv' ]);
@@ -495,13 +581,19 @@ for iSubject = opt.subjects
                         if ~strcmpi(tmpFileName(underScores(end)+1:end), 'eeg')
                             if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg.fif')
                                 if ~strcmpi(tmpFileName(underScores(end)+1:end), 'meg')
-                                    error('Data file name does not contain eeg, ieeg, or meg'); % theoretically impossible
+                                    if ~strcmpi(tmpFileName(underScores(end)+1:end), 'emg')
+                                        error('Data file name does not contain eeg, ieeg, meg, or emg');
+                                    else
+                                        modality = 'emg';
+                                    end
                                 else
                                     modality = 'meg';
                                 end
                             else
                                 modality = 'meg';
                             end
+                        elseif contains(eegFileRaw, '_emg.')
+                            modality = 'emg';
                         else
                             modality = 'eeg';
                         end
@@ -620,11 +712,13 @@ for iSubject = opt.subjects
 			                end
                         end
                         
-                        % coordsystem file
-                        % ----------------
+                        % coordsystem file(s)
+                        % -------------------
                         if strcmpi(opt.bidscoord, 'on')
-                            coordFile = bids_get_file(eegFileRaw(1:end-8), '_coordsystem.json', coordFile);                   
-                            [EEG, bids] = bids_importcoordsystemfile(EEG, coordFile, 'bids', bids); 
+                            % Get all coordsystem files for this subject/session
+                            % Could be single (_coordsystem.json) or multiple (_space-*_coordsystem.json)
+                            coordFiles = bids_get_all_coordsystem_files(eegFileRaw(1:end-8), coordFile);
+                            [EEG, bids] = bids_importcoordsystemfile(EEG, coordFiles, 'bids', bids);
                         end
     
                         % copy information inside dataset
@@ -632,7 +726,12 @@ for iSubject = opt.subjects
                         EEG.session = iFold;
                         EEG.run = iRun;
                         EEG.task = task(6:end); % task is currently of format "task-<Task name>"
-                        
+                        if ~isempty(recordingLabel)
+                            EEG.recording = recordingLabel;
+                        end
+                        % Set datatype for export
+                        EEG.etc.datatype = modality;
+
                         % build `EEG.BIDS` from `bids`
                         BIDS.gInfo = bids.dataset_description;
                         BIDS.gInfo.README = bids.README;
@@ -663,7 +762,10 @@ for iSubject = opt.subjects
                     
                     % building study command
                     commands = [ commands { 'index' count 'load' eegFileNameOut 'subject' bids.participants{iSubject,pInd} 'session' iFold 'task' task(6:end) 'run' iRun } ];
-                    
+                    if ~isempty(recordingLabel)
+                        commands = [ commands { 'recording' recordingLabel } ];
+                    end
+
                     % custom numerical fields
                     for iCol = 2:size(bids.participants,2)
                         commands = [ commands { bids.participants{1,iCol} bids.participants{iSubject,iCol} } ];
@@ -842,17 +944,15 @@ if ~iscell(runs)
     runs = {runs}; % integer now in a cell
 end
 keepInd = arrayfun(@(x) contains(extractAfter(x.name,'run-'),runs), fileList);
-% keepInd = zeros(1,length(fileList));
-% for iFile = 1:length(fileList)
-%     runInd = strfind(fileList(iFile).name, '_run-');
-%     if ~isempty(runInd)
-%         strTmp = fileList(iFile).name(runInd+5:end);
-%         underScore = find(strTmp == '_');
-%         if any(runs == str2double(strTmp(1:underScore(1)-1)))
-%             keepInd(iFile) = 1;
-%         end
-%     end
-% end
+fileList = fileList(logical(keepInd));
+
+% filter files by recording entity
+% ---------------------------------
+function fileList = filterFilesRecording(fileList, recordings)
+if ~iscell(recordings)
+    recordings = {recordings};
+end
+keepInd = arrayfun(@(x) contains(extractAfter(x.name,'recording-'),recordings), fileList);
 fileList = fileList(logical(keepInd));
 
 
@@ -878,6 +978,16 @@ else
         if exist(tmpFile, 'file')
             filestr = tmpFile;
         end
+    end
+end
+
+% get all coordsystem files (single or multiple with space entity)
+function coordFiles = bids_get_all_coordsystem_files(baseName, coordFileStruct)
+coordFiles = {};
+if ~isempty(coordFileStruct) && isfield(coordFileStruct, 'folder') && isfield(coordFileStruct, 'name')
+    % Return all coordsystem files found (could be single or multiple with space)
+    for i = 1:length(coordFileStruct)
+        coordFiles{end+1} = fullfile(coordFileStruct(i).folder, coordFileStruct(i).name);
     end
 end
 

@@ -347,7 +347,7 @@ opt = finputcheck(varargin, {
     'rmtempfiles'  'string'  {'on' 'off'}    'on';
     'exportformat' 'string'  {'same' 'eeglab' 'edf' 'bdf'}    'eeglab';
     'individualEventsJson' 'string'  {'on' 'off'}    'off';
-    'modality'     'string'  {'ieeg' 'meg' 'eeg' 'auto'}       'auto';
+    'modality'     'string'  {'ieeg' 'meg' 'eeg' 'emg' 'auto'}       'auto';
     'README'       'string'  {}    '';
     'CHANGES'      'string'  {}    '' ;
     'copydata'     'integer' {}    [0 1]; % legacy, does nothing now
@@ -369,6 +369,13 @@ if ~isempty(opt.generatedBy)
 end
 if ~isempty(opt.sourceDatasets)
     opt.SourceDatasets = opt.sourceDatasets;
+end
+
+if strcmpi(opt.modality, 'emg')
+    if strcmpi(opt.exportformat, 'eeglab')
+        opt.exportformat = 'bdf';
+        fprintf('EMG data detected: changing export format to bdf\n');
+    end
 end
 
 % deleting folder
@@ -872,6 +879,13 @@ tInfo = opt.tInfo;
 [pathIn,fileInNoExt,ext] = fileparts(fileIn);
 fprintf('Processing file %s\n', fileIn);
 [EEG,opt.modality] = eeg_import(fileIn, 'modality', opt.modality, 'noevents', opt.noevents, 'importfunc', opt.importfunc);
+
+% Set default export format to EDF for EMG data (after modality is determined)
+if strcmpi(opt.modality, 'emg') && strcmpi(opt.exportformat, 'eeglab')
+    opt.exportformat = 'edf';
+    fprintf('Note: EMG data will be exported to EDF format (default for EMG)\n');
+end
+
 if contains(fileIn, '_bids_tmp_') && strcmpi(opt.rmtempfiles, 'on')
     fprintf('Deleting temporary file %s\n', fileIn);
     delete(fileIn);
@@ -892,7 +906,7 @@ end
 fileOut = [fileBase '_' opt.modality ext];
 
 % select data subset
-EEG = eeg_selectsegment(EEG, 'eventtype', eventtype, 'eventindex', eventindex, 'timeoffset', timeoffset );        
+EEG = eeg_selectsegment(EEG, 'eventtype', eventtype, 'eventindex', eventindex, 'timeoffset', timeoffset );
 
 if ~isequal(opt.exportformat, 'same') || isequal(ext, '.set')
     % export data if necessary
@@ -900,7 +914,29 @@ if ~isequal(opt.exportformat, 'same') || isequal(ext, '.set')
     if isequal(opt.exportformat, 'eeglab')
         pop_saveset(EEG, 'filename', [ fileOutNoExt '.set' ], 'filepath', filePathTmp);
     else
-        pop_writeeeg(EEG, fullfile(filePathTmp, [ fileOutNoExt '.' opt.exportformat]), 'TYPE',upper(opt.exportformat));
+        % Check for regular sampling when exporting to EDF/BDF
+        if strcmpi(opt.exportformat, 'edf') || strcmpi(opt.exportformat, 'bdf')
+            [isRegular, avgFreq] = bids_check_regular_sampling(EEG);
+            if ~isRegular
+                error(['EDF/BDF export requires regular sampling. Your data has irregular sampling (avg %.2f Hz).\n' ...
+                       'Please resample your data before exporting:\n' ...
+                       '  EEG = pop_resample(EEG, %.0f);\n' ...
+                       'Then re-run bids_export.'], avgFreq, round(avgFreq));
+            end
+        end
+
+        % For EMG (and other modalities), save without events in EDF
+        % Events are saved separately in events.tsv
+        if strcmpi(opt.modality, 'emg') && (strcmpi(opt.exportformat, 'edf') || strcmpi(opt.exportformat, 'bdf'))
+            % Temporarily remove events before writing EDF
+            tmpEvents = EEG.event;
+            EEG.event = [];
+            pop_writeeeg(EEG, fullfile(filePathTmp, [ fileOutNoExt '.' opt.exportformat]), 'TYPE',upper(opt.exportformat));
+            % Restore events for events.tsv export
+            EEG.event = tmpEvents;
+        else
+            pop_writeeeg(EEG, fullfile(filePathTmp, [ fileOutNoExt '.' opt.exportformat]), 'TYPE',upper(opt.exportformat));
+        end
     end
 else
     % copy the file
@@ -966,18 +1002,30 @@ if ischar(opt.chanlookup) && ~isempty(opt.chanlookup)
     EEG=pop_chanedit(EEG, 'lookup', opt.chanlookup);
 end
 
-% Write electrode file information (electrodes.tsv and coordsystem.json)
-bids_writechanfile(EEG, fileOutRed);
-bids_writeelectrodefile(EEG, fileOutRed, 'export', opt.elecexport);
+% Set datatype before writing channel/electrode files
 if strcmpi(opt.modality, 'eeg')
-    bids_writetinfofile(EEG, tInfo, notes, fileOutRed);
     EEG.etc.datatype = 'eeg';
 elseif strcmpi(opt.modality, 'ieeg')
-    bids_writeieegtinfofile(EEG, tInfo, notes, fileOutRed);
     EEG.etc.datatype = 'ieeg';
 elseif strcmpi(opt.modality, 'meg')
-    bids_writemegtinfofile(EEG, tInfo, notes, fileOutRed);
     EEG.etc.datatype = 'meg';
+elseif strcmpi(opt.modality, 'emg')
+    EEG.etc.datatype = 'emg';
+end
+
+% Write electrode file information (electrodes.tsv and coordsystem.json)
+bids_writechanfile(EEG, fileOutRed);
+bids_writeelectrodefile(EEG, fileOutRed, 'export', opt.elecexport, 'rootdir', opt.targetdir);
+
+% Write modality-specific info files
+if strcmpi(opt.modality, 'eeg')
+    bids_writetinfofile(EEG, tInfo, notes, fileOutRed);
+elseif strcmpi(opt.modality, 'ieeg')
+    bids_writeieegtinfofile(EEG, tInfo, notes, fileOutRed);
+elseif strcmpi(opt.modality, 'meg')
+    bids_writemegtinfofile(EEG, tInfo, notes, fileOutRed);
+elseif strcmpi(opt.modality, 'emg')
+    bids_writeemgtinfofile(EEG, tInfo, notes, fileOutRed);
 end
 
 % write channel information

@@ -10,16 +10,24 @@
 %
 % Optional inputs:
 %  'Export'    - ['on'|'off'|'auto']
+%  'rootdir'   - [string] root BIDS directory for space-entity coordsystem files
 %
 % Authors: Dung Truong, Arnaud Delorme, 2022
 
 function bids_writeelectrodefile(EEG, fileOut, varargin)
 
-if nargin > 2
-    flagExport = varargin{2};
-else
-    flagExport = 'auto';
+opt = finputcheck(varargin, { ...
+    'export'    'string'   {'on' 'off' 'auto'}   'auto'; ...
+    'rootdir'   'string'   {}                     '' ...
+    }, 'bids_writeelectrodefile');
+if ischar(opt), error(opt); end
+
+% Legacy support: if called with old signature
+if nargin > 2 && ~ischar(varargin{1})
+    opt.export = varargin{2};
 end
+
+flagExport = opt.export;
 
 % remove task because a bug in v1.10.0 validator returns an error (MAYBE REMOVE THAT SECTION LATER)
 ind = strfind(fileOut, 'task-');
@@ -50,33 +58,273 @@ if isfield(EEG.chaninfo, 'filename') && isequal(flagExport, 'auto')
 end
 
 if any(strcmp(flagExport, {'auto', 'on'})) && ~isempty(EEG.chanlocs) && isfield(EEG.chanlocs, 'X') && any(cellfun(@(x)~isempty(x), { EEG.chanlocs.X }))
-    fid = fopen( [ fileOut '_electrodes.tsv' ], 'w');
-    fprintf(fid, 'name\tx\ty\tz\n');
-    
+    % Check if EMG for extended columns
+    isEMG = isfield(EEG, 'etc') && isfield(EEG.etc, 'datatype') && strcmpi(EEG.etc.datatype, 'emg');
+
+    % Determine which columns have actual data
+    columnsToWrite = {'name', 'x', 'y'}; % REQUIRED (z is optional)
+
+    % Check if z has actual data (not just zeros or n/a)
+    hasZ = false;
     for iChan = 1:EEG.nbchan
-        if isempty(EEG.chanlocs(iChan).X) || isnan(EEG.chanlocs(iChan).X) || contains(fileOut, 'ieeg')
-            fprintf(fid, '%s\tn/a\tn/a\tn/a\n', EEG.chanlocs(iChan).labels );
-        else
-            fprintf(fid, '%s\t%2.6f\t%2.6f\t%2.6f\n', EEG.chanlocs(iChan).labels, EEG.chanlocs(iChan).X, EEG.chanlocs(iChan).Y, EEG.chanlocs(iChan).Z );
+        if isfield(EEG.chanlocs(iChan), 'Z') && ~isempty(EEG.chanlocs(iChan).Z) && ...
+           ~isnan(EEG.chanlocs(iChan).Z) && EEG.chanlocs(iChan).Z ~= 0
+            hasZ = true;
+            break;
         end
     end
+    if hasZ
+        columnsToWrite{end+1} = 'z';
+    end
+    if isEMG
+        % Check EMG RECOMMENDED columns
+        recommendedFields = {
+            'coordinate_system', 'coordinate_system';
+            'electrode_type', 'type';
+            'electrode_material', 'material';
+            'impedance', 'impedance';
+            'group', 'group'
+        };
+
+        availableFields = {};
+        missingFields = {};
+
+        for iField = 1:size(recommendedFields, 1)
+            fieldName = recommendedFields{iField, 1};
+            colName = recommendedFields{iField, 2};
+            hasData = false;
+
+            % Check if any electrode has this field with actual data
+            for iChan = 1:EEG.nbchan
+                if isfield(EEG.chanlocs(iChan), fieldName) && ...
+                   ~isempty(EEG.chanlocs(iChan).(fieldName)) && ...
+                   ~strcmpi(EEG.chanlocs(iChan).(fieldName), 'n/a')
+                    hasData = true;
+                    break;
+                end
+            end
+
+            if hasData
+                columnsToWrite{end+1} = colName;
+                availableFields{end+1} = colName;
+            else
+                missingFields{end+1} = colName;
+            end
+        end
+
+        % Display warning about missing RECOMMENDED columns
+        if ~isempty(missingFields)
+            fprintf('Note: The following RECOMMENDED EMG electrode columns are not included (no data available): %s\n', ...
+                    strjoin(missingFields, ', '));
+        end
+    end
+
+    % Write TSV file with determined columns
+    fid = fopen( [ fileOut '_electrodes.tsv' ], 'w');
+    fprintf(fid, '%s\n', strjoin(columnsToWrite, '\t'));
+
+    for iChan = 1:EEG.nbchan
+        values = {};
+
+        % Name (always)
+        % For EMG: use signal_electrode if available, otherwise use channel label
+        if isEMG && isfield(EEG.chanlocs(iChan), 'signal_electrode') && ~isempty(EEG.chanlocs(iChan).signal_electrode)
+            values{end+1} = EEG.chanlocs(iChan).signal_electrode;
+        else
+            values{end+1} = EEG.chanlocs(iChan).labels;
+        end
+
+        % X, Y
+        if isempty(EEG.chanlocs(iChan).X) || isnan(EEG.chanlocs(iChan).X) || contains(fileOut, 'ieeg')
+            values{end+1} = 'n/a';
+            values{end+1} = 'n/a';
+        else
+            % Determine decimal precision based on coordinate units
+            if isEMG && isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateUnits')
+                units = EEG.chaninfo.BIDS.EMGCoordinateUnits;
+                if strcmpi(units, 'percent')
+                    fmt = '%.0f';  % No decimals for percent
+                elseif strcmpi(units, 'ratio')
+                    fmt = '%.2f';  % Max 2 decimals for ratio
+                else
+                    fmt = '%2.6f';  % Default: 6 decimals for mm, etc.
+                end
+            else
+                fmt = '%2.6f';  % Default
+            end
+            values{end+1} = sprintf(fmt, EEG.chanlocs(iChan).X);
+            values{end+1} = sprintf(fmt, EEG.chanlocs(iChan).Y);
+        end
+
+        % Z (only if column exists)
+        if ismember('z', columnsToWrite)
+            if isempty(EEG.chanlocs(iChan).X) || isnan(EEG.chanlocs(iChan).X) || contains(fileOut, 'ieeg')
+                values{end+1} = 'n/a';
+            else
+                % Use same format as X/Y
+                if isEMG && isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateUnits')
+                    units = EEG.chaninfo.BIDS.EMGCoordinateUnits;
+                    if strcmpi(units, 'percent')
+                        fmt = '%.0f';
+                    elseif strcmpi(units, 'ratio')
+                        fmt = '%.2f';
+                    else
+                        fmt = '%2.6f';
+                    end
+                else
+                    fmt = '%2.6f';
+                end
+                values{end+1} = sprintf(fmt, EEG.chanlocs(iChan).Z);
+            end
+        end
+
+        % Find starting column for additional fields
+        startCol = 3; % name, x, y
+        if ismember('z', columnsToWrite)
+            startCol = 4;
+        end
+
+        % Additional EMG columns (only those with data)
+        if isEMG
+            for iCol = (startCol+1):length(columnsToWrite)
+                colName = columnsToWrite{iCol};
+
+                % Map column name to field name
+                switch colName
+                    case 'coordinate_system'
+                        fieldName = 'coordinate_system';
+                    case 'type'
+                        fieldName = 'electrode_type';
+                    case 'material'
+                        fieldName = 'electrode_material';
+                    case 'impedance'
+                        fieldName = 'impedance';
+                    case 'group'
+                        fieldName = 'group';
+                end
+
+                % Get value or 'n/a'
+                if isfield(EEG.chanlocs(iChan), fieldName) && ...
+                   ~isempty(EEG.chanlocs(iChan).(fieldName))
+                    val = EEG.chanlocs(iChan).(fieldName);
+                    if isnumeric(val)
+                        values{end+1} = num2str(val);
+                    else
+                        values{end+1} = val;
+                    end
+                else
+                    values{end+1} = 'n/a';
+                end
+            end
+        end
+
+        fprintf(fid, '%s\n', strjoin(values, '\t'));
+    end
     fclose(fid);
-    
+
     % Write coordinate file information (coordsystem.json)
-    if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EEGCoordinateUnits')
-        coordsystemStruct.EEGCoordinateUnits = EEG.chaninfo.BIDS.EEGCoordinateUnits;
+    % Supports both single and multiple coordinate systems
+    isEMG = isfield(EEG, 'etc') && isfield(EEG.etc, 'datatype') && strcmpi(EEG.etc.datatype, 'emg');
+
+    % Check for multiple coordinate systems
+    if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'coordsystems')
+        % Multiple coordinate systems (with space entities)
+        coordsystems = EEG.chaninfo.BIDS.coordsystems;
+
+        % Validate parent references for nested coordinate systems
+        spaceLabels = cellfun(@(x) x.space, coordsystems, 'UniformOutput', false);
+        for iCoord = 1:length(coordsystems)
+            cs = coordsystems{iCoord};
+            if isfield(cs, 'ParentCoordinateSystem') && ~isempty(cs.ParentCoordinateSystem)
+                if ~ismember(cs.ParentCoordinateSystem, spaceLabels)
+                    error('Invalid parent coordinate system "%s" for space "%s". Parent must exist.', ...
+                          cs.ParentCoordinateSystem, cs.space);
+                end
+            end
+        end
+
+        % Write each coordinate system as separate file
+        for iCoord = 1:length(coordsystems)
+            cs = coordsystems{iCoord};
+            coordStruct = struct();
+
+            % Copy all fields except 'space'
+            fields = fieldnames(cs);
+            for iField = 1:length(fields)
+                if ~strcmpi(fields{iField}, 'space')
+                    coordStruct.(fields{iField}) = cs.(fields{iField});
+                end
+            end
+
+            % Write with space entity in filename
+            if ~isempty(cs.space)
+                % Space-entity coordsystem files go at root if rootdir is provided
+                if ~isempty(opt.rootdir)
+                    filename = fullfile(opt.rootdir, sprintf('space-%s_coordsystem.json', cs.space));
+                else
+                    filename = sprintf('%s_space-%s_coordsystem.json', fileOut, cs.space);
+                end
+            else
+                filename = sprintf('%s_coordsystem.json', fileOut);
+            end
+            jsonwrite(filename, coordStruct, struct('indent','  '));
+        end
     else
-        coordsystemStruct.EEGCoordinateUnits = 'mm';
+        % Single coordinate system (backward compatibility)
+        coordsystemStruct = struct();
+
+        if isEMG
+            if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateUnits')
+                coordsystemStruct.EMGCoordinateUnits = EEG.chaninfo.BIDS.EMGCoordinateUnits;
+            else
+                coordsystemStruct.EMGCoordinateUnits = 'mm';
+            end
+            if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateSystem')
+                coordsystemStruct.EMGCoordinateSystem = EEG.chaninfo.BIDS.EMGCoordinateSystem;
+            else
+                coordsystemStruct.EMGCoordinateSystem = 'Other';
+            end
+            if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EMGCoordinateSystemDescription')
+                coordsystemStruct.EMGCoordinateSystemDescription = EEG.chaninfo.BIDS.EMGCoordinateSystemDescription;
+            else
+                coordsystemStruct.EMGCoordinateSystemDescription = 'Electrode locations in mm';
+            end
+        else
+            if isfield(EEG.chaninfo, 'BIDS') && isfield(EEG.chaninfo.BIDS, 'EEGCoordinateUnits')
+                coordsystemStruct.EEGCoordinateUnits = EEG.chaninfo.BIDS.EEGCoordinateUnits;
+            else
+                coordsystemStruct.EEGCoordinateUnits = 'mm';
+            end
+            if isfield(EEG.chaninfo, 'BIDS') &&isfield(EEG.chaninfo.BIDS, 'EEGCoordinateSystem')
+                coordsystemStruct.EEGCoordinateSystem = EEG.chaninfo.BIDS.EEGCoordinateSystem;
+            else
+                coordsystemStruct.EEGCoordinateSystem = 'CTF';
+            end
+            if isfield(EEG.chaninfo, 'BIDS') &&isfield(EEG.chaninfo.BIDS, 'EEGCoordinateSystemDescription')
+                coordsystemStruct.EEGCoordinateSystemDescription = EEG.chaninfo.BIDS.EEGCoordinateSystemDescription;
+            else
+                coordsystemStruct.EEGCoordinateSystemDescription = 'EEGLAB';
+            end
+        end
+        % Write coordsystem file
+        % For EMG with single coordinate system, write at root if rootdir provided
+        if isEMG && ~isempty(opt.rootdir)
+            filename = fullfile(opt.rootdir, 'coordsystem.json');
+        else
+            filename = [fileOut '_coordsystem.json'];
+        end
+        jsonwrite(filename, coordsystemStruct, struct('indent','  '));
     end
-    if isfield(EEG.chaninfo, 'BIDS') &&isfield(EEG.chaninfo.BIDS, 'EEGCoordinateSystem')
-        coordsystemStruct.EEGCoordinateSystem = EEG.chaninfo.BIDS.EEGCoordinateSystem;
-    else
-        coordsystemStruct.EEGCoordinateSystem = 'CTF';
+end
+
+% Helper function to get field value or 'n/a' for electrode fields
+function value = getfield_or_na_elec(struct, fieldname)
+if isfield(struct, fieldname) && ~isempty(struct.(fieldname))
+    value = struct.(fieldname);
+    % Convert numeric to string
+    if isnumeric(value)
+        value = num2str(value);
     end
-    if isfield(EEG.chaninfo, 'BIDS') &&isfield(EEG.chaninfo.BIDS, 'EEGCoordinateSystemDescription')
-        coordsystemStruct.EEGCoordinateSystemDescription = EEG.chaninfo.BIDS.EEGCoordinateSystemDescription;
-    else
-        coordsystemStruct.EEGCoordinateSystemDescription = 'EEGLAB';
-    end
-    jsonwrite( [ fileOut '_coordsystem.json' ], coordsystemStruct);
+else
+    value = 'n/a';
 end
