@@ -36,7 +36,7 @@ Accepted EEG input formats are all files that EEGLAB can read.
 * MRI export: ✔ (no conversion)
 * fMRI export: ✖
 * Motion-cap export: ✖ (upcoming)
-* EMG export: ✖ (upcoming)
+* EMG export: ✔ (as .edf and .bdf, beta import and export)
 * MEG export: ✖ (upcoming)
 
 # EEG-BIDS import capabilities for EEGLAB
