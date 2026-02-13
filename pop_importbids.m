@@ -60,6 +60,10 @@
 
 function [STUDY, ALLEEG, bids, stats, commands] = pop_importbids(bidsFolder, varargin)
 
+if nargin > 0
+    bidsFolder = char(bidsFolder);
+end
+
 STUDY = [];
 ALLEEG = [];
 bids = [];
