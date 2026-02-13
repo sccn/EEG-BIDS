@@ -138,6 +138,7 @@ else
             end
         end
 
+        if isnan(values{end}), values{end} = 'n/a'; end
         fprintf(fid, '%s\n', strjoin(values, '\t'));
     end
 end

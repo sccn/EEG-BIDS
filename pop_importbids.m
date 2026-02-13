@@ -122,17 +122,17 @@ if nargin < 1
     geometry = {[2 1.5], 1, 1,[1 0.35],[0.6 0.35 0.5],[0.6 0.35 0.5],[0.6 0.35 0.5],[0.6 0.35 0.5],[0.6 0.35 0.5],1,[1 2 0.5]};
     geomvert = [1 0.5, 1 1 1 1.5 1.5 1.5 1 0.5 1];
     if isempty(recordings)
-        promptstr(13:15) = [];
+        promptstr(16:18) = [];
         geometry(8) = [];
         geomvert(8) = [];
     end
     if isempty(runs)
-        promptstr(10:12) = [];
+        promptstr(13:15) = [];
         geometry(7) = [];
         geomvert(7) = [];
     end
     if isempty(sessions)
-        promptstr(7:9) = [];
+        promptstr(10:12) = [];
         geometry(6) = [];
         geomvert(6) = [];
     end
