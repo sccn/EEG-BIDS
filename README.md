@@ -144,4 +144,8 @@ v10.1 - fix export wizard.
 
 v10.2 - fix missing task when exporting study, fix bids subject (bug 860), better handling of descriptive tags.
 
-v10.3 - fix importing samples when both samples and latency are present. 
+v10.3 - fix importing samples when both samples and latency are present.
+
+v10.4 - add EMG support for import.
+
+v10.5 - adds beta EMG export support, fixes session and run indexing and UI handling, improves subject validation, and prevents invalid channel values during export. 
