@@ -253,6 +253,7 @@ if isempty(opt.subjects)
     opt.subjects = 2:size(bids.participants,1); % indices into the participants.tsv file, ignoring first header row
 else
     if iscell(opt.subjects) % match ID to particpiants and return index
+        sub_index = nan(1, length(opt.subjects));  % Pre-allocate with NaN to detect missing subjects
         for sub = length(opt.subjects):-1:1
             if contains(opt.subjects{sub},'sub-')
                 ID = extractAfter(opt.subjects{sub},'sub-');
@@ -265,6 +266,11 @@ else
             else
                 sub_index(sub) = test;
             end
+        end
+        % Remove subjects that weren't found (NaN entries)
+        sub_index = sub_index(~isnan(sub_index));
+        if isempty(sub_index)
+            error('None of the requested subjects were found in the BIDS dataset -- likely wrong folder or typo in folder name');
         end
         opt.subjects = sub_index+1;
     else % takes integers in 
