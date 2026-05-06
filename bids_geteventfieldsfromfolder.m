@@ -42,7 +42,7 @@ for iFile = 1:length(files)
             fields = union(fields, fieldsTmp);
         end
     else
-        if ~isempty(strfind(files(iFile).name, 'events.tsv'))
+        if files(iFile).name(1) ~= '.' && ~isempty(strfind(files(iFile).name, 'events.tsv'))
              res = loadtxt( fullfile(files(iFile).folder, files(iFile).name), 'verbose', 'off', 'delim', 9, 'convert', 'off');
              fields = union(fields, res(1,:));
 %             % other solutions
