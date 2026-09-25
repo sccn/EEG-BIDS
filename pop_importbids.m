@@ -760,6 +760,7 @@ for iSubject = opt.subjects
                             behData = table2struct(behData);
                         end
                         BIDS.behavioral = behData;
+                        BIDS.sourcefile = eegFileRaw; % raw BIDS data file, so plugins can find its sidecars after import
                         EEG.BIDS = BIDS;
                         
                         if strcmpi(opt.metadata, 'off')

@@ -33,6 +33,15 @@ function [EEG, channelData, elecData] = bids_importchanlocs(EEG, channelFile, el
     if isempty(channelData) && isempty(elecData)
         return
     end
+    % channels.tsv: name, type and units are the first three columns (BIDS);
+    % optional columns such as status come in any order, so they are found by
+    % their header. Reading status from column 4 put low_cutoff values into
+    % chanlocs.status on iEEG datasets (e.g. OpenNeuro ds004696, ds004080).
+    colStatus = []; colStatusDesc = [];
+    if size(channelData,2) > 1
+        colStatus     = find(strcmpi(channelData(1,:), 'status'), 1);
+        colStatusDesc = find(strcmpi(channelData(1,:), 'status_description'), 1);
+    end
     for iChan = 2:size(channelData,1)
         if size(channelData,2) == 1
             fprintf('Warning: BIDS channel data missing tab characters\n')
@@ -44,20 +53,50 @@ function [EEG, channelData, elecData] = bids_importchanlocs(EEG, channelFile, el
             chanlocs(iChan-1).labels = channelData{iChan,1};
             chanlocs(iChan-1).type   = channelData{iChan,2};
             chanlocs(iChan-1).unit   = channelData{iChan,3};
-            if size(channelData,2) > 3
-                chanlocs(iChan-1).status = channelData{iChan,4};
+            if ~isempty(colStatus)
+                chanlocs(iChan-1).status = channelData{iChan,colStatus};
+            end
+            if ~isempty(colStatusDesc)
+                chanlocs(iChan-1).status_description = channelData{iChan,colStatusDesc};
             end
         end
     end
-    for iChan = 2:size(elecData,1)
-        if ~isempty(elecData) && iChan <= size(elecData,1)
-            chanlocs(iChan-1).labels = elecData{iChan,1};
-            chanlocs(iChan-1).X = elecData{iChan,2};
-            chanlocs(iChan-1).Y = elecData{iChan,3};
-            chanlocs(iChan-1).Z = elecData{iChan,4};
-            % Import coordinate_system (5th column) if present (EMG)
-            if size(elecData,2) >= 5 && ~isempty(elecData{iChan,5}) && ~strcmpi(elecData{iChan,5}, 'n/a')
-                chanlocs(iChan-1).coordinate_system = elecData{iChan,5};
+
+    % electrodes.tsv: BIDS does not require it to list the same channels in the
+    % same order as channels.tsv (iEEG files often leave out contacts without
+    % coordinates). When the names line up row by row, rows are used by position
+    % as before (including extra rows, such as an EGI reference). Otherwise they
+    % are matched to channels by name: assigning them by position relabelled the
+    % data rows, e.g. 27 of 30 contacts of sub-02 on OpenNeuro ds004696.
+    if size(elecData,1) > 1
+        colCoordSys = find(strcmpi(elecData(1,:), 'coordinate_system'), 1); % EMG
+        elecNames = cellfun(@local_str, elecData(2:end,1), 'UniformOutput', false);
+        byName = false;
+        if size(channelData,1) > 1 && ~isempty(chanlocs)
+            chanNames = cellfun(@local_str, {chanlocs.labels}, 'UniformOutput', false);
+            nCommon = min(numel(chanNames), numel(elecNames));
+            byName = ~isequal(lower(chanNames(1:nCommon)), lower(elecNames(1:nCommon)'));
+        end
+        nIgnored = 0;
+        for iElec = 2:size(elecData,1)
+            if byName
+                iChan = find(strcmpi(chanNames, elecNames{iElec-1}), 1);
+                if isempty(iChan), nIgnored = nIgnored + 1; continue; end
+            else
+                iChan = iElec - 1;
+                chanlocs(iChan).labels = elecData{iElec,1};
+            end
+            chanlocs(iChan).X = elecData{iElec,2};
+            chanlocs(iChan).Y = elecData{iElec,3};
+            chanlocs(iChan).Z = elecData{iElec,4};
+            if ~isempty(colCoordSys) && ~isempty(elecData{iElec,colCoordSys}) && ~strcmpi(elecData{iElec,colCoordSys}, 'n/a')
+                chanlocs(iChan).coordinate_system = elecData{iElec,colCoordSys};
+            end
+        end
+        if byName
+            fprintf('Electrode positions matched to channels by name (the electrodes file lists another order or subset)\n');
+            if nIgnored > 0
+                fprintf('%d electrode(s) in the electrodes file match no channel and were ignored\n', nIgnored);
             end
         end
     end
@@ -89,4 +128,9 @@ function [EEG, channelData, elecData] = bids_importchanlocs(EEG, channelFile, el
     end
     EEG.chanlocs = chanlocs;
     EEG.chaninfo = chaninfo;
+end
+
+function s = local_str(x)
+% channel name as text (bids_loadfile turns numeric-looking names into numbers)
+if ischar(x), s = strtrim(x); elseif isstring(x), s = strtrim(char(x)); else, s = num2str(x); end
 end
