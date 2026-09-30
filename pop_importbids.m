@@ -407,23 +407,24 @@ for iSubject = opt.subjects
             % check the runs
             if ~isempty(opt.runs)
                 eegFile       = filterFilesRun(eegFile      , opt.runs);
-                infoFile      = filterFilesRun(infoFile     , opt.runs);
-                channelFile   = filterFilesRun(channelFile  , opt.runs);
-                elecFile      = filterFilesRun(elecFile     , opt.runs);
-                eventFile     = filterFilesRun(eventFile    , opt.runs);
-                eventDescFile = filterFilesRun(eventDescFile, opt.runs);
-                % no runs for BEH or coordsystem
+                infoFile      = filterFilesRun(infoFile     , opt.runs, true);
+                channelFile   = filterFilesRun(channelFile  , opt.runs, true);
+                elecFile      = filterFilesRun(elecFile     , opt.runs, true);
+                eventFile     = filterFilesRun(eventFile    , opt.runs, true);
+                eventDescFile = filterFilesRun(eventDescFile, opt.runs, true);
+                % no runs for BEH or coordsystem; sidecars without a run entity
+                % (e.g. session-level electrodes.tsv) apply to all runs and are kept
             end
 
             % check the recordings (multi-device)
             if ~isempty(opt.recordings)
                 eegFile       = filterFilesRecording(eegFile      , opt.recordings);
-                infoFile      = filterFilesRecording(infoFile     , opt.recordings);
-                channelFile   = filterFilesRecording(channelFile  , opt.recordings);
-                elecFile      = filterFilesRecording(elecFile     , opt.recordings);
-                eventFile     = filterFilesRecording(eventFile    , opt.recordings);
-                eventDescFile = filterFilesRecording(eventDescFile, opt.recordings);
-                coordFile     = filterFilesRecording(coordFile    , opt.recordings);
+                infoFile      = filterFilesRecording(infoFile     , opt.recordings, true);
+                channelFile   = filterFilesRecording(channelFile  , opt.recordings, true);
+                elecFile      = filterFilesRecording(elecFile     , opt.recordings, true);
+                eventFile     = filterFilesRecording(eventFile    , opt.recordings, true);
+                eventDescFile = filterFilesRecording(eventDescFile, opt.recordings, true);
+                coordFile     = filterFilesRecording(coordFile    , opt.recordings, true);
                 % events and coords may or may not have recording entity
             end
             
@@ -954,30 +955,36 @@ fileList = fileList(logical(keepInd));
 
 % Filter file runs
 % ----------------
-function fileList = filterFilesRun(fileList, runs)
-fileList = filterFilesEntity(fileList, 'run', runs);
+function fileList = filterFilesRun(fileList, runs, keepMissing)
+if nargin < 3, keepMissing = false; end
+fileList = filterFilesEntity(fileList, 'run', runs, keepMissing);
 
 % filter files by recording entity
 % ---------------------------------
-function fileList = filterFilesRecording(fileList, recordings)
-fileList = filterFilesEntity(fileList, 'recording', recordings);
+function fileList = filterFilesRecording(fileList, recordings, keepMissing)
+if nargin < 3, keepMissing = false; end
+fileList = filterFilesEntity(fileList, 'recording', recordings, keepMissing);
 
 % keep files whose entity label (e.g. run-01) is one of the requested values
 % values may be numbers or text; numbers ignore zero padding (1 matches run-01
-% but not run-10)
+% but not run-10); files without the entity are kept if keepMissing is true
 % ------------------------------------------------------------------------------
-function fileList = filterFilesEntity(fileList, entity, values)
+function fileList = filterFilesEntity(fileList, entity, values, keepMissing)
 if ischar(values)
     values = { values };
 elseif ~iscell(values)
     values = num2cell(values);
 end
-values    = cellfun(@(v) char(string(v)), values, 'uniformoutput', false);
+for iVal = 1:length(values)
+    if isnumeric(values{iVal}), values{iVal} = num2str(values{iVal}); else, values{iVal} = char(values{iVal}); end
+end
 valuesNum = str2double(values);
 keepInd = false(1, length(fileList));
 for iFile = 1:length(fileList)
     label = regexp(fileList(iFile).name, [ '_' entity '-([a-zA-Z0-9]+)' ], 'tokens', 'once');
-    if ~isempty(label)
+    if isempty(label)
+        keepInd(iFile) = keepMissing;
+    else
         keepInd(iFile) = any(strcmp(label{1}, values)) || any(str2double(label{1}) == valuesNum);
     end
 end

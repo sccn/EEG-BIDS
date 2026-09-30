@@ -76,6 +76,12 @@ function [EEG, channelData, elecData] = bids_importchanlocs(EEG, channelFile, el
             chanNames = cellfun(@local_str, {chanlocs.labels}, 'UniformOutput', false);
             nCommon = min(numel(chanNames), numel(elecNames));
             byName = ~isequal(lower(chanNames(1:nCommon)), lower(elecNames(1:nCommon)'));
+            if byName && ~any(ismember(lower(elecNames), lower(chanNames)))
+                % no name in common (e.g. "EEG Fp1" vs "Fp1"): names cannot be
+                % matched, so keep the positional assignment
+                fprintf('Warning: no electrode name matches a channel name; electrodes assigned to channels by position\n');
+                byName = false;
+            end
         end
         nIgnored = 0;
         for iElec = 2:size(elecData,1)
