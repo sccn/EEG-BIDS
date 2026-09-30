@@ -154,7 +154,7 @@ if nargin < 1
         if res.bidssessions && ~isempty(res.bidsessionstr),  options = { options{:} 'sessions' sessions(res.bidsessionstr) }; end
     end
     if isfield(res, 'bidsruns')
-        if res.bidsruns && ~isempty(res.bidsrunsstr),  options = { options{:} 'runs' str2double(runs(res.bidsrunsstr)) }; end
+        if res.bidsruns && ~isempty(res.bidsrunsstr),  options = { options{:} 'runs' runs(res.bidsrunsstr) }; end
     end
     if isfield(res, 'bidsrecordings')
         if res.bidsrecordings && ~isempty(res.bidsrecordingsstr),  options = { options{:} 'recordings' recordings(res.bidsrecordingsstr) }; end
@@ -251,7 +251,7 @@ bids.data.eventdesc = [];
 bids.data.eventinfo = [];
 inconsistentChannels = 0;
 inconsistentEvents   = 0;
-faileddatasets = [];
+faileddatasets = {};
 
 if isempty(opt.subjects)
     opt.subjects = 2:size(bids.participants,1); % indices into the participants.tsv file, ignoring first header row
@@ -808,7 +808,8 @@ for iSubject = opt.subjects
                     end
                     %}
                 catch ME
-                    faileddatasets = [faileddatasets eegFileRaw];
+                    faileddatasets{end+1} = eegFileRaw;
+                    fprintf(2, 'Error importing %s (skipped):\n%s\n', eegFileRaw, getReport(ME, 'basic'));
                 end
             end % end for eegFileRawAll
             
@@ -858,6 +859,9 @@ stats = bids_metadata_stats(bids, inconsistentChannels);
 % -----------------------------
 if strcmpi(opt.metadata, 'off')
     if isempty(commands)
+        if ~isempty(faileddatasets)
+            error('No dataset could be imported; %d file(s) failed, see the errors printed above', length(faileddatasets));
+        end
         error('No dataset were found');
     end
     studyName = fullfile(opt.outputdir, [opt.studyName '.study']);
@@ -950,20 +954,33 @@ fileList = fileList(logical(keepInd));
 % Filter file runs
 % ----------------
 function fileList = filterFilesRun(fileList, runs)
-if ~iscell(runs)
-    runs = {runs}; % integer now in a cell
-end
-keepInd = arrayfun(@(x) contains(extractAfter(x.name,'run-'),runs), fileList);
-fileList = fileList(logical(keepInd));
+fileList = filterFilesEntity(fileList, 'run', runs);
 
 % filter files by recording entity
 % ---------------------------------
 function fileList = filterFilesRecording(fileList, recordings)
-if ~iscell(recordings)
-    recordings = {recordings};
+fileList = filterFilesEntity(fileList, 'recording', recordings);
+
+% keep files whose entity label (e.g. run-01) is one of the requested values
+% values may be numbers or text; numbers ignore zero padding (1 matches run-01
+% but not run-10)
+% ------------------------------------------------------------------------------
+function fileList = filterFilesEntity(fileList, entity, values)
+if ischar(values)
+    values = { values };
+elseif ~iscell(values)
+    values = num2cell(values);
 end
-keepInd = arrayfun(@(x) contains(extractAfter(x.name,'recording-'),recordings), fileList);
-fileList = fileList(logical(keepInd));
+values    = cellfun(@(v) char(string(v)), values, 'uniformoutput', false);
+valuesNum = str2double(values);
+keepInd = false(1, length(fileList));
+for iFile = 1:length(fileList)
+    label = regexp(fileList(iFile).name, [ '_' entity '-([a-zA-Z0-9]+)' ], 'tokens', 'once');
+    if ~isempty(label)
+        keepInd(iFile) = any(strcmp(label{1}, values)) || any(str2double(label{1}) == valuesNum);
+    end
+end
+fileList = fileList(keepInd);
 
 
 % set structure
