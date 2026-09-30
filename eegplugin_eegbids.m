@@ -33,7 +33,15 @@ function vers = eegplugin_eegbids(fig, trystrs, catchstrs)
     
     % menu callbacks
     % --------------
-    comcnt1 = [ trystrs.no_check '[STUDYTMP, ALLEEGTMP, ~, ~, LASTCOM] = pop_importbids; '  catchstrs.load_study ];
+    % A BIDS folder holding a single recording is loaded as a dataset, not as a
+    % one-dataset STUDY: in STUDY mode EEGLAB disables the dataset-level menus.
+    % LASTCOM is then emptied so that catchstrs.load_study skips the STUDY.
+    comsingle = [ 'if ~isempty(LASTCOM) && numel(ALLEEGTMP) == 1,' ...
+                  '    ALLEEG = ALLEEGTMP; EEG = ALLEEG(1); CURRENTSET = 1; STUDY = []; CURRENTSTUDY = 0;' ...
+                  '    eegh([LASTCOM '' STUDY = []; CURRENTSTUDY = 0; EEG = ALLEEG(1); CURRENTSET = 1;'']);' ...
+                  '    LASTCOM = '''';' ...
+                  'end;' ];
+    comcnt1 = [ trystrs.no_check '[STUDYTMP, ALLEEGTMP, ~, ~, LASTCOM] = pop_importbids; ' comsingle catchstrs.load_study ];
     comcnt2 = [ trystrs.no_check '[~,~,LASTCOM] = pop_exportbids(STUDY, EEG);' catchstrs.add_to_hist ];
                 
     % create menus
