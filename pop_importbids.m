@@ -331,7 +331,16 @@ for iSubject = opt.subjects
     % import data
     for iFold = 1:length(subjectFolder) % scan sessions
         if ~exist(subjectFolder{iFold},'dir')
-            fprintf(2, 'No EEG data folder for subject %s session %s\n', bids.participants{iSubject,pInd}, subFolders{iFold});
+            % a session holding only other modalities (e.g. an MRI session with
+            % anat/) is normal in BIDS: report it, not as an error
+            other = dir(fullfile(parentSubjectFolder, subFolders{iFold}));
+            other = { other([other.isdir] & ~startsWith({other.name}, '.')).name };
+            if ~isempty(other)
+                fprintf('Subject %s session %s has no EEG, MEG or iEEG data (only %s); skipped\n', ...
+                    bids.participants{iSubject,pInd}, subFolders{iFold}, strjoin(other, ', '));
+            else
+                fprintf(2, 'No EEG data folder for subject %s session %s\n', bids.participants{iSubject,pInd}, subFolders{iFold});
+            end
         else
             
             % scans.tsv for time synch information
